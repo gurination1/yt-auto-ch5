@@ -1,15 +1,27 @@
 import os
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    for ep in [".env", "../.env", "../../.env", "/mnt/g/yt-auto-fleet/.env"]:
+        if os.path.exists(ep):
+            load_dotenv(ep, override=False)
+except Exception:
+    pass
 
 # Auto-load local_env.sh if present to populate environment variables
 def _autoload_local_env():
-    for env_path in ["local_env.sh", "../local_env.sh",  "/root/local_env.sh"]:
+    for env_path in [".env", "local_env.sh", "../local_env.sh",  "/root/local_env.sh"]:
         if os.path.exists(env_path):
             try:
                 with open(env_path, "r", encoding="utf-8") as f:
                     for line in f:
                         line = line.strip()
-                        if line.startswith("export ") and "=" in line:
-                            k, v = line[7:].split("=", 1)
+                        if not line or line.startswith("#"):
+                            continue
+                        if line.startswith("export "):
+                            line = line[7:]
+                        if "=" in line:
+                            k, v = line.split("=", 1)
                             k = k.strip()
                             v = v.strip().strip('"').strip("'")
                             if k and k not in os.environ and v:
