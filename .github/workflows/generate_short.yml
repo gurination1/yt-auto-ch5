@@ -28,6 +28,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check Primary Server Upload Status (Fallback Guard)
+        id: fallback_check
+        run: |
+          python check_slot_fallback.py
+
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -57,6 +63,7 @@ jobs:
         run: pip install -r requirements.txt && pip install -U --pre "yt-dlp[default]"
 
       - name: Generate Short
+        if: steps.fallback_check.outputs.should_run == \'true\' || github.event_name == \'workflow_dispatch\'
         timeout-minutes: 50
         env:
           GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
