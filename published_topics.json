@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How Webvan's ambitious, vertically integrated grocery delivery service collapsed despite a prescient vision, by building massive infrastructure decades before the market was ready.",
     "The Unlocking of Hidden 1950s Advertising Archives Sparks Fresh Academic Scrutiny into Mid-Century Consumer Manipulation",
     "The ongoing legal proceedings and recent court appearance of a key figure in the $300 million \"Feeding Our Future\" federal programs fraud scheme highlight the challenges of prosecuting large-scale, intricate financial deception.",
     "How **De Beers** engineered the perception of diamonds as rare and eternally valuable, launching the modern engagement ring tradition to create a global monopoly out of a relatively common gemstone.",
@@ -89,8 +88,9 @@
     "Autonomous deep-sea robots are redefining mineral extraction, enabling selective polymetallic nodule mining with significantly reduced environmental impact, as NOAA advances the first commercial recovery application.",
     "How **Scramjet engines** achieve propulsion at hypersonic speeds (Mach 5+) with virtually no moving parts, relying entirely on extreme aerodynamic compression and **supersonic combustion** to create thrust, a counterintuitive feat of propulsion design.",
     "China's Yebatan Hydropower Station, set to be the world's largest, is defying extreme Himalayan conditions with revolutionary low-heat cement and tunneling through mountains, sparking global debate on its audacious engineering, environmental impact, and geopolitical significance.",
-    "China's experimental maglev vehicle accelerates to 497 mph (800 km/h) in 5.3 seconds on a 1-kilometer test track, setting a new short-distance acceleration record."
+    "China's experimental maglev vehicle accelerates to 497 mph (800 km/h) in 5.3 seconds on a 1-kilometer test track, setting a new short-distance acceleration record.",
+    "How colossal skyscrapers, designed to sway miles above ground, use counter-oscillating **Tuned Mass Dampers (TMDs)** to absorb dangerous resonant vibrations, not just stop visible movement."
   ],
-  "subcluster_idx": 0,
-  "call_count": 146
+  "subcluster_idx": 1,
+  "call_count": 147
 }
