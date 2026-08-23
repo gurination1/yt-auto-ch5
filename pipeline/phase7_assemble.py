@@ -65,57 +65,79 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
         ss_offset = ss_offsets[i]
         norm_path = f"output/broll_{i}_norm.mp4"
         
-        # Handle missing/None broll_path by generating a unique 4K Pollinations AI motion clip for this specific segment
+        # Handle missing/None broll_path by fetching real video (YouTube CC / Pexels) before image fallback
         if not broll_path or not os.path.exists(broll_path) or os.path.getsize(broll_path) < 10_000:
             broll_path = f"output/emergency_broll_{i}.mp4"
-            print(f"[Assemble] B-roll for segment {i} missing. Generating high-quality 4K visual motion clip...")
+            print(f"[Assemble] B-roll for segment {i} missing. Searching real YouTube & stock video clips...")
             seg_info = script.get("segments", [])[i] if script and i < len(script.get("segments", [])) else {}
             seg_query = seg_info.get("broll_query") or seg_info.get("narration") or "cinematic 4k footage"
             
-            # 1. Try Pexels 4K video search directly
-            from pipeline.config import PEXELS_API_KEY
-            pexels_success = False
-            if PEXELS_API_KEY:
-                try:
-                    import urllib.request
-                    headers = {
-                        "Authorization": PEXELS_API_KEY,
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                    }
-                    req = urllib.request.Request(
-                        f"https://api.pexels.com/videos/search?query={urllib.parse.quote(seg_query)}&per_page=5&orientation=portrait",
-                        headers=headers
-                    )
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        pdata = json.loads(resp.read().decode())
-                        videos = pdata.get("videos", [])
-                        if videos:
-                            for vid in videos:
-                                files = vid.get("video_files", [])
-                                best_file = next((f for f in files if f.get("width") == 1080 and f.get("height") == 1920), None) or files[0]
-                                video_link = best_file.get("link")
-                                if video_link:
-                                    temp_vid = f"output/pexels_temp_{i}.mp4"
-                                    req_vid = urllib.request.Request(video_link, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-                                    with urllib.request.urlopen(req_vid, timeout=15) as vresp, open(temp_vid, "wb") as out_f:
-                                        out_f.write(vresp.read())
-                                    if os.path.exists(temp_vid) and os.path.getsize(temp_vid) > 20_000:
-                                        broll_path = temp_vid
-                                        pexels_success = True
-                                        print(f"[Assemble] Successfully fetched 4K Pexels B-roll clip for segment {i}!")
-                                        break
-                except Exception as pex_err:
-                    print(f"[Assemble] Pexels direct fetch note: {pex_err}")
+            video_success = False
             
-            # 2. Pollinations 4K motion generator fallback if Pexels unavailable
-            if not pexels_success:
+            # 1. Try YouTube CC video search directly via yt-dlp
+            try:
+                from pipeline.phase4_broll import _youtube_candidates, _download_video_robust, _image_to_ken_burns_video
+                yt_cands = _youtube_candidates(seg_query, n=3)
+                for cand in yt_cands:
+                    temp_vid = f"output/emergency_yt_{i}.mp4"
+                    if _download_video_robust(cand["video_url"], temp_vid, i, candidate_info=cand):
+                        _image_to_ken_burns_video(temp_vid, broll_path, w, h, duration=duration)
+                        if os.path.exists(temp_vid):
+                            try: os.remove(temp_vid)
+                            except Exception: pass
+                        if os.path.exists(broll_path) and os.path.getsize(broll_path) > 20_000:
+                            video_success = True
+                            print(f"[Assemble] Successfully fetched real YouTube video clip for segment {i}!")
+                            break
+            except Exception as yt_err:
+                print(f"[Assemble] YouTube fallback search note: {yt_err}")
+                
+            # 2. Try Pexels video search if available
+            if not video_success:
+                pex_key = os.environ.get("PEXELS_API_KEY", "")
+                if pex_key:
+                    try:
+                        import urllib.request
+                        headers = {
+                            "Authorization": pex_key,
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                        }
+                        req = urllib.request.Request(
+                            f"https://api.pexels.com/videos/search?query={urllib.parse.quote(seg_query)}&per_page=5&orientation=portrait",
+                            headers=headers
+                        )
+                        with urllib.request.urlopen(req, timeout=10) as resp:
+                            pdata = json.loads(resp.read().decode())
+                            videos = pdata.get("videos", [])
+                            if videos:
+                                for vid in videos:
+                                    files = vid.get("video_files", [])
+                                    best_file = next((f for f in files if f.get("width") == 1080 and f.get("height") == 1920), None) or files[0]
+                                    video_link = best_file.get("link")
+                                    if video_link:
+                                        temp_vid = f"output/pexels_temp_{i}.mp4"
+                                        req_vid = urllib.request.Request(video_link, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+                                        with urllib.request.urlopen(req_vid, timeout=15) as vresp, open(temp_vid, "wb") as out_f:
+                                            out_f.write(vresp.read())
+                                        if os.path.exists(temp_vid) and os.path.getsize(temp_vid) > 20_000:
+                                            _image_to_ken_burns_video(temp_vid, broll_path, w, h, duration=duration)
+                                            if os.path.exists(temp_vid):
+                                                try: os.remove(temp_vid)
+                                                except Exception: pass
+                                            video_success = True
+                                            print(f"[Assemble] Successfully fetched 4K Pexels B-roll clip for segment {i}!")
+                                            break
+                    except Exception as pex_err:
+                        print(f"[Assemble] Pexels direct fetch note: {pex_err}")
+            
+            # 3. Pollinations 4K motion generator fallback only if all video searches fail
+            if not video_success:
                 prompt_clean = f"4k cinematic documentary footage of {seg_query}, photorealistic, 8k, detailed, no text, no watermark"
                 from pipeline.phase4_broll import _pollinations_image, _image_to_ken_burns_video
                 synth_img = f"output/emergency_img_{i}.jpg"
                 if _pollinations_image(prompt_clean, synth_img, w=2160, h=3840):
                     _image_to_ken_burns_video(synth_img, broll_path, w, h, duration=duration)
                 else:
-                    # High quality procedural mandelbrot animation
                     cmd_synth = [
                         "ffmpeg", "-y", "-f", "lavfi",
                         "-i", f"gradients=s={w}x{h}:r=30:c0=0x0a2244:c1=0x00d4ff:c2=0xff007f:x0=0:y0=0:x1={w}:y1={h}:speed=0.01",

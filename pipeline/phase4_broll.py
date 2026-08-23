@@ -1,3 +1,14 @@
+
+def _get_ytdlp_bin() -> list[str]:
+    import shutil, sys
+    for p in ["/usr/local/bin/yt-dlp", "/mnt/g/yt-auto-fleet/venv/bin/yt-dlp", "/home/manveer2/venv_yt_auto/bin/yt-dlp"]:
+        if os.path.exists(p) and os.access(p, os.X_OK):
+            return [p]
+    bin_path = shutil.which("yt-dlp")
+    if bin_path:
+        return [bin_path]
+    return [sys.executable, "-m", "yt_dlp"]
+
 import socket
 socket.setdefaulttimeout(15.0)
 import os
@@ -956,7 +967,9 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
             print(f"[B-roll] Downloading YouTube video slice using yt-dlp CLI: {url}...")
             
             # Find Node.js path for deciphering signatures
-            node_path = "/usr/bin/node" if os.path.exists("/usr/bin/node") else "node"
+            import shutil
+            node_bin = shutil.which("node") or ("/usr/bin/node" if os.path.exists("/usr/bin/node") else "node")
+            ytdlp_bin_cmd = _get_ytdlp_bin()
             
             # 1. Read duration and uploader details from candidate_info if present
             duration_secs = 0.0
@@ -965,11 +978,10 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 duration_secs = float(candidate_info.get("duration", 0.0))
             else:
                 try:
-                    cmd_info = [
-                        "yt-dlp",
+                    cmd_info = ytdlp_bin_cmd + [
                         "--dump-json",
                         "--extractor-args", "youtube:player_client=android,ios,mweb",
-                        "--js-runtimes", f"node:{node_path}",
+                        "--js-runtimes", f"node:{node_bin}",
                         "--user-agent", "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36",
                         "--no-check-certificates",
                         "--socket-timeout", "8",
@@ -1005,11 +1017,10 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
             ]
             
             for client_name, user_agent in clients_to_try:
-                cmd_dl = [
-                    "yt-dlp",
+                cmd_dl = ytdlp_bin_cmd + [
                     "--download-sections", section_arg,
                     "--extractor-args", f"youtube:player_client={client_name}",
-                    "--js-runtimes", f"node:{node_path}",
+                    "--js-runtimes", f"node:{node_bin}",
                     "--format", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
                     "--merge-output-format", "mp4",
                     "--user-agent", user_agent,
@@ -1101,8 +1112,8 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                     cmd_dur = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", out_path]
                     res_dur = subprocess.run(cmd_dur, capture_output=True, text=True, timeout=10)
                     act_dur = float(res_dur.stdout.strip())
-                    if act_dur > 0.0 and act_dur < 6.0:
-                        print(f"[B-roll] Downloaded slice too short ({act_dur:.2f}s < 6.0s). Rejecting candidate to prevent repeating clip loop.")
+                    if act_dur > 0.0 and act_dur < 2.0:
+                        print(f"[B-roll] Downloaded slice too short ({act_dur:.2f}s < 2.0s). Rejecting candidate to prevent repeating clip loop.")
                         if os.path.exists(out_path):
                             os.remove(out_path)
                         return False
@@ -1791,13 +1802,16 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             from pipeline.vision_match import vision_rank_broll
             best_idx, match_found = vision_rank_broll(thumbs, narration, query)
 
-            # Sort valid_candidates so best_idx is chosen; if rejected, discard batch
+            # Sort valid_candidates so best_idx is chosen; always try remaining candidates
             candidate_order = []
             if match_found and best_idx is not None and best_idx < len(valid_candidates):
                 candidate_order.append(valid_candidates[best_idx])
+                for idx_cand, c in enumerate(valid_candidates):
+                    if idx_cand != best_idx:
+                        candidate_order.append(c)
             else:
-                print(f"[B-roll] Segment {segment_index}: Vision match rejected all candidate clips. Discarding batch.")
-                candidate_order = []
+                print(f"[B-roll] Segment {segment_index}: Vision match did not pick a single winner. Trying candidates in score order...")
+                candidate_order = list(valid_candidates)
 
             for chosen in candidate_order:
                 print(f"[B-roll] Attempting download for source: {chosen.get('source', 'Unknown')} ({chosen['video_url'][:50]}...)")
