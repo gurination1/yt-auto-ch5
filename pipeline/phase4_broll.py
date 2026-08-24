@@ -934,10 +934,22 @@ def _youtube_candidates(query: str, n: int = 5) -> list[dict]:
                         continue
                     seen_urls.add(full_url)
                     
-                    uploader = entry.get('uploader') or entry.get('channel') or entry.get('uploader_id') or "YouTube"
-                    clean_uploader = re.sub(r'[^a-zA-Z0-9_-]', '', str(uploader))
-                    handle = f"@{clean_uploader}" if clean_uploader else "@YouTube"
+                    channel = entry.get('channel') or entry.get('uploader') or ""
+                    uploader_id = entry.get('uploader_id') or ""
                     
+                    if uploader_id and str(uploader_id).startswith('@'):
+                        handle = str(uploader_id).strip()
+                    elif channel:
+                        clean_c = re.sub(r'[^a-zA-Z0-9_-]', '', str(channel)).strip()
+                        handle = f"@{clean_c}" if clean_c else "@YouTube"
+                    elif uploader_id:
+                        clean_u = re.sub(r'[^a-zA-Z0-9_-]', '', str(uploader_id)).strip()
+                        handle = f"@{clean_u}" if clean_u else "@YouTube"
+                    else:
+                        handle = "@YouTube"
+                    
+                    uploader_name = channel or uploader_id or "YouTube"
+                    channel_url = entry.get('channel_url') or entry.get('uploader_url') or (f"https://www.youtube.com/{handle}" if handle != "@YouTube" else "")
                     thumb_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
                     
                     candidates.append({
@@ -947,8 +959,9 @@ def _youtube_candidates(query: str, n: int = 5) -> list[dict]:
                         "title": title,
                         "description": entry.get('description', '') or "",
                         "duration": duration_secs,
-                        "uploader_name": uploader,
-                        "uploader_handle": handle
+                        "uploader_name": str(uploader_name).strip(),
+                        "uploader_handle": str(handle).strip(),
+                        "channel_url": str(channel_url).strip()
                     })
                     
                     if len(candidates) >= n:
@@ -1133,24 +1146,33 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                         return False
 
                 # Save credit metadata for on-screen attribution in phase 7
-                uploader = info.get("uploader") or info.get("channel") or (candidate_info.get("uploader_name") if candidate_info else "YouTube")
-                handle = candidate_info.get("uploader_handle") if candidate_info else None
-                if not handle and uploader:
-                    clean_u = re.sub(r'[^a-zA-Z0-9_-]', '', str(uploader))
-                    handle = f"@{clean_u}"
+                c_name = (candidate_info.get("uploader_name") if candidate_info else None) or info.get("channel") or info.get("uploader") or "YouTube"
+                c_handle = (candidate_info.get("uploader_handle") if candidate_info else None) or info.get("uploader_id")
+                if not c_handle and c_name and c_name != "YouTube":
+                    if str(c_name).startswith("@"):
+                        c_handle = c_name
+                    else:
+                        clean_u = re.sub(r'[^a-zA-Z0-9_-]', '', str(c_name))
+                        c_handle = f"@{clean_u}" if clean_u else "@YouTube"
+                if not c_handle:
+                    c_handle = "@YouTube"
+                
+                c_chan_url = (candidate_info.get("channel_url") if candidate_info else "") or info.get("channel_url") or info.get("uploader_url") or ""
+                c_title = (candidate_info.get("title") if candidate_info else "") or info.get("title") or ""
                 
                 credit_data = {
                     "source": "YouTube",
-                    "uploader_name": uploader,
-                    "uploader_handle": handle or "@YouTube",
+                    "uploader_name": str(c_name).strip(),
+                    "uploader_handle": str(c_handle).strip(),
+                    "channel_url": str(c_chan_url).strip(),
                     "video_url": url,
-                    "title": info.get("title") or (candidate_info.get("title") if candidate_info else "")
+                    "title": str(c_title).strip()
                 }
                 credit_file = f"output/broll_{segment_index}_credit.json"
                 try:
                     with open(credit_file, "w") as cf:
-                        json.dump(credit_data, cf)
-                    print(f"[B-roll] Saved segment {segment_index} credit metadata: {handle}")
+                        json.dump(credit_data, cf, indent=2)
+                    print(f"[B-roll] Saved segment {segment_index} credit metadata: {c_name} ({c_handle})")
                 except Exception as cerr:
                     print(f"[B-roll] Warning: Could not save credit file: {cerr}")
             return success
@@ -1816,7 +1838,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             for chosen in candidate_order:
                 print(f"[B-roll] Attempting download for source: {chosen.get('source', 'Unknown')} ({chosen['video_url'][:50]}...)")
                 temp_video_path = f"output/temp_video_{segment_index}.mp4"
-                if _download_video_robust(chosen["video_url"], temp_video_path, segment_index):
+                if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen):
                     if used_urls is not None:
                         used_urls.add(chosen["video_url"])
                     print(f"[B-roll] Video downloaded. Running Hyperframes overlays...")

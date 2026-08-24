@@ -154,21 +154,35 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
             try:
                 with open(credit_file, "r") as cf:
                     cdata = json.load(cf)
-                    handle = cdata.get("uploader_handle") or "@YouTube"
-                    title = cdata.get("title") or ""
-                    url = cdata.get("video_url") or ""
-                    if handle:
-                        if handle not in seen_handles:
-                            seen_handles.add(handle)
-                            footage_credits.append({
-                                "handle": handle,
-                                "url": url,
-                                "title": title
-                            })
-                        clean_handle = re.sub(r"[^a-zA-Z0-9_@-]", "", str(handle))
-                        clean_txt = f"Footage\\: {clean_handle}"
-                        drawtext_chain = f",drawtext=text='{clean_txt}':x=40:y=80:fontsize=22:fontcolor=white:shadowcolor=black@0.8:shadowx=2:shadowy=2:enable='between(t,0,3.5)'"
-                        print(f"[Assemble] Burning clean on-screen attribution badge for segment {i}: {handle}")
+                    u_name = cdata.get("uploader_name") or ""
+                    u_handle = cdata.get("uploader_handle") or ""
+                    v_url = cdata.get("video_url") or ""
+                    v_title = cdata.get("title") or ""
+                    v_chan_url = cdata.get("channel_url") or ""
+                    
+                    if u_handle and u_handle != "@YouTube":
+                        display_tag = u_handle
+                    elif u_name and u_name != "YouTube":
+                        display_tag = u_name
+                    else:
+                        display_tag = "@YouTube"
+                        
+                    credit_key = u_handle if (u_handle and u_handle != "@YouTube") else u_name
+                    if credit_key and credit_key not in seen_handles:
+                        seen_handles.add(credit_key)
+                        footage_credits.append({
+                            "name": u_name,
+                            "handle": u_handle,
+                            "display_tag": display_tag,
+                            "url": v_url,
+                            "channel_url": v_chan_url,
+                            "title": v_title
+                        })
+                    
+                    clean_display = str(display_tag).replace("\\", "").replace("'", "").replace(":", "\\:").replace("%", "\\%")
+                    clean_txt = f"Footage\\: {clean_display}"
+                    drawtext_chain = f",drawtext=text='{clean_txt}':x=40:y=80:fontsize=24:fontcolor=white:shadowcolor=black@0.85:shadowx=2:shadowy=2:enable='between(t,0,3.5)'"
+                    print(f"[Assemble] Burning clean on-screen attribution badge for segment {i}: Footage: {display_tag}")
             except Exception as cerr:
                 print(f"[Assemble] Warning: Could not parse credit file {credit_file}: {cerr}")
 

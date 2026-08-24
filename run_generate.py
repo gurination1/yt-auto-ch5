@@ -311,11 +311,45 @@ def main():
         thumb_text = script.get("thumbnail_text") or script.get("title") or "SECRET REVEALED"
         thumbnail = phase8.generate_thumbnail(final_video, thumb_text, topic_prompt=script.get("title", ""))
         
+        # Append footage credits to description if footage_credits.json exists
+        description_text = script["description"]
+        if os.path.exists("output/footage_credits.json"):
+            try:
+                with open("output/footage_credits.json", "r") as fc_file:
+                    fc_data = json.load(fc_file)
+                    if fc_data:
+                        credits_str = "\n\n--- FOOTAGE CREDITS (Educational Fair Use) ---\n"
+                        for fc_item in fc_data:
+                            name = fc_item.get("name") or ""
+                            handle = fc_item.get("handle") or fc_item.get("display_tag") or ""
+                            v_url = fc_item.get("url") or ""
+                            chan_url = fc_item.get("channel_url") or ""
+                            
+                            if name and handle and handle != f"@{name}" and handle != "@YouTube" and name != "YouTube":
+                                tag = f"{name} ({handle})"
+                            elif name and name != "YouTube":
+                                tag = name
+                            elif handle and handle != "@YouTube":
+                                tag = handle
+                            else:
+                                tag = "YouTube Creator"
+                                
+                            ref_url = v_url or chan_url
+                            if ref_url:
+                                credits_str += f"• Footage courtesy: {tag} — {ref_url}\n"
+                            else:
+                                credits_str += f"• Footage courtesy: {tag}\n"
+                        
+                        if "--- FOOTAGE CREDITS" not in description_text:
+                            description_text = description_text.rstrip() + credits_str
+            except Exception as fc_err:
+                print(f"[Generate] Warning: Could not append footage credits to description: {fc_err}")
+
         # Save metadata for publish step
         metadata_path = "output/metadata.json"
         metadata = {
             "title":       script["title"],
-            "description": script["description"],
+            "description": description_text,
             "tags":        script["tags"],
             "category_id": script.get("category_id", "27"),
             "publish_at":  script.get("publish_at"),

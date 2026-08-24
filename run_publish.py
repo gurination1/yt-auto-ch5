@@ -117,12 +117,30 @@ def main():
                 if fc_data:
                     credits_str = "\n\n--- FOOTAGE CREDITS (Educational Fair Use) ---\n"
                     for fc_item in fc_data:
-                        handle = fc_item.get("handle") or fc_item.get("uploader_handle") or fc_item.get("uploader_name") or "@YouTube"
-                        v_url = fc_item.get("url") or fc_item.get("video_url") or ""
-                        credits_str += f"Source: {handle} - {v_url}\n"
+                        name = fc_item.get("name") or ""
+                        handle = fc_item.get("handle") or fc_item.get("display_tag") or ""
+                        v_url = fc_item.get("url") or ""
+                        chan_url = fc_item.get("channel_url") or ""
+                        
+                        if name and handle and handle != f"@{name}" and handle != "@YouTube" and name != "YouTube":
+                            tag = f"{name} ({handle})"
+                        elif name and name != "YouTube":
+                            tag = name
+                        elif handle and handle != "@YouTube":
+                            tag = handle
+                        else:
+                            tag = "YouTube Creator"
+                            
+                        ref_url = v_url or chan_url
+                        if ref_url:
+                            credits_str += f"• Footage courtesy: {tag} — {ref_url}\n"
+                        else:
+                            credits_str += f"• Footage courtesy: {tag}\n"
+                    
                     curr_desc = metadata.get("description", "") or ""
-                    metadata["description"] = curr_desc + credits_str
-                    print(f"[Publish] Appended {len(fc_data)} footage credit entries to video description.")
+                    if "--- FOOTAGE CREDITS" not in curr_desc:
+                        metadata["description"] = curr_desc.rstrip() + credits_str
+                        print(f"[Publish] Appended {len(fc_data)} footage credit entries to video description.")
         except Exception as fc_err:
             print(f"[Publish] Warning: Could not append footage credits: {fc_err}")
 
