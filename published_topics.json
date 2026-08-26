@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How **De Beers** engineered the perception of diamonds as rare and eternally valuable, launching the modern engagement ring tradition to create a global monopoly out of a relatively common gemstone.",
     "China's Moonshot AI launches Kimi K3, a new model surprising US tech giants like OpenAI and Anthropic, intensifying the global AI brand war over open-source innovation and alleged 'distillation' tactics.",
     "Orange County's demand for a $4 million reimbursement from GKN Aerospace after a 'catastrophic failure' of a chemical storage tank system led to mass evacuations, revealing the immense financial and public safety costs of industrial product failures.",
     "How Henry Ford's Model T \"any color as long as it's black\" policy was a manufacturing breakthrough, not a design choice, simplifying production to an extreme and enabling mass production affordability.",
@@ -89,8 +88,9 @@
     "China's experimental maglev vehicle accelerates to 497 mph (800 km/h) in 5.3 seconds on a 1-kilometer test track, setting a new short-distance acceleration record.",
     "How colossal skyscrapers, designed to sway miles above ground, use counter-oscillating **Tuned Mass Dampers (TMDs)** to absorb dangerous resonant vibrations, not just stop visible movement.",
     "South Korea's city of Ulsan is pioneering the development of standardized subsea data center models to address the escalating demands of AI computing and solve land, power, and cooling constraints.",
-    "India's $1.2 Billion Incentive to Boost Domestic Tunnel Boring Machine Manufacturing"
+    "India's $1.2 Billion Incentive to Boost Domestic Tunnel Boring Machine Manufacturing",
+    "How deep underground mines, like South Africa's Mponeng Gold Mine, employ massive **refrigeration plants** and intricate ventilation shafts to *cool* air from 60\u00b0C to breathable temperatures, countering the extreme **geothermal gradient**."
   ],
-  "subcluster_idx": 3,
-  "call_count": 149
+  "subcluster_idx": 4,
+  "call_count": 150
 }
