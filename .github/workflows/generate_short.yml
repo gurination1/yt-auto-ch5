@@ -63,7 +63,7 @@ jobs:
         run: pip install -r requirements.txt && pip install -U --pre "yt-dlp[default]"
 
       - name: Generate Short
-        if: steps.fallback_check.outputs.should_run == \'true\' || github.event_name == \'workflow_dispatch\'
+        if: steps.fallback_check.outputs.should_run == 'true' || github.event_name == 'workflow_dispatch'
         timeout-minutes: 50
         env:
           GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
@@ -104,6 +104,7 @@ jobs:
           exit 1
 
       - name: Publish to YouTube
+        if: steps.fallback_check.outputs.should_run == 'true' || github.event_name == 'workflow_dispatch'
         timeout-minutes: 15
         env:
           DM_API_KEY:       ${{ secrets.DM_API_KEY }}
