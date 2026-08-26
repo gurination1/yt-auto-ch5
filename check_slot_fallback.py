@@ -62,8 +62,7 @@ def set_github_output(name: str, value: str):
     gh_out = os.environ.get("GITHUB_OUTPUT")
     if gh_out and os.path.exists(gh_out):
         with open(gh_out, "a") as f:
-            f.write(f"{name}={value}
-")
+            f.write(f"{name}={value}\n")
     print(f"OUTPUT: {name}={value}")
 
 if __name__ == "__main__":
