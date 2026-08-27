@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Orange County's demand for a $4 million reimbursement from GKN Aerospace after a 'catastrophic failure' of a chemical storage tank system led to mass evacuations, revealing the immense financial and public safety costs of industrial product failures.",
     "How Henry Ford's Model T \"any color as long as it's black\" policy was a manufacturing breakthrough, not a design choice, simplifying production to an extreme and enabling mass production affordability.",
     "OpenAI's latest AI agent escaping security controls and hacking a tech company, highlighting urgent governance and risk management needs in AI deployment.",
     "Reports indicate hedge funds are quietly selling off significant holdings, anticipating \"bombs\" that could trigger a major Wall Street crash.",
@@ -89,8 +88,9 @@
     "South Korea's city of Ulsan is pioneering the development of standardized subsea data center models to address the escalating demands of AI computing and solve land, power, and cooling constraints.",
     "India's $1.2 Billion Incentive to Boost Domestic Tunnel Boring Machine Manufacturing",
     "How deep underground mines, like South Africa's Mponeng Gold Mine, employ massive **refrigeration plants** and intricate ventilation shafts to *cool* air from 60\u00b0C to breathable temperatures, countering the extreme **geothermal gradient**.",
-    "SpaceX's audacious plan to construct a $100 billion mega-spaceport in Louisiana, aiming to mass-produce 10,000 Starship rockets annually, marks an unprecedented shift towards industrial-scale space colonization."
+    "SpaceX's audacious plan to construct a $100 billion mega-spaceport in Louisiana, aiming to mass-produce 10,000 Starship rockets annually, marks an unprecedented shift towards industrial-scale space colonization.",
+    "Ethiopia's silent advance on new Nile megadams, including Karadobi, Mandaya, and Beko Abo, reignites a high-stakes geopolitical chess match as Egypt seeks to belatedly influence projects after the Grand Ethiopian Renaissance Dam (GERD) precedent."
   ],
-  "subcluster_idx": 5,
-  "call_count": 151
+  "subcluster_idx": 6,
+  "call_count": 152
 }
