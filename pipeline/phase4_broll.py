@@ -858,8 +858,18 @@ def _parse_iso_duration(duration_str: str) -> float:
 def _reddit_candidates(query: str, n: int = 4) -> list[dict]:
     """
     Search Reddit for genuine viral user footage, sightings, anomalies, and authentic video posts.
-    Captures post author and subreddit for on-screen Fair Use attribution.
+    Uses multi-tiered RedditVideoEngine (PullPush streams + semantic community footage grounding)
+    and captures post author / subreddit for on-screen Fair Use attribution.
     """
+    try:
+        from pipeline.reddit_engine import get_reddit_engine
+        engine = get_reddit_engine()
+        cands = engine.get_reddit_candidates(query, niche="mystery", n=n)
+        if cands:
+            return cands
+    except Exception as e:
+        print(f"[B-roll] Reddit engine note for '{query}': {e}")
+
     import urllib.parse
     candidates = []
     seen = set()
@@ -910,7 +920,7 @@ def _reddit_candidates(query: str, n: int = 4) -> list[dict]:
                 if len(candidates) >= n:
                     break
     except Exception as e:
-        print(f"[B-roll] Reddit search note for '{query}': {e}")
+        print(f"[B-roll] Reddit fallback note for '{query}': {e}")
     return candidates
 
 
