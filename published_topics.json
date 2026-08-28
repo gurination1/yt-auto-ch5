@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Reports indicate hedge funds are quietly selling off significant holdings, anticipating \"bombs\" that could trigger a major Wall Street crash.",
     "What if Color Labs had refined its original, confusing social network app instead of pivoting multiple times, eventually failing to find a viable market despite $41 million in funding?",
     "The 2026 nostalgia boom is seeing brands move beyond superficial retro aesthetics, deeply integrating 1950s cultural values to connect with Gen Z's skepticism.",
     "Pakistan's unprecedented $10 billion emergency bailout appeal to Donald Trump, highlighting the nation's severe economic crisis and repeated reliance on international lifelines.",
@@ -89,8 +88,9 @@
     "SpaceX's audacious plan to construct a $100 billion mega-spaceport in Louisiana, aiming to mass-produce 10,000 Starship rockets annually, marks an unprecedented shift towards industrial-scale space colonization.",
     "Ethiopia's silent advance on new Nile megadams, including Karadobi, Mandaya, and Beko Abo, reignites a high-stakes geopolitical chess match as Egypt seeks to belatedly influence projects after the Grand Ethiopian Renaissance Dam (GERD) precedent.",
     "What if a Hyperloop tube wasn't a near-vacuum? The **Kantrowitz Limit** explains how a pod would create a massive air cushion, or 'choked flow,' in front of it, making high speeds impossible.",
-    "Burj Khalifa Tuned Mass Damper Wind Engineering #648"
+    "Burj Khalifa Tuned Mass Damper Wind Engineering #648",
+    "MacArtney's subsea infrastructure enables millimeter-level precision for immersing 73,500-tonne elements of the Fehmarnbelt Fixed Link, a critical advancement in underwater tunnel construction."
   ],
-  "subcluster_idx": 1,
-  "call_count": 154
+  "subcluster_idx": 2,
+  "call_count": 155
 }
