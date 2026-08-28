@@ -319,7 +319,7 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
     assembled_video_path = "output/assembled_video.mp4"
     cmd = [
         "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list_path,
-        "-c:v", "libx264", "-preset", "fast", "-crf", "20", "-pix_fmt", "yuv420p",
+        "-c", "copy",
         assembled_video_path
     ]
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
