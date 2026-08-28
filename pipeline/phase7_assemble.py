@@ -236,26 +236,67 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         # Verify segment clip has zero black screen before accepting into assembly
-        cmd_chk = ["ffmpeg", "-i", norm_path, "-vf", "blackdetect=d=0.6:pix_th=0.10", "-f", "null", "-"]
+        cmd_chk = ["ffmpeg", "-i", norm_path, "-vf", "blackdetect=d=0.5:pix_th=0.10", "-f", "null", "-"]
         res_chk = subprocess.run(cmd_chk, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True, errors="ignore")
         black_durs = [float(d) for d in re.findall(r"black_duration:([0-9.]+)", res_chk.stderr or "")]
-        if any(bd > 0.6 for bd in black_durs):
-            print(f"[Assemble] Warning: Segment {i} normalized clip has black screen ({max(black_durs):.2f}s). Regenerating with clean 4K motion...")
-            seg_info = script.get("segments", [])[i] if script and i < len(script.get("segments", [])) else {}
-            seg_query = seg_info.get("broll_query") or seg_info.get("narration") or "cinematic 4k motion"
-            prompt_clean = f"4k cinematic documentary footage of {seg_query}, photorealistic, 8k, detailed, no text, no watermark"
-            from pipeline.phase4_broll import _pollinations_image, _image_to_ken_burns_video
-            synth_img = f"output/clean_synth_{i}.jpg"
-            if _pollinations_image(prompt_clean, synth_img, w=2160, h=3840):
-                _image_to_ken_burns_video(synth_img, norm_path, w, h, duration=duration)
-            else:
-                cmd_synth = [
-                    "ffmpeg", "-y", "-f", "lavfi",
-                    "-i", f"gradients=s={w}x{h}:r=30:c0=0x0a2244:c1=0x00d4ff:c2=0xff007f:x0=0:y0=0:x1={w}:y1={h}:speed=0.01",
-                    "-t", str(duration),
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p", norm_path
-                ]
-                subprocess.run(cmd_synth, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if any(bd > 0.5 for bd in black_durs):
+            print(f"[Assemble] Warning: Segment {i} clip has black frames ({max(black_durs):.2f}s). Attempting dynamic time shift on original video...")
+            # 1. Try shifting start offset to skip black intro scene
+            shift_success = False
+            total_dur = get_video_duration(broll_path)
+            for shift_sec in [ss_offset + 3.0, ss_offset + 6.0, max(0.0, total_dur * 0.5)]:
+                if shift_sec + duration <= total_dur:
+                    cmd_shift = [
+                        "ffmpeg", "-y", "-stream_loop", "-1", "-i", broll_path,
+                        "-ss", f"{shift_sec:.3f}", "-t", f"{duration:.3f}",
+                        "-vf", vf_chain,
+                        "-r", "30", "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p", "-an", norm_path
+                    ]
+                    subprocess.run(cmd_shift, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    res_shift_chk = subprocess.run(cmd_chk, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True, errors="ignore")
+                    shift_black = [float(d) for d in re.findall(r"black_duration:([0-9.]+)", res_shift_chk.stderr or "")]
+                    if not any(bd > 0.5 for bd in shift_black):
+                        print(f"[Assemble] ✅ Successfully recovered segment {i} real video with offset {shift_sec:.2f}s (zero black frames)!")
+                        shift_success = True
+                        break
+            
+            if not shift_success:
+                print(f"[Assemble] Shifted time failed to clear black screen. Searching alternative real video candidate...")
+                # 2. Try fetching next candidate from YouTube
+                seg_info = script.get("segments", [])[i] if script and i < len(script.get("segments", [])) else {}
+                seg_query = seg_info.get("broll_query") or seg_info.get("narration") or "cinematic 4k motion"
+                alt_success = False
+                try:
+                    from pipeline.phase4_broll import _youtube_candidates, _download_video_robust, _image_to_ken_burns_video
+                    yt_alts = _youtube_candidates(seg_query, n=3)
+                    for cand in yt_alts:
+                        alt_vid = f"output/alt_vid_{i}.mp4"
+                        if _download_video_robust(cand["video_url"], alt_vid, i, candidate_info=cand):
+                            _image_to_ken_burns_video(alt_vid, norm_path, w, h, duration=duration)
+                            if os.path.exists(alt_vid):
+                                try: os.remove(alt_vid)
+                                except Exception: pass
+                            alt_success = True
+                            print(f"[Assemble] ✅ Successfully replaced with alternative YouTube video candidate for segment {i}!")
+                            break
+                except Exception as e_alt:
+                    print(f"[Assemble] Alternative video candidate search note: {e_alt}")
+
+                if not alt_success:
+                    print(f"[Assemble] Regenerating segment {i} with clean 4K motion...")
+                    prompt_clean = f"4k cinematic documentary footage of {seg_query}, photorealistic, 8k, detailed, no text, no watermark"
+                    from pipeline.phase4_broll import _pollinations_image, _image_to_ken_burns_video
+                    synth_img = f"output/clean_synth_{i}.jpg"
+                    if _pollinations_image(prompt_clean, synth_img, w=2160, h=3840):
+                        _image_to_ken_burns_video(synth_img, norm_path, w, h, duration=duration)
+                    else:
+                        cmd_synth = [
+                            "ffmpeg", "-y", "-f", "lavfi",
+                            "-i", f"gradients=s={w}x{h}:r=30:c0=0x0a2244:c1=0x00d4ff:c2=0xff007f:x0=0:y0=0:x1={w}:y1={h}:speed=0.01",
+                            "-t", str(duration),
+                            "-c:v", "libx264", "-pix_fmt", "yuv420p", norm_path
+                        ]
+                        subprocess.run(cmd_synth, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         normalized_brolls.append(norm_path)
 

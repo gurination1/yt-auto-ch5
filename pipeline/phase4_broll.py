@@ -855,10 +855,70 @@ def _parse_iso_duration(duration_str: str) -> float:
     return float(hours * 3600 + minutes * 60 + seconds)
 
 
+def _reddit_candidates(query: str, n: int = 4) -> list[dict]:
+    """
+    Search Reddit for genuine viral user footage, sightings, anomalies, and authentic video posts.
+    Captures post author and subreddit for on-screen Fair Use attribution.
+    """
+    import urllib.parse
+    candidates = []
+    seen = set()
+    clean_q = re.sub(r'[^a-zA-Z0-9\s]', '', query).strip()
+    if not clean_q:
+        return []
+    
+    url = f"https://api.pullpush.io/reddit/search/submission/?q={urllib.parse.quote(clean_q)}&is_video=true&size=15"
+    try:
+        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=6)
+        if r.status_code == 200:
+            items = r.json().get("data", [])
+            for it in items:
+                media = it.get("media") or {}
+                r_vid = media.get("reddit_video") if isinstance(media, dict) else None
+                f_url = r_vid.get("fallback_url") if r_vid else None
+                if not f_url and it.get("is_video") and it.get("url", "").endswith(".mp4"):
+                    f_url = it.get("url")
+                if not f_url:
+                    continue
+                if f_url in seen:
+                    continue
+                seen.add(f_url)
+                
+                sub = it.get("subreddit") or "Reddit"
+                author = it.get("author") or "RedditUser"
+                title = it.get("title", "")
+                thumb = it.get("thumbnail")
+                if not thumb or thumb in ["self", "default", "nsfw", "spoiler"]:
+                    preview = it.get("preview") or {}
+                    images = preview.get("images") or []
+                    if images and images[0].get("source", {}).get("url"):
+                        thumb = images[0]["source"]["url"].replace("&amp;", "&")
+                    else:
+                        thumb = f_url
+                
+                handle = f"u/{author} (r/{sub})"
+                candidates.append({
+                    "source": "Reddit",
+                    "video_url": f_url,
+                    "thumb_url": thumb,
+                    "title": title,
+                    "duration": float(r_vid.get("duration", 10.0)) if r_vid else 10.0,
+                    "uploader_name": f"r/{sub}",
+                    "uploader_handle": handle,
+                    "channel_url": f"https://reddit.com/r/{sub}"
+                })
+                if len(candidates) >= n:
+                    break
+    except Exception as e:
+        print(f"[B-roll] Reddit search note for '{query}': {e}")
+    return candidates
+
+
 def _youtube_candidates(query: str, n: int = 5) -> list[dict]:
     """
     Search YouTube for matchable B-roll clips using broad ytsearch query.
     Captures uploader channel handle for on-screen Fair Use attribution.
+    Prioritizes modern high-definition (4K/1080p) footage and filters out low-resolution archives.
     """
     import yt_dlp
     import urllib.parse
@@ -867,10 +927,10 @@ def _youtube_candidates(query: str, n: int = 5) -> list[dict]:
     candidates = []
     seen_urls = set()
     search_queries = [
-        f"{query} documentary footage",
         f"{query} real footage 4k",
-        f"{query} cinematic b-roll",
-        f"{query} archive",
+        f"{query} 1080p documentary",
+        f"{query} cinematic b-roll 4k",
+        f"{query} authentic footage",
         query
     ]
     
@@ -904,7 +964,7 @@ def _youtube_candidates(query: str, n: int = 5) -> list[dict]:
                     duration = entry.get('duration')
                     
                     duration_secs = float(duration) if duration else 0.0
-                    if duration_secs > 0.0 and (duration_secs < 12.0 or duration_secs > 1800.0):
+                    if duration_secs > 0.0 and (duration_secs < 10.0 or duration_secs > 1800.0):
                         continue
                     
                     # Filter out lecture/classroom/blackboard/explainer/text-heavy titles unless explicitly requested
@@ -1034,7 +1094,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                     "--download-sections", section_arg,
                     "--extractor-args", f"youtube:player_client={client_name}",
                     "--js-runtimes", f"node:{node_bin}",
-                    "--format", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+                    "--format", "bestvideo[height>=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height>=720]+bestaudio/best[height>=720]/best",
                     "--merge-output-format", "mp4",
                     "--user-agent", user_agent,
                     "--no-check-certificates",
@@ -1120,8 +1180,21 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                         break
             success = os.path.exists(out_path) and os.path.getsize(out_path) > 10_000
             if success:
-                # Verify actual duration with ffprobe to prevent short repeating clips or corrupt downloads
+                # Verify actual duration and resolution with ffprobe to prevent low-res potato clips or corrupt downloads
                 try:
+                    cmd_probe = ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height,duration", "-of", "json", out_path]
+                    res_probe = subprocess.run(cmd_probe, capture_output=True, text=True, timeout=10)
+                    probe_data = json.loads(res_probe.stdout)
+                    streams = probe_data.get("streams", [])
+                    if streams:
+                        v_w = int(streams[0].get("width") or 0)
+                        v_h = int(streams[0].get("height") or 0)
+                        if v_w > 0 and v_h > 0 and max(v_w, v_h) < 720:
+                            print(f"[B-roll] Video resolution too low ({v_w}x{v_h} < 720p). Rejecting candidate to maintain crisp HD quality.")
+                            if os.path.exists(out_path):
+                                os.remove(out_path)
+                            return False
+                    
                     cmd_dur = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", out_path]
                     res_dur = subprocess.run(cmd_dur, capture_output=True, text=True, timeout=10)
                     act_dur = float(res_dur.stdout.strip())
@@ -1159,9 +1232,10 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 
                 c_chan_url = (candidate_info.get("channel_url") if candidate_info else "") or info.get("channel_url") or info.get("uploader_url") or ""
                 c_title = (candidate_info.get("title") if candidate_info else "") or info.get("title") or ""
+                c_source = (candidate_info.get("source") if candidate_info else None) or "YouTube"
                 
                 credit_data = {
-                    "source": "YouTube",
+                    "source": c_source,
                     "uploader_name": str(c_name).strip(),
                     "uploader_handle": str(c_handle).strip(),
                     "channel_url": str(c_chan_url).strip(),
@@ -1573,14 +1647,15 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> fl
         dur_score = max(0.0, 20.0 - 2.0 * diff)
         
     source_weights = {
-        "nasa": 160.0,
-        "pexels": 150.0,
-        "pixabay": 140.0,
+        "reddit": 175.0,
+        "youtube": 165.0,
+        "nasa": 155.0,
+        "pexels": 140.0,
         "coverr": 135.0,
-        "youtube": 125.0,
-        "dvids": 50.0,
-        "wikimedia": 40.0,
-        "archive": 30.0,
+        "pixabay": 130.0,
+        "dvids": 100.0,
+        "wikimedia": 60.0,
+        "archive": 40.0,
         "klipy": 20.0
     }
     source_lower = str(item.get("source", "")).lower()
@@ -1622,7 +1697,7 @@ def _sanitize_broll_query(query: str) -> str:
 
 def fetch_broll(query: str, format_type: str, segment_index: int, duration: float = 6.0, narration: str = "", alt_queries: list[str] | None = None, used_urls: set[str] | None = None, channel: str = "general") -> str:
     """
-    Unified B-roll candidate ranking across multiple platforms (YouTube CC prioritized, Coverr, Pexels, Pixabay, NASA, Wikimedia)
+    Unified B-roll candidate ranking across multiple platforms (Reddit & YouTube prioritized, Coverr, Pexels, Pixabay, NASA, Wikimedia)
     using Gemini Vision matching and URL de-duplication.
     """
     orientation = "portrait" if format_type == "short" else "landscape"
@@ -1682,17 +1757,19 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     candidates = []
 
     CHANNEL_SOURCE_PRIORITY = {
-        "science":     ["youtube", "pexels", "coverr", "nasa", "dvids", "wikimedia", "archive", "pixabay"],
-        "nature":      ["youtube", "pexels", "coverr", "pixabay", "wikimedia", "archive"],
-        "mystery":     ["youtube", "pexels", "coverr", "archive", "wikimedia", "pixabay"],
-        "engineering": ["youtube", "pexels", "coverr", "nasa", "dvids", "wikimedia", "archive"],
+        "mystery":     ["reddit", "youtube", "pexels", "coverr", "archive", "wikimedia", "pixabay"],
+        "nature":      ["reddit", "youtube", "pexels", "coverr", "pixabay", "wikimedia", "archive"],
+        "science":     ["reddit", "youtube", "pexels", "coverr", "nasa", "dvids", "wikimedia", "archive", "pixabay"],
+        "engineering": ["reddit", "youtube", "pexels", "coverr", "nasa", "dvids", "wikimedia", "archive"],
         "business":    ["youtube", "pexels", "coverr", "pixabay", "klipy"],
-        "general":     ["youtube", "pexels", "coverr", "pixabay", "nasa", "wikimedia", "archive", "dvids"],
+        "general":     ["reddit", "youtube", "pexels", "coverr", "pixabay", "nasa", "wikimedia", "archive", "dvids"],
     }
 
     def run_source_query(source: str, q: str) -> list[dict]:
         try:
-            if source == "youtube":
+            if source == "reddit":
+                return _reddit_candidates(q, n=4)
+            elif source == "youtube":
                 return _youtube_candidates(q, n=5)
             elif source == "nasa":
                 if not NASA_BROLL_ENABLED:
