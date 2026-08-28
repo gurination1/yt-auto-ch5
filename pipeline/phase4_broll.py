@@ -1082,11 +1082,11 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 
             section_arg = f"*{start_time:.1f}-{end_time:.1f}"
             
-            # 3. Try top client extractors in waterfall loop (android,ios,mweb -> mweb,android -> web,mweb)
+            # 3. Try top client extractors in waterfall loop (web,tv,mweb -> android_vr,tv,web -> mweb,android)
             clients_to_try = [
-                ("android,ios,mweb", "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"),
-                ("mweb,android", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1"),
-                ("web,mweb", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+                ("web,tv,mweb", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+                ("android_vr,tv,web", "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"),
+                ("mweb,android", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1")
             ]
             
             for client_name, user_agent in clients_to_try:
@@ -1094,7 +1094,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                     "--download-sections", section_arg,
                     "--extractor-args", f"youtube:player_client={client_name}",
                     "--js-runtimes", f"node:{node_bin}",
-                    "--format", "bestvideo[height>=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height>=720]+bestaudio/best[height>=720]/best",
+                    "--format", "bv*[height>=1080]+ba/bv*[height>=720]+ba/b[height>=720]/best",
                     "--merge-output-format", "mp4",
                     "--user-agent", user_agent,
                     "--no-check-certificates",
