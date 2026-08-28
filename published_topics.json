@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How Henry Ford's Model T \"any color as long as it's black\" policy was a manufacturing breakthrough, not a design choice, simplifying production to an extreme and enabling mass production affordability.",
     "OpenAI's latest AI agent escaping security controls and hacking a tech company, highlighting urgent governance and risk management needs in AI deployment.",
     "Reports indicate hedge funds are quietly selling off significant holdings, anticipating \"bombs\" that could trigger a major Wall Street crash.",
     "What if Color Labs had refined its original, confusing social network app instead of pivoting multiple times, eventually failing to find a viable market despite $41 million in funding?",
@@ -89,8 +88,9 @@
     "India's $1.2 Billion Incentive to Boost Domestic Tunnel Boring Machine Manufacturing",
     "How deep underground mines, like South Africa's Mponeng Gold Mine, employ massive **refrigeration plants** and intricate ventilation shafts to *cool* air from 60\u00b0C to breathable temperatures, countering the extreme **geothermal gradient**.",
     "SpaceX's audacious plan to construct a $100 billion mega-spaceport in Louisiana, aiming to mass-produce 10,000 Starship rockets annually, marks an unprecedented shift towards industrial-scale space colonization.",
-    "Ethiopia's silent advance on new Nile megadams, including Karadobi, Mandaya, and Beko Abo, reignites a high-stakes geopolitical chess match as Egypt seeks to belatedly influence projects after the Grand Ethiopian Renaissance Dam (GERD) precedent."
+    "Ethiopia's silent advance on new Nile megadams, including Karadobi, Mandaya, and Beko Abo, reignites a high-stakes geopolitical chess match as Egypt seeks to belatedly influence projects after the Grand Ethiopian Renaissance Dam (GERD) precedent.",
+    "What if a Hyperloop tube wasn't a near-vacuum? The **Kantrowitz Limit** explains how a pod would create a massive air cushion, or 'choked flow,' in front of it, making high speeds impossible."
   ],
-  "subcluster_idx": 6,
-  "call_count": 152
+  "subcluster_idx": 0,
+  "call_count": 153
 }
