@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Why quantum computers don't melt at absolute zero",
     "Meta faces a class-action lawsuit alleging its AI systems unfairly targeted employees for layoffs, raising legal and ethical concerns about automated HR decisions.",
     "How Eastman Kodak's own engineer, Steven Sasson, invented the first digital camera in 1975, but the company's fear of cannibalizing its immensely profitable film business led it to suppress the technology, sealing its eventual downfall.",
     "Terret Nexus's new platform is collapsing the 'AI-to-revenue gap' from 12 months to 48 hours by autonomously fixing sales pipeline failures.",
@@ -89,8 +88,9 @@
     "How super-cranes lift immense loads by dynamically shifting thousands of tons of counterweight on **Self-Propelled Counterweight Bogies**, making the crane's own ballast often heavier than its lift.",
     "The quiet revolution of subsea processing systems emerging as a capital-efficient alternative to new offshore facilities, extending the lifespan of mature oil fields.",
     "The International Space Station (ISS) Expedition 75 crew recently conducted a spacewalk to install a new high-speed antenna, enhancing communication capabilities for the orbital outpost.",
-    "Danyang-Kunshan Grand Bridge High Speed Rail Engineering #360"
+    "Danyang-Kunshan Grand Bridge High Speed Rail Engineering #360",
+    "Bagger 288 Colossal Bucket-Wheel Excavator #647"
   ],
-  "subcluster_idx": 6,
-  "call_count": 159
+  "subcluster_idx": 0,
+  "call_count": 160
 }
