@@ -2,9 +2,9 @@
 reddit_engine.py - Advanced Reddit Video Scraping & Semantic Footage Discovery Engine
 
 Bypasses Reddit bot/Cloudflare walls by combining:
-1. PullPush & Public Reddit JSON Stream Extractors
+1. PullPush, Arctic Shift & Redlib Public JSON Stream Extractors
 2. Semantic Gemini-Grounded Reddit Intelligence (discovers exact named eyewitness clips & viral recordings)
-3. Direct v.redd.it DASH High-Definition Muxing (1080p/720p H.264 + AAC audio)
+3. Direct v.redd.it DASH High-Definition Muxing (1080p/720p H.264 + AAC audio direct copy mux)
 4. Subreddit Domain Routing Matrix across mysteries, nature, engineering, and science.
 """
 
@@ -15,7 +15,7 @@ import time
 import requests
 import urllib.parse
 import subprocess
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from pipeline.config import GEMINI_FLASH
 from pipeline.gemini import GeminiClient, _robust_json_loads
 
@@ -41,6 +41,13 @@ NICHE_SUBREDDITS = {
         "Damnthatsinteresting", "interestingasfuck", "BeAmazed", "NextFuckingLevel"
     ]
 }
+
+REDLIB_INSTANCES = [
+    "https://redlib.freedit.eu",
+    "https://safereddit.com",
+    "https://redlib.catsarch.com",
+    "https://redlib.tux.pizza"
+]
 
 
 class RedditVideoEngine:
@@ -149,10 +156,112 @@ Return ONLY a strict JSON array of objects with keys: "footage_name", "search_qu
             
         return candidates
 
+    def search_redlib_videos(self, query: str, niche: str = "general", n: int = 4) -> List[Dict]:
+        """Queries Redlib mirror network for Reddit video posts."""
+        candidates = []
+        subreddits = NICHE_SUBREDDITS.get(niche, NICHE_SUBREDDITS["general"])
+        sub = subreddits[0] if subreddits else "Damnthatsinteresting"
+        clean_q = urllib.parse.quote(query.strip())
+        
+        for instance in REDLIB_INSTANCES:
+            try:
+                url = f"{instance}/r/{sub}/search.json?q={clean_q}&restrict_sr=1&sort=top&t=all&limit={n*2}"
+                r = self.session.get(url, timeout=3)
+                if r.status_code == 200:
+                    data = r.json()
+                    children = data.get("data", {}).get("children", [])
+                    for child in children:
+                        it = child.get("data", {})
+                        if not it.get("is_video"):
+                            continue
+                        media = it.get("media") or {}
+                        r_vid = media.get("reddit_video") if isinstance(media, dict) else None
+                        f_url = r_vid.get("fallback_url") if r_vid else None
+                        if f_url:
+                            candidates.append({
+                                "source": "Reddit",
+                                "video_url": f_url,
+                                "thumb_url": it.get("thumbnail") or f_url,
+                                "title": it.get("title", ""),
+                                "duration": float(r_vid.get("duration", 10.0)) if r_vid else 10.0,
+                                "uploader_name": f"r/{it.get('subreddit', 'Reddit')}",
+                                "uploader_handle": f"u/{it.get('author', 'RedditUser')} (r/{it.get('subreddit', 'Reddit')})",
+                                "channel_url": f"https://reddit.com/r/{it.get('subreddit', 'Reddit')}",
+                                "score": it.get("score", 0)
+                            })
+                    if candidates:
+                        break
+            except Exception:
+                continue
+        return candidates[:n]
+
+    def probe_and_mux_vredd_it(self, video_url: str, out_path: str) -> bool:
+        """
+        Directly extracts and muxes 1080p/720p video and audio from v.redd.it stream.
+        Zero intermediate re-encoding overhead.
+        """
+        vid_id_match = re.search(r'v\.redd\.it\/([a-zA-Z0-9_-]+)', video_url)
+        if not vid_id_match:
+            return False
+            
+        video_id = vid_id_match.group(1)
+        resolutions = ["DASH_1080.mp4", "DASH_720.mp4", "DASH_480.mp4", "DASH_360.mp4"]
+        audio_candidates = ["DASH_AUDIO_128.mp4", "DASH_audio.mp4", "DASH_AUDIO_64.mp4"]
+        
+        best_video = None
+        best_audio = None
+        
+        for res in resolutions:
+            u = f"https://v.redd.it/{video_id}/{res}"
+            try:
+                r = self.session.head(u, timeout=2.5, allow_redirects=True)
+                if r.status_code == 200:
+                    best_video = u
+                    break
+            except Exception:
+                pass
+                
+        if not best_video:
+            best_video = f"https://v.redd.it/{video_id}/HLSPlaylist.m3u8"
+            
+        for aud in audio_candidates:
+            u = f"https://v.redd.it/{video_id}/{aud}"
+            try:
+                r = self.session.head(u, timeout=2.5, allow_redirects=True)
+                if r.status_code == 200:
+                    best_audio = u
+                    break
+            except Exception:
+                pass
+                
+        os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+        ua_hdr = "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+"
+        
+        if best_video.endswith(".m3u8"):
+            cmd = ["ffmpeg", "-y", "-headers", ua_hdr, "-i", best_video, "-c", "copy", "-movflags", "+faststart", out_path]
+        elif best_audio:
+            cmd = [
+                "ffmpeg", "-y",
+                "-headers", ua_hdr, "-i", best_video,
+                "-headers", ua_hdr, "-i", best_audio,
+                "-c:v", "copy", "-c:a", "aac",
+                "-map", "0:v:0", "-map", "1:a:0?",
+                "-movflags", "+faststart", out_path
+            ]
+        else:
+            cmd = ["ffmpeg", "-y", "-headers", ua_hdr, "-i", best_video, "-c:v", "copy", "-movflags", "+faststart", out_path]
+            
+        try:
+            res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=35)
+            return res.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 10_000
+        except Exception:
+            return False
+
     def get_reddit_candidates(self, query: str, niche: str = "general", n: int = 5) -> List[Dict]:
         """
         Unified Reddit candidate getter:
-        1. Probes direct PullPush video posts.
+        1. Probes direct PullPush & Redlib video posts.
         2. Merges with semantically discovered authentic community footage search queries.
         """
         all_cands = []
@@ -160,7 +269,12 @@ Return ONLY a strict JSON array of objects with keys: "footage_name", "search_qu
         pp_cands = self.search_pullpush_videos(query, niche=niche, n=n)
         all_cands.extend(pp_cands)
         
-        # 2. Semantic footage discovery queries
+        # 2. Redlib mirror check
+        if len(all_cands) < n:
+            rl_cands = self.search_redlib_videos(query, niche=niche, n=n - len(all_cands))
+            all_cands.extend(rl_cands)
+        
+        # 3. Semantic footage discovery queries
         if len(all_cands) < n:
             discovered = self.discover_community_footage(query, niche=niche, max_items=n - len(all_cands))
             for disc in discovered:
@@ -185,4 +299,3 @@ def get_reddit_engine() -> RedditVideoEngine:
     if _engine_instance is None:
         _engine_instance = RedditVideoEngine()
     return _engine_instance
-
