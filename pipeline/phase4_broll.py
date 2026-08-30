@@ -1058,32 +1058,13 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
 
         # Check if downloading from YouTube
         if "youtube.com" in url or "youtu.be" in url:
-            print(f"[B-roll] Downloading YouTube video slice using yt-dlp CLI: {url}...")
+            print(f"[B-roll] Downloading YouTube video slice for segment {segment_index}: {url}...")
             
-            import shutil
-            node_bin = shutil.which("node") or ("/usr/bin/node" if os.path.exists("/usr/bin/node") else "node")
             ytdlp_bin_cmd = _get_ytdlp_bin()
-            
             duration_secs = 0.0
             info = {}
             if candidate_info and candidate_info.get("duration"):
                 duration_secs = float(candidate_info.get("duration", 0.0))
-            else:
-                try:
-                    cmd_info = ytdlp_bin_cmd + [
-                        "--dump-json",
-                        "--extractor-args", "youtube:player_client=android_creator,ios,tv_embedded",
-                        "--js-runtimes", f"node:{node_bin}",
-                        "--user-agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36",
-                        "--no-check-certificates",
-                        "--socket-timeout", "6",
-                        url
-                    ]
-                    res_info = subprocess.run(cmd_info, capture_output=True, text=True, check=True, timeout=8)
-                    info = json.loads(res_info.stdout)
-                    duration_secs = float(info.get("duration", 0.0))
-                except Exception as e:
-                    print(f"[B-roll] Warning: Could not retrieve video duration: {e}")
             
             start_time = 5.0
             if duration_secs >= 60.0:
@@ -1092,144 +1073,74 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 start_time = 8.0
             elif duration_secs > 0.0:
                 start_time = 0.0
-                
-            end_time = start_time + 10.0
-            if duration_secs > 0.0 and end_time > duration_secs:
-                end_time = duration_secs
-                start_time = max(0.0, end_time - 10.0)
-                
-            section_arg = f"*{start_time:.1f}-{end_time:.1f}"
-            
-            # Primary datacenter-resilient clients (android_creator & ios bypass 403 on cloud runners)
-            clients_to_try = [
-                ("android_creator,ios,tv_embedded", "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36"),
-                ("android_vr,tv_embedded,ios", "Mozilla/5.0 (Linux; Android 10; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) OculusBrowser/32.0 Mobile VR Safari/537.36"),
-                ("tv_embedded,ios,mweb", "Mozilla/5.0 (SMART-TV; Linux; Tizen 7.0) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/5.0 TV Safari/537.36"),
-                ("mweb,android_creator", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1")
-            ]
-            
-            for client_name, user_agent in clients_to_try:
-                cmd_dl = ytdlp_bin_cmd + [
-                    "--download-sections", section_arg,
-                    "--extractor-args", f"youtube:player_client={client_name}",
-                    "--js-runtimes", f"node:{node_bin}",
-                    "--format", "bv*[height>=1080]+ba/bv*[height>=720]+ba/b[height>=720]/best",
-                    "--merge-output-format", "mp4",
-                    "--user-agent", user_agent,
-                    "--no-check-certificates",
-                    "--force-keyframes-at-cuts",
-                    "--downloader", "ffmpeg",
-                    "--downloader-args", "ffmpeg_i:-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 5 -timeout 10000000",
-                    "--concurrent-fragments", "1",
-                    "--fragment-retries", "3",
-                    "--retries", "2",
-                    "--socket-timeout", "10",
-                    "--output", out_path,
-                    url
-                ]
-                print(f"[B-roll] Running yt-dlp section download ({client_name} client)...")
+            slice_dur = 10.0
+
+            # Method 1: Direct stream URL resolution with matching User-Agent streaming (bypasses CDN 403)
+            player_clients = ["android", "android_creator", "tv_embedded", "android_music"]
+            for client_name in player_clients:
                 try:
-                    subprocess.run(cmd_dl, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=25)
-                except subprocess.TimeoutExpired:
-                    print(f"[B-roll] yt-dlp section download ({client_name}) timed out after 25s.")
-                if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
-                    print(f"[B-roll] YouTube slice download SUCCESS with {client_name} client!")
-                    break
-            
+                    cmd_json = ytdlp_bin_cmd + [
+                        "--dump-json",
+                        "--extractor-args", f"youtube:player_client={client_name}",
+                        "--format", "18/22/best[ext=mp4]/best",
+                        "--no-check-certificates",
+                        "--socket-timeout", "6",
+                        url
+                    ]
+                    res_json = subprocess.run(cmd_json, capture_output=True, text=True, timeout=8)
+                    if res_json.returncode == 0:
+                        info = json.loads(res_json.stdout)
+                        direct_stream_url = info.get("url")
+                        if direct_stream_url:
+                            http_hdrs = info.get("http_headers", {})
+                            ua = http_hdrs.get("User-Agent", "com.google.android.youtube/19.29.37 (Linux; U; Android 14) gzip")
+                            cmd_ff = [
+                                "ffmpeg", "-y",
+                                "-user_agent", ua,
+                                "-ss", str(start_time),
+                                "-i", direct_stream_url,
+                                "-t", str(slice_dur),
+                                "-c:v", "libx264", "-preset", "fast", "-crf", "20",
+                                "-pix_fmt", "yuv420p", "-an", out_path
+                            ]
+                            subprocess.run(cmd_ff, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=18)
+                            if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
+                                print(f"[B-roll] Direct YouTube stream slice SUCCESS with {client_name} client!")
+                                break
+                except Exception as e_stream:
+                    print(f"[B-roll] Direct stream attempt ({client_name}) failed: {e_stream}")
+
             success = os.path.exists(out_path) and os.path.getsize(out_path) > 10_000
-            
-            # 4. Fallback A: Cobalt API stream resolution if yt-dlp receives datacenter IP challenge
-            if not success:
-                try:
-                    cobalt_endpoints = ["https://api.cobalt.tools/", "https://cobalt-api.kwiatekm.tokyo/"]
-                    for c_ep in cobalt_endpoints:
-                        try:
-                            payload = {"url": url, "videoQuality": "1080", "downloadMode": "auto"}
-                            r_cob = requests.post(c_ep, json=payload, headers={"Accept": "application/json", "User-Agent": "yt-auto/2.0"}, timeout=6)
-                            if r_cob.status_code == 200:
-                                c_data = r_cob.json()
-                                c_stream = c_data.get("url")
-                                if c_stream:
-                                    temp_cob = out_path + ".cobalt.mp4"
-                                    with requests.get(c_stream, stream=True, timeout=12) as st_res:
-                                        if st_res.status_code == 200:
-                                            with open(temp_cob, "wb") as f_out:
-                                                for chunk in st_res.iter_content(chunk_size=32768):
-                                                    if chunk:
-                                                        f_out.write(chunk)
-                                            if os.path.exists(temp_cob) and os.path.getsize(temp_cob) > 50_000:
-                                                cmd_slice = [
-                                                    "ffmpeg", "-y", "-ss", str(start_time),
-                                                    "-i", temp_cob, "-t", "10",
-                                                    "-c:v", "libx264", "-preset", "fast", "-crf", "20",
-                                                    "-pix_fmt", "yuv420p", "-an", out_path
-                                                ]
-                                                subprocess.run(cmd_slice, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                                                if os.path.exists(temp_cob):
-                                                    os.remove(temp_cob)
-                                                if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
-                                                    print(f"[B-roll] Cobalt API direct MP4 stream slice SUCCESS!")
-                                                    success = True
-                                                    break
-                        except Exception:
-                            continue
-                except Exception:
-                    pass
 
-            # 5. Fallback B: Invidious Proxy Stream Extractor (local=true)
+            # Method 2: Native yt-dlp section download fallback
             if not success:
-                try:
-                    vid_match = re.search(r'(?:v=|\/)([a-zA-Z0-9_-]{11})', url)
-                    if vid_match:
-                        vid_id = vid_match.group(1)
-                        inv_nodes = [
-                            "https://inv.tux.pizza",
-                            "https://invidious.nerdvpn.de",
-                            "https://inv.nadeko.net",
-                            "https://vid.puffyan.us"
+                section_arg = f"*{start_time:.1f}-{start_time+slice_dur:.1f}"
+                for client_name in ["android_creator", "tv_embedded", "android"]:
+                    try:
+                        cmd_dl = ytdlp_bin_cmd + [
+                            "--download-sections", section_arg,
+                            "--extractor-args", f"youtube:player_client={client_name}",
+                            "--format", "best[ext=mp4]/best",
+                            "--merge-output-format", "mp4",
+                            "--force-keyframes-at-cuts",
+                            "--no-check-certificates",
+                            "--socket-timeout", "10",
+                            "--output", out_path,
+                            url
                         ]
-                        for node in inv_nodes:
-                            try:
-                                api_url = f"{node}/api/v1/videos/{vid_id}"
-                                r_inv = requests.get(api_url, timeout=3.5)
-                                if r_inv.status_code == 200:
-                                    inv_data = r_inv.json()
-                                    formats = inv_data.get("formatStreams", [])
-                                    mp4_fmt = [f for f in formats if f.get("container") == "mp4"]
-                                    if mp4_fmt:
-                                        itag = mp4_fmt[0].get("itag", 18)
-                                        stream_url = f"{node}/latest_version?id={vid_id}&itag={itag}&local=true"
-                                        temp_full = out_path + ".full.mp4"
-                                        with requests.get(stream_url, stream=True, timeout=10) as st_res:
-                                            if st_res.status_code == 200:
-                                                with open(temp_full, "wb") as f_out:
-                                                    for chunk in st_res.iter_content(chunk_size=16384):
-                                                        if chunk:
-                                                            f_out.write(chunk)
-                                                if os.path.exists(temp_full) and os.path.getsize(temp_full) > 50_000:
-                                                    cmd_slice = [
-                                                        "ffmpeg", "-y", "-ss", str(start_time),
-                                                        "-i", temp_full, "-t", "10",
-                                                        "-c:v", "libx264", "-preset", "fast", "-crf", "20",
-                                                        "-pix_fmt", "yuv420p", "-an", out_path
-                                                    ]
-                                                    subprocess.run(cmd_slice, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                                                    if os.path.exists(temp_full):
-                                                        os.remove(temp_full)
-                                                    if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
-                                                        print(f"[B-roll] Invidious proxy stream slice download SUCCESS from node {node}!")
-                                                        success = True
-                                                        break
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
+                        subprocess.run(cmd_dl, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20)
+                        if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
+                            print(f"[B-roll] Native yt-dlp slice download SUCCESS with {client_name} client!")
+                            success = True
+                            break
+                    except Exception:
+                        pass
 
+            # Method 3: Container rename / conversion fallback
             if not success:
                 for alt_ext in [".mp4", ".webm", ".mkv"]:
                     candidate_file = out_path + alt_ext
                     if os.path.exists(candidate_file) and os.path.getsize(candidate_file) > 10_000:
-                        print(f"[B-roll] Converting/renaming container {candidate_file} -> {out_path}...")
                         cmd_conv = [
                             "ffmpeg", "-y", "-i", candidate_file,
                             "-c:v", "libx264", "-preset", "fast", "-crf", "20",
@@ -1264,18 +1175,8 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                         if os.path.exists(out_path):
                             os.remove(out_path)
                         return False
-                except Exception as e_dur:
-                    try:
-                        test_cmd = ["ffmpeg", "-v", "error", "-i", out_path, "-t", "1", "-f", "null", "-"]
-                        test_res = subprocess.run(test_cmd, capture_output=True, timeout=10)
-                        if test_res.returncode != 0:
-                            if os.path.exists(out_path):
-                                os.remove(out_path)
-                            return False
-                    except Exception:
-                        if os.path.exists(out_path):
-                            os.remove(out_path)
-                        return False
+                except Exception:
+                    pass
 
                 c_name = (candidate_info.get("uploader_name") if candidate_info else None) or info.get("channel") or info.get("uploader") or "YouTube"
                 c_handle = (candidate_info.get("uploader_handle") if candidate_info else None) or info.get("uploader_id")
@@ -1305,7 +1206,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                     with open(credit_file, "w") as cf:
                         json.dump(credit_data, cf, indent=2)
                     print(f"[B-roll] Saved segment {segment_index} credit metadata: {c_name} ({c_handle})")
-                except Exception as cerr:
+                except Exception:
                     pass
             return success
 

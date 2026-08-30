@@ -235,8 +235,7 @@ Return ONLY a strict JSON array of objects with keys: "footage_name", "search_qu
                 pass
                 
         os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
-        ua_hdr = "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)
-"
+        ua_hdr = "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\n"
         
         if best_video.endswith(".m3u8"):
             cmd = ["ffmpeg", "-y", "-headers", ua_hdr, "-i", best_video, "-c", "copy", "-movflags", "+faststart", out_path]
