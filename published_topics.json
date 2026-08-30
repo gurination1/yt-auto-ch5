@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Terret Nexus's new platform is collapsing the 'AI-to-revenue gap' from 12 months to 48 hours by autonomously fixing sales pipeline failures.",
     "The U.S. Housing Market Faces a Looming 'Great Reset' as Affordability Plummets and Demand Slows.",
     "How WeWork's 'tech company' facade collapsed, revealing the counterintuitive truth that its $47 billion valuation was built on a traditional real estate model, fundamentally reshaping investor scrutiny for future 'unicorn' startups.",
     "The resurgence of debate surrounding 1950s advertisements that are now deemed illegal or unethical due to dangerous health claims and inappropriate targeting.",
@@ -89,8 +88,9 @@
     "Danyang-Kunshan Grand Bridge High Speed Rail Engineering #360",
     "Bagger 288 Colossal Bucket-Wheel Excavator #647",
     "The world's tallest wooden skyscraper, Mj\u00f8st\u00e5rnet, spearheads a burgeoning trend of hybrid timber construction, challenging concrete's dominance and revealing how sustainable wood can redefine future colossal urban landscapes.",
-    "How subsea tunnels, despite being submerged, experience significant **thermal expansion and contraction** by meters, requiring specialized flexible **expansion joints** to prevent buckling and cracking from internal temperature changes."
+    "How subsea tunnels, despite being submerged, experience significant **thermal expansion and contraction** by meters, requiring specialized flexible **expansion joints** to prevent buckling and cracking from internal temperature changes.",
+    "Three Gorges Dam Hydropower Civil Engineering #528"
   ],
-  "subcluster_idx": 2,
-  "call_count": 162
+  "subcluster_idx": 3,
+  "call_count": 163
 }
