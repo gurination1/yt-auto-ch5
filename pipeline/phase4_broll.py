@@ -1076,7 +1076,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
             slice_dur = 10.0
 
             # Method 1: Direct stream URL resolution with matching User-Agent streaming (bypasses CDN 403)
-            player_clients = ["android", "android_creator", "tv_embedded", "android_music"]
+            player_clients = ["android", "android_creator", "tv_embedded", "android_vr", "android_music"]
             for client_name in player_clients:
                 try:
                     cmd_json = ytdlp_bin_cmd + [
@@ -1087,7 +1087,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                         "--socket-timeout", "6",
                         url
                     ]
-                    res_json = subprocess.run(cmd_json, capture_output=True, text=True, timeout=8)
+                    res_json = subprocess.run(cmd_json, capture_output=True, text=True, timeout=25)
                     if res_json.returncode == 0:
                         info = json.loads(res_json.stdout)
                         direct_stream_url = info.get("url")
@@ -1103,7 +1103,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                                 "-c:v", "libx264", "-preset", "fast", "-crf", "20",
                                 "-pix_fmt", "yuv420p", "-an", out_path
                             ]
-                            subprocess.run(cmd_ff, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=18)
+                            subprocess.run(cmd_ff, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=35)
                             if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
                                 print(f"[B-roll] Direct YouTube stream slice SUCCESS with {client_name} client!")
                                 break
