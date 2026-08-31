@@ -71,6 +71,7 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
             print(f"[Assemble] B-roll for segment {i} missing. Running MultiPlatformVideoHarvester...")
             seg_info = script.get("segments", [])[i] if script and i < len(script.get("segments", [])) else {}
             seg_narration = seg_info.get("narration") or seg_info.get("broll_query") or "authentic documentary 4k footage"
+            seg_query = seg_info.get("broll_query") or seg_info.get("narration") or "cinematic 4k footage" 
             
             video_success = False
             
