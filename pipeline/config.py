@@ -99,17 +99,14 @@ THUMBNAIL_LAYOUTS = [
     "split_left",         # dark left panel with text, right panel shows frame
 ]
 
-# topic sub-cluster rotation for Business, Wealth and Tech Monopolies channel
-ENGINEERING_SUBCLUSTERS = [
-    "record-breaking megaprojects, colossal skyscrapers and deep architectural foundations",
-    "subsea tunnels, megabridges, underwater highways and seismic engineering",
-    "colossal construction machines, tunnel boring giants and heavy machinery",
-    "deep underground mines, oceanic oil platforms and extreme earthworks",
-    "aerospace engineering, supersonic propulsion, rocket manufacturing and orbital stations",
-    "hydroelectric megadams, nuclear fusion reactors and extreme power grid infrastructure",
-    "extreme transport engineering, high-speed rail, magnetic levitation and hyperloops"
+# topic sub-cluster rotation for Science and Technology channel
+SCIENCE_SUBCLUSTERS = [
+    "space exploration and astrophysics",
+    "physics and quantum mechanics mysteries",
+    "advanced chemistry and materials science",
+    "biotechnology and genetic engineering",
+    "future technology and computing breakthroughs",
 ]
-SCIENCE_SUBCLUSTERS = ENGINEERING_SUBCLUSTERS
 
 YT_CATEGORY_EDUCATION = "27"
 YT_CATEGORY_SCIENCE   = "28"
@@ -121,10 +118,17 @@ def validate_config():
     missing = []
     if not GEMINI_API_KEYS:
         missing.append("GEMINI_API_KEY or GEMINI_API_KEYS")
-    for var, val in [("PEXELS_API_KEY", PEXELS_API_KEY),
-                     ("YT_CLIENT_ID", YT_CLIENT_ID),
-                     ("YT_CLIENT_SECRET", YT_CLIENT_SECRET),
-                     ("YT_REFRESH_TOKEN", YT_REFRESH_TOKEN)]:
+    
+    check_vars = []
+    if PEXELS_API_KEY:
+        check_vars.append(("PEXELS_API_KEY", PEXELS_API_KEY))
+    if os.environ.get("DISABLE_YT_UPLOAD") != "1":
+        check_vars.extend([
+            ("YT_CLIENT_ID", YT_CLIENT_ID),
+            ("YT_CLIENT_SECRET", YT_CLIENT_SECRET),
+            ("YT_REFRESH_TOKEN", YT_REFRESH_TOKEN)
+        ])
+    for var, val in check_vars:
         if not val:
             missing.append(var)
     if missing:
