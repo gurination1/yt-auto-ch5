@@ -1,3 +1,4 @@
+import os
 import json
 import datetime
 import random
@@ -38,10 +39,17 @@ def generate_script(topic: dict, format_type: str) -> dict:
             topic=topic.get("topic", "science"),
             event="A discovery"
         )
-        
+        lang_instruction = ""
+        target_lang = os.environ.get("LANGUAGE", "").lower() or topic.get("language", "").lower()
+        if target_lang == "punjabi" or "punjabi" in topic.get("topic", "").lower():
+            lang_instruction = (
+                "\nCRITICAL LANGUAGE REQUIREMENT: Write the 'narration' for every segment in authentic, natural conversational Punjabi (ਪੰਜਾਬੀ). "
+                "Keep 'broll_query', 'broll_queries', and 'title' in English so video search engines find 4K footage.\n"
+            )
+            
         prompt = f"""Generate an extremely viral, high-retention 25-35 second YouTube Short educational script on the topic: "{topic['topic']}".
 Use the following hook concept as your core theme: "{hook_formatted}" (short hook: "{topic.get('short_hook', '')}").
-
+{lang_instruction}
 Narration Style Requirements :
 1. Pacing & Punchiness: 5 to 15 words per segment's narration. CRITICAL: NEVER split a single sentence across multiple segments! Each segment MUST contain 1 or 2 complete, self-contained sentences. If you split a sentence, the voiceover will pause awkwardly mid-sentence.
 2. Conversational & Extreme Simplicity: Use ONLY 5th-grade vocabulary. Extremely simple words, no complex grammar, no SAT words. Must be so simple a 10-year-old understands instantly.
@@ -266,47 +274,234 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
 
     if script is None:
         is_fallback_script = True
-        print("[Phase2] Gemini API rate-limited after retries. Generating high-quality fallback script dict...")
-        topic_title = topic.get('topic', 'Quantum Secrets') if isinstance(topic, dict) else str(topic)
-        script = {
-            "title": f"🤯 {topic_title[:32]}",
-            "voiceover_plan": "Deliver suspenseful, mind-blowing educational narration.",
-            "vocal_tone": "deep_curiosity",
-            "description": f"Discover the secret of {topic_title}.\n\nFast. Accurate. Mind-blowing.\n\n#science #facts #space",
-            "tags": ["science", "facts", "space", "quantum", "physics", "universe", "didyouknow"],
-            "category_id": "27",
-            "segments": [
-                {
-                    "id": 1,
-                    "narration": f"What if {topic_title[:30]} holds the secret to the entire universe?",
-                    "broll_query": "deep space galaxy starry night cosmos",
-                    "broll_queries": ["deep space galaxy starry night cosmos", "astronomy telescope observatory", "quantum particle physics wave"],
-                    "duration_target": 6
-                },
-                {
-                    "id": 2,
-                    "narration": "Physicists discovered that empty space isn't actually empty at all.",
-                    "broll_query": "quantum particle animation blue glowing",
-                    "broll_queries": ["quantum particle animation blue glowing", "abstract science network digital", "atom nuclear physics energy"],
-                    "duration_target": 6
-                },
-                {
-                    "id": 3,
-                    "narration": "Energy fluctuations create and destroy particles every single millisecond.",
-                    "broll_query": "supernova star explosion space cosmic",
-                    "broll_queries": ["supernova star explosion space cosmic", "black hole accretion disk space", "cosmic energy burst universe"],
-                    "duration_target": 6
-                },
-                {
-                    "id": 4,
-                    "narration": "Check out the link in the description to explore quantum physics now!",
-                    "broll_query": "smartphone screen scrolling close up",
-                    "broll_queries": ["smartphone screen scrolling close up", "mobile technology hands typing", "cyber digital interface"],
-                    "duration_target": 5
-                }
-            ],
-            "loop_callout": True
-        }
+        print("[Phase2] Gemini API rate-limited after retries. Generating niche-aware dynamic topic fallback script dict...")
+        raw_title = topic.get('topic', 'Engineering Breakthrough') if isinstance(topic, dict) else str(topic)
+        import re
+        clean_subj = re.sub(r'#\d+', '', raw_title)
+        clean_subj = re.sub(r'[^\w\s-]', '', clean_subj).strip()
+        words = clean_subj.split()
+        entity_name = " ".join(words[:6]) if len(words) > 6 else clean_subj
+        if not entity_name:
+            entity_name = "this monumental breakthrough"
+
+        # Detect channel niche
+        ch_env = os.environ.get("CHANNEL_NAME", "").lower() or os.environ.get("NICHE", "").lower()
+        topic_ch = topic.get("channel", "").lower() if isinstance(topic, dict) else ""
+        niche = topic_ch or ch_env
+        lower_subj = clean_subj.lower()
+
+        if not niche:
+            if any(w in lower_subj for w in ["tunnel", "bridge", "skyscraper", "dam", "megaproject", "machine", "engineering", "tower", "highway", "canal", "train", "alps", "gotthard"]):
+                niche = "engineering"
+            elif any(w in lower_subj for w in ["fish", "ocean", "animal", "creature", "predator", "evolution", "mating", "abyssal", "trench", "species", "wildlife", "sea"]):
+                niche = "nature"
+            elif any(w in lower_subj for w in ["battle", "war", "empire", "tactics", "ancient", "siege", "rome", "weapon", "general", "conquest"]):
+                niche = "history"
+            elif any(w in lower_subj for w in ["mystery", "enigma", "unexplained", "strange", "anomaly", "alien", "ufo", "disappearance"]):
+                niche = "mystery"
+            else:
+                niche = "science"
+
+        if niche == "engineering":
+            script = {
+                "title": f"🏗️ Inside {entity_name[:32]}",
+                "voiceover_plan": "Deliver fast-paced, awe-inspiring engineering narration.",
+                "vocal_tone": "deep_curiosity",
+                "description": f"The impossible engineering behind {entity_name}.\n\nMassive scale. Extreme physics.\n\n#engineering #megaprojects #construction",
+                "tags": ["engineering", "megaprojects", "construction", "technology", "architecture", "machines", "didyouknow"],
+                "category_id": "28",
+                "segments": [
+                    {
+                        "id": 1,
+                        "narration": f"The {entity_name} is one of the most audacious megaprojects ever constructed by human engineers.",
+                        "broll_query": f"{entity_name} megaproject construction real footage 4k",
+                        "broll_queries": [f"{entity_name} megaproject construction real footage 4k", f"{entity_name} colossal engineering machinery 4k", f"{entity_name} aerial landmark 1080p"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 2,
+                        "narration": f"To build the {entity_name}, teams had to overcome extreme physical forces and push modern materials beyond their limits.",
+                        "broll_query": f"{entity_name} heavy machinery construction site 4k",
+                        "broll_queries": [f"{entity_name} heavy machinery construction site 4k", f"{entity_name} tunnel boring machine industrial 4k", "massive civil engineering construction 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 3,
+                        "narration": f"Every single section required millimeter-level precision and unprecedented structural breakthroughs.",
+                        "broll_query": f"{entity_name} completed operational infrastructure 4k",
+                        "broll_queries": [f"{entity_name} completed operational infrastructure 4k", f"{entity_name} high speed transit aerial 4k", "modern engineering masterpiece 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 4,
+                        "narration": f"Today, the {entity_name} stands as living proof of what human ambition can achieve.",
+                        "broll_query": f"{entity_name} cinematic engineering documentary 4k",
+                        "broll_queries": [f"{entity_name} cinematic engineering documentary 4k", f"{entity_name} drone overview 4k", "futuristic megastructure architecture 4k"],
+                        "duration_target": 5
+                    }
+                ],
+                "loop_callout": True
+            }
+        elif niche == "nature":
+            script = {
+                "title": f"🌊 Secret of {entity_name[:32]}",
+                "voiceover_plan": "Deliver intense, suspenseful wildlife narration.",
+                "vocal_tone": "deep_curiosity",
+                "description": f"The shocking survival adaptation of {entity_name}.\n\nWild biology in extreme habitats.\n\n#nature #wildlife #ocean",
+                "tags": ["nature", "wildlife", "animals", "biology", "ocean", "evolution", "didyouknow"],
+                "category_id": "15",
+                "segments": [
+                    {
+                        "id": 1,
+                        "narration": f"Deep in the wild, the {entity_name} developed one of the most extreme survival mechanisms on Earth.",
+                        "broll_query": f"{entity_name} wildlife documentary real footage 4k",
+                        "broll_queries": [f"{entity_name} wildlife documentary real footage 4k", f"{entity_name} animal close up authentic footage 4k", f"{entity_name} ocean habitat 1080p"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 2,
+                        "narration": f"To survive intense predation, the {entity_name} utilizes biological adaptations seen nowhere else in nature.",
+                        "broll_query": f"{entity_name} hunting predation behavior 4k",
+                        "broll_queries": [f"{entity_name} hunting predation behavior 4k", f"{entity_name} natural habitat camera 4k", "deep wilderness wildlife documentary 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 3,
+                        "narration": f"Biologists studying the {entity_name} uncovered physiological traits that allow it to thrive under lethal conditions.",
+                        "broll_query": f"{entity_name} underwater scientific observation 4k",
+                        "broll_queries": [f"{entity_name} underwater scientific observation 4k", f"{entity_name} macro wildlife photography 4k", "fascinating creature biology 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 4,
+                        "narration": f"The incredible biology of the {entity_name} reveals how life adapts to conquer the impossible.",
+                        "broll_query": f"{entity_name} cinematic wildlife documentary 4k",
+                        "broll_queries": [f"{entity_name} cinematic wildlife documentary 4k", f"{entity_name} animal kingdom close up 4k", "natural world documentary 4k"],
+                        "duration_target": 5
+                    }
+                ],
+                "loop_callout": True
+            }
+        elif niche == "history":
+            script = {
+                "title": f"⚔️ Tactical Secret of {entity_name[:32]}",
+                "voiceover_plan": "Deliver dramatic, epic historical narration.",
+                "vocal_tone": "deep_curiosity",
+                "description": f"The battlefield strategy that changed world history: {entity_name}.\n\n#history #warfare #tactics",
+                "tags": ["history", "warfare", "tactics", "ancient", "battles", "strategy", "didyouknow"],
+                "category_id": "27",
+                "segments": [
+                    {
+                        "id": 1,
+                        "narration": f"In ancient history, the tactical mastery of {entity_name} permanently shattered the balance of power.",
+                        "broll_query": f"{entity_name} historical documentary battle 4k",
+                        "broll_queries": [f"{entity_name} historical documentary battle 4k", f"{entity_name} ancient warfare reenactment 1080p", "ancient empire fortress ruins 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 2,
+                        "narration": f"Commanders deployed revolutionary combat strategies that caught their adversaries completely off guard.",
+                        "broll_query": f"{entity_name} tactical military formation historical 4k",
+                        "broll_queries": [f"{entity_name} tactical military formation historical 4k", "ancient weapons combat strategy 4k", "battlefield history documentary 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 3,
+                        "narration": f"This decisive confrontation proved that superior discipline and tactical terrain mastery overcome raw numbers.",
+                        "broll_query": f"{entity_name} archaeological ruins battlefield 4k",
+                        "broll_queries": [f"{entity_name} archaeological ruins battlefield 4k", "ancient civilization history 4k", "historical empire conquest 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 4,
+                        "narration": f"The enduring strategic legacy of {entity_name} is still analyzed by historians to this day.",
+                        "broll_query": f"{entity_name} ancient monument historical documentary 4k",
+                        "broll_queries": [f"{entity_name} ancient monument historical documentary 4k", "epic historical archive cinematic 4k", "ancient world civilization 4k"],
+                        "duration_target": 5
+                    }
+                ],
+                "loop_callout": True
+            }
+        elif niche == "mystery":
+            script = {
+                "title": f"👁️ Unsolved: {entity_name[:32]}",
+                "voiceover_plan": "Deliver dark, suspenseful mystery narration.",
+                "vocal_tone": "deep_curiosity",
+                "description": f"The baffling anomaly of {entity_name}.\n\nUnexplained evidence. Lingering questions.\n\n#mystery #unexplained #strange",
+                "tags": ["mystery", "unexplained", "strange", "paranormal", "anomaly", "didyouknow"],
+                "category_id": "24",
+                "segments": [
+                    {
+                        "id": 1,
+                        "narration": f"For decades, the inexplicable enigma surrounding {entity_name} has baffled researchers across the world.",
+                        "broll_query": f"{entity_name} mystery anomaly archival footage 4k",
+                        "broll_queries": [f"{entity_name} mystery anomaly archival footage 4k", f"{entity_name} unexplained phenomenon documentary 1080p", "dark mystery twilight 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 2,
+                        "narration": f"Physical evidence and documented records of {entity_name} reveal anomalies that modern theories fail to explain.",
+                        "broll_query": f"{entity_name} scientific investigation anomaly evidence 4k",
+                        "broll_queries": [f"{entity_name} scientific investigation anomaly evidence 4k", "archival mystery raw footage 4k", "strange earth enigma 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 3,
+                        "narration": f"Investigators analyzing the data discovered patterns that defy all conventional logic.",
+                        "broll_query": f"{entity_name} mysterious location drone camera 4k",
+                        "broll_queries": [f"{entity_name} mysterious location drone camera 4k", "unsolved mystery investigation 4k", "historical enigma dark 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 4,
+                        "narration": f"To this day, the true explanation for {entity_name} remains shrouded in total mystery.",
+                        "broll_query": f"{entity_name} unsolved mystery documentary 4k",
+                        "broll_queries": [f"{entity_name} unsolved mystery documentary 4k", "strange world anomaly cinematic 4k", "deep mystery landscape 4k"],
+                        "duration_target": 5
+                    }
+                ],
+                "loop_callout": True
+            }
+        else: # science
+            script = {
+                "title": f"🔬 Breakthrough in {entity_name[:32]}",
+                "voiceover_plan": "Deliver fast, energetic scientific narration.",
+                "vocal_tone": "deep_curiosity",
+                "description": f"The mind-blowing physics behind {entity_name}.\n\n#science #physics #technology",
+                "tags": ["science", "physics", "technology", "quantum", "universe", "didyouknow"],
+                "category_id": "28",
+                "segments": [
+                    {
+                        "id": 1,
+                        "narration": f"The breakthrough discovery of {entity_name} is transforming our understanding of physical reality.",
+                        "broll_query": f"{entity_name} scientific laboratory research 4k",
+                        "broll_queries": [f"{entity_name} scientific laboratory research 4k", f"{entity_name} experimental physics discovery 1080p", "advanced science laboratory 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 2,
+                        "narration": f"By analyzing extreme experimental data, physicists proved that {entity_name} operates through unprecedented mechanisms.",
+                        "broll_query": f"{entity_name} laboratory experiment laser apparatus 4k",
+                        "broll_queries": [f"{entity_name} laboratory experiment laser apparatus 4k", "particle physics laboratory 4k", "high tech science experiment 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 3,
+                        "narration": f"This fundamental reaction produces energy dynamics that challenge established theoretical models.",
+                        "broll_query": f"{entity_name} scientific simulation visualization 4k",
+                        "broll_queries": [f"{entity_name} scientific simulation visualization 4k", "atomic particle reaction physics 4k", "supercomputer science simulation 4k"],
+                        "duration_target": 6
+                    },
+                    {
+                        "id": 4,
+                        "narration": f"As scientific tools advance, {entity_name} may unlock the next great revolution in technology.",
+                        "broll_query": f"{entity_name} futuristic science innovation 4k",
+                        "broll_queries": [f"{entity_name} futuristic science innovation 4k", "frontier technology laboratory 4k", "deep space scientific observatory 4k"],
+                        "duration_target": 5
+                    }
+                ],
+                "loop_callout": True
+            }
 
     if format_type == "short":
         script["segment_count"] = segment_count
