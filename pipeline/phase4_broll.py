@@ -1261,6 +1261,26 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                     try: os.remove(out_path)
                     except Exception: pass
                 os.rename(temp_file, out_path)
+                
+                # Strict Resolution Quality Gate: Reject low-res vintage scans below 720p
+                try:
+                    probe_cmd = [
+                        "ffprobe", "-v", "error",
+                        "-select_streams", "v:0",
+                        "-show_entries", "stream=width,height",
+                        "-of", "csv=s=x:p=0",
+                        out_path
+                    ]
+                    probe_res = subprocess.check_output(probe_cmd).decode().strip()
+                    if "x" in probe_res:
+                        pw, ph = map(int, probe_res.split("x")[:2])
+                        if pw < 720 and ph < 720:
+                            print(f"[B-roll] REJECTED low-res/grainy clip ({pw}x{ph} < 720p) for segment {segment_index}.")
+                            try: os.remove(out_path)
+                            except Exception: pass
+                            return False
+                except Exception:
+                    pass
                 return True
         return False
     except Exception as e:
@@ -1297,10 +1317,10 @@ def _image_to_ken_burns_video(img_path: str, out_path: str, w: int, h: int, dura
     frames = int(duration * fps)
 
     styles = [
-        f"scale=1080:1920,zoompan=z='min(zoom+0.0015,1.5)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={w}x{h}:fps={fps}",
-        f"scale=1080:1920,zoompan=z='min(zoom+0.0015,1.5)':d={frames}:x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)*(on/{frames})':s={w}x{h}:fps={fps}",
-        f"scale=1080:1920,zoompan=z='min(zoom+0.0015,1.5)':d={frames}:x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)*(1-on/{frames})':s={w}x{h}:fps={fps}",
-        f"scale=1080:1920,zoompan=z='min(zoom+0.001,1.3)':d={frames}:x='iw-iw/zoom':y='ih/2-(ih/zoom/2)':s={w}x{h}:fps={fps}",
+        f"zoompan=z='min(zoom+0.0012,1.25)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={w}x{h}:fps={fps},scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}",
+        f"zoompan=z='min(zoom+0.0012,1.25)':d={frames}:x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)*(on/{frames})':s={w}x{h}:fps={fps},scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}",
+        f"zoompan=z='min(zoom+0.0012,1.25)':d={frames}:x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)*(1-on/{frames})':s={w}x{h}:fps={fps},scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}",
+        f"zoompan=z='min(zoom+0.0010,1.20)':d={frames}:x='iw-iw/zoom':y='ih/2-(ih/zoom/2)':s={w}x{h}:fps={fps},scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}",
     ]
     vf = random.choice(styles)
 
@@ -1619,15 +1639,14 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> fl
         dur_score = max(0.0, 20.0 - 2.0 * diff)
         
     source_weights = {
-        "reddit": 175.0,
-        "youtube": 165.0,
-        "nasa": 155.0,
-        "pexels": 140.0,
-        "coverr": 135.0,
-        "pixabay": 130.0,
-        "dvids": 100.0,
-        "wikimedia": 60.0,
-        "archive": 40.0,
+        "pexels": 200.0,
+        "pixabay": 195.0,
+        "coverr": 190.0,
+        "nasa": 180.0,
+        "reddit": 160.0,
+        "dvids": 140.0,
+        "wikimedia": 120.0,
+        "archive": 10.0,
         "klipy": 20.0
     }
     source_lower = str(item.get("source", "")).lower()
@@ -1752,12 +1771,12 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     queries_to_try = queries_to_try_dedup
 
     CHANNEL_SOURCE_PRIORITY = {
-        "mystery":     ["reddit", "youtube", "archive", "wikimedia", "dvids"],
-        "nature":      ["reddit", "youtube", "archive", "wikimedia", "nasa", "dvids"],
-        "science":     ["youtube", "nasa", "reddit", "archive", "wikimedia"],
-        "engineering": ["reddit", "youtube", "nasa", "dvids", "wikimedia", "archive"],
-        "business":    ["youtube", "archive", "wikimedia"],
-        "general":     ["reddit", "youtube", "archive", "wikimedia", "nasa", "dvids"],
+        "mystery":     ["pexels", "pixabay", "coverr", "reddit", "wikimedia", "dvids"],
+        "nature":      ["pexels", "pixabay", "coverr", "wikimedia", "nasa", "reddit"],
+        "science":     ["pexels", "pixabay", "coverr", "nasa", "wikimedia", "reddit"],
+        "engineering": ["pexels", "pixabay", "coverr", "dvids", "wikimedia", "reddit", "nasa"],
+        "business":    ["pexels", "pixabay", "coverr", "wikimedia"],
+        "general":     ["pexels", "pixabay", "coverr", "nasa", "dvids", "wikimedia", "reddit"],
     }
 
     def run_source_query(source: str, q: str) -> list[dict]:
