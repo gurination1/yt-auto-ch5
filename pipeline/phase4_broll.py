@@ -1059,10 +1059,12 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
             start_time = 0.0
         slice_dur = 10.0
 
+        is_reddit = "v.redd.it" in url or "reddit.com" in url or (candidate_info and candidate_info.get("source") == "Reddit")
+        is_youtube = "youtube.com" in url or "youtu.be" in url or (candidate_info and candidate_info.get("source") == "YouTube")
+
         # 1. Reddit HLS / DASH stream download via FFmpeg copy
-        if "v.redd.it" in url or "reddit.com" in url or (candidate_info and candidate_info.get("source") == "Reddit"):
+        if is_reddit:
             print(f"[B-roll] Downloading authentic Reddit video slice for segment {segment_index}: {url}...")
-            # If not an m3u8 direct URL, format it
             hls_url = url
             m_vid = re.search(r'v\.redd\.it\/([a-zA-Z0-9_-]+)', url)
             if m_vid:
@@ -1082,7 +1084,6 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 res_r = subprocess.run(cmd_red, capture_output=True, text=True, timeout=30)
                 if res_r.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
                     print(f"[B-roll] Reddit authentic video slice download SUCCESS!")
-                    # Save credit
                     c_name = candidate_info.get("uploader_name", "Reddit") if candidate_info else "Reddit"
                     c_handle = candidate_info.get("uploader_handle", "r/Reddit") if candidate_info else "r/Reddit"
                     credit_data = {
@@ -1098,11 +1099,14 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                             json.dump(credit_data, cf, indent=2)
                     except Exception: pass
                     return True
+                else:
+                    print(f"[B-roll] Reddit FFmpeg failed: {res_r.stderr[:200]}")
             except Exception as e_red:
                 print(f"[B-roll] Reddit download exception: {e_red}")
+            return False
 
         # 2. YouTube video download via native yt-dlp chunk download + local FFmpeg slice (0% 403 blocks)
-        if "youtube.com" in url or "youtu.be" in url or (candidate_info and candidate_info.get("source") == "YouTube"):
+        if is_youtube:
             print(f"[B-roll] Downloading YouTube authentic video slice for segment {segment_index}: {url}...")
             ytdlp_bin_cmd = _get_ytdlp_bin()
             temp_full = f"output/yt_full_temp_{segment_index}.mp4"
@@ -1110,58 +1114,74 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 try: os.remove(temp_full)
                 except Exception: pass
 
-            cmd_dl = ytdlp_bin_cmd + [
-                "--extractor-args", "youtube:player_client=android_creator,android",
-                "--format", "18/22/136/137/best[ext=mp4]/best",
-                "--no-check-certificates",
-                "--socket-timeout", "15",
-                "-o", temp_full,
-                url
+            client_options = [
+                "android_creator,android",
+                "android",
+                "tv_embedded",
+                "web"
             ]
-            try:
-                res_dl = subprocess.run(cmd_dl, capture_output=True, text=True, timeout=45)
-                if os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000:
-                    cmd_cut = [
-                        "ffmpeg", "-y",
-                        "-ss", str(start_time),
-                        "-i", temp_full,
-                        "-t", str(slice_dur),
-                        "-c:v", "copy", "-c:a", "copy",
-                        out_path
-                    ]
-                    res_cut = subprocess.run(cmd_cut, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20)
-                    try: os.remove(temp_full)
-                    except Exception: pass
-                    
-                    if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
-                        print(f"[B-roll] YouTube authentic video slice download SUCCESS!")
-                        c_name = candidate_info.get("uploader_name", "YouTube") if candidate_info else "YouTube"
-                        c_handle = candidate_info.get("uploader_handle", "@YouTube") if candidate_info else "@YouTube"
-                        credit_data = {
-                            "source": "YouTube",
-                            "uploader_name": str(c_name),
-                            "uploader_handle": str(c_handle),
-                            "channel_url": candidate_info.get("channel_url", "") if candidate_info else "",
-                            "video_url": url,
-                            "title": candidate_info.get("title", "") if candidate_info else ""
-                        }
-                        try:
-                            with open(f"output/broll_{segment_index}_credit.json", "w") as cf:
-                                json.dump(credit_data, cf, indent=2)
+
+            for client_str in client_options:
+                cmd_dl = ytdlp_bin_cmd + [
+                    "--extractor-args", f"youtube:player_client={client_str}",
+                    "--format", "18/22/136/137/best[ext=mp4]/best",
+                    "--no-check-certificates",
+                    "--socket-timeout", "15",
+                    "-o", temp_full,
+                    url
+                ]
+                try:
+                    res_dl = subprocess.run(cmd_dl, capture_output=True, text=True, timeout=40)
+                    if os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000:
+                        cmd_cut = [
+                            "ffmpeg", "-y",
+                            "-ss", str(start_time),
+                            "-i", temp_full,
+                            "-t", str(slice_dur),
+                            "-c:v", "copy", "-c:a", "copy",
+                            out_path
+                        ]
+                        subprocess.run(cmd_cut, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20)
+                        try: os.remove(temp_full)
                         except Exception: pass
-                        return True
-            except Exception as e_yt:
-                print(f"[B-roll] YouTube download exception: {e_yt}")
+                        
+                        if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
+                            print(f"[B-roll] YouTube authentic video slice download SUCCESS with client {client_str}!")
+                            c_name = candidate_info.get("uploader_name", "YouTube") if candidate_info else "YouTube"
+                            c_handle = candidate_info.get("uploader_handle", "@YouTube") if candidate_info else "@YouTube"
+                            credit_data = {
+                                "source": "YouTube",
+                                "uploader_name": str(c_name),
+                                "uploader_handle": str(c_handle),
+                                "channel_url": candidate_info.get("channel_url", "") if candidate_info else "",
+                                "video_url": url,
+                                "title": candidate_info.get("title", "") if candidate_info else ""
+                            }
+                            try:
+                                with open(f"output/broll_{segment_index}_credit.json", "w") as cf:
+                                    json.dump(credit_data, cf, indent=2)
+                            except Exception: pass
+                            return True
+                    else:
+                        print(f"[B-roll] yt-dlp client {client_str} failed: {res_dl.stderr[:150]}")
+                except Exception as e_yt:
+                    print(f"[B-roll] YouTube download exception ({client_str}): {e_yt}")
+            return False
 
         # 3. Direct HTTP/HTTPS Video stream (NASA, Archive.org, DVIDS, Wikimedia)
         print(f"[B-roll] Downloading direct media stream for segment {segment_index}: {url[:80]}...")
         r = requests.get(url, stream=True, timeout=35, headers={"User-Agent": "yt-auto/2.0 (educational-video-pipeline)"})
         r.raise_for_status()
 
+        content_type = r.headers.get("Content-Type", "").lower()
+        if "html" in content_type or "text" in content_type:
+            print(f"[B-roll] URL returned HTML/text, not a video stream. Rejecting.")
+            return False
+
         parsed = urllib.parse.urlparse(url)
         path = parsed.path.lower()
-        is_webm = path.endswith(".webm") or path.endswith(".ogv")
-        is_gif = path.endswith(".gif")
+        is_webm = path.endswith(".webm") or path.endswith(".ogv") or "webm" in content_type
+        is_gif = path.endswith(".gif") or "gif" in content_type
 
         temp_ext = ".webm" if is_webm else ".gif" if is_gif else ".mp4"
         temp_file = f"output/temp_dl_{segment_index}{temp_ext}"
@@ -1211,8 +1231,10 @@ def _image_to_ken_burns_video(img_path: str, out_path: str, w: int, h: int, dura
             "-c:v", "libx264", "-preset", "fast", "-crf", "20", "-pix_fmt", "yuv420p",
             "-an", out_path
         ]
-        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if res.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
+            return
+        print(f"[B-roll] Video normalization returned non-zero ({res.returncode}), falling back to procedural synth...")
 
     # Force DISABLE_HYPERFRAMES to prevent tech HUD borders/grid overlays over B-roll clips
     os.environ["DISABLE_HYPERFRAMES"] = "1"
