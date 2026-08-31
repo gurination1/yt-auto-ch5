@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The recent, sharp decline in South Korea's KOSPI index, losing trillions in value, signals a significant correction as the AI-driven tech boom shows signs of fading, causing investors to re-evaluate highly leveraged positions in chipmakers.",
     "How Dean Kamen's Segway, a marvel of engineering launched with unprecedented hype, failed to revolutionize urban transport because it solved no widespread problem, despite its inventor's prior successes.",
     "The art of subtle persuasion: iconic 1950s campaigns that built lasting brand narratives with powerful, yet minimal, messaging.",
     "The DC Scam Strike Force's unprecedented success in freezing over $800 million from international cryptocurrency romance and investment frauds, revealing sophisticated social engineering tactics targeting Americans.",
@@ -89,8 +88,9 @@
     "Gotthard Base Tunnel Subterranean Alps Engineering #177",
     "Gotthard Base Tunnel Subterranean Alps Engineering #523",
     "Gotthard Base Tunnel Subterranean Alps Engineering #650",
-    "China's military develops a hypersonic air-to-air weapon, potentially redefining long-range aerial defense and threat projection."
+    "China's military develops a hypersonic air-to-air weapon, potentially redefining long-range aerial defense and threat projection.",
+    "China's 'Artificial Sun' (EAST) achieves a groundbreaking breakthrough by breaching the Greenwald limit, a critical electron density barrier, significantly advancing the path towards viable nuclear fusion."
   ],
-  "subcluster_idx": 5,
-  "call_count": 172
+  "subcluster_idx": 6,
+  "call_count": 173
 }
