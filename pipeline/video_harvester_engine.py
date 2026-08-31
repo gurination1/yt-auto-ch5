@@ -165,36 +165,24 @@ class MultiPlatformVideoHarvester:
     def search_reddit(self, query: str, limit: int = 5) -> List[HarvesterCandidate]:
         candidates = []
         try:
-            search_url = f"https://www.reddit.com/search.json?q={urllib.parse.quote(query)}&type=link&limit={limit*3}"
-            headers = {"User-Agent": "VideoHarvester/2.0 (Linux x86_64)"}
-            data = self._http_get_json(search_url, headers=headers)
-            for post in data.get("data", {}).get("children", []):
-                pdata = post.get("data", {})
-                if not pdata.get("is_video"):
-                    continue
-                vid_meta = pdata.get("secure_media", {}).get("reddit_video") or pdata.get("media", {}).get("reddit_video")
-                if not vid_meta:
-                    continue
-                fallback_url = vid_meta.get("fallback_url", "")
-                base_url = re.sub(r"/DASH_.*", "", fallback_url)
-                audio_url = f"{base_url}/DASH_AUDIO_128.mp4" if base_url else None
+            from pipeline.reddit_engine import get_reddit_engine
+            r_cands = get_reddit_engine().get_reddit_candidates(query, n=limit)
+            for rc in r_cands:
                 candidates.append(
                     HarvesterCandidate(
-                        id=pdata.get("id", ""),
-                        title=pdata.get("title", ""),
-                        description=pdata.get("selftext", ""),
-                        channel_name=f"r/{pdata.get('subreddit', 'Reddit')} (u/{pdata.get('author', 'user')})",
-                        url=f"https://www.reddit.com{pdata.get('permalink', '')}",
-                        stream_url=fallback_url,
-                        audio_url=audio_url,
+                        id=re.sub(r'[^a-zA-Z0-9]', '', rc.get("video_url", ""))[-12:],
+                        title=rc.get("title", ""),
+                        description="",
+                        channel_name=rc.get("uploader_handle") or rc.get("uploader_name", "Reddit"),
+                        url=rc.get("channel_url") or "https://reddit.com",
+                        stream_url=rc.get("video_url", ""),
+                        audio_url=None,
                         platform="reddit",
-                        duration=float(vid_meta.get("duration") or 10.0),
-                        thumbnail_url=pdata.get("thumbnail") or "",
+                        duration=float(rc.get("duration") or 10.0),
+                        thumbnail_url=rc.get("thumb_url") or "",
                     )
                 )
-                if len(candidates) >= limit:
-                    break
-        except Exception:
+        except Exception as e:
             pass
         return candidates
 
@@ -328,15 +316,18 @@ class MultiPlatformVideoHarvester:
             if profile.entity_category in ["viral_eyewitness", "cryptid_anomaly"]:
                 tasks.append(executor.submit(self.search_tiktok, profile.anchor_entity, 3))
 
-            for future in as_completed(tasks, timeout=self.timeout + 4):
-                try:
-                    res = future.result()
-                    for c in res:
-                        if c.url and c.url not in seen_urls:
-                            seen_urls.add(c.url)
-                            raw_candidates.append(c)
-                except Exception:
-                    pass
+            try:
+                for future in as_completed(tasks, timeout=self.timeout + 4):
+                    try:
+                        res = future.result()
+                        for c in res:
+                            if c.url and c.url not in seen_urls:
+                                seen_urls.add(c.url)
+                                raw_candidates.append(c)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
         # Apply Hard Entity Gatekeeper Scoring
         scored_candidates: List[HarvesterCandidate] = []

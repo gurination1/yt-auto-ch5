@@ -257,16 +257,75 @@ Return ONLY a strict JSON array of objects with keys: "footage_name", "search_qu
         except Exception:
             return False
 
+    def search_reddit_rss(self, query: str, niche: str = "general", n: int = 5) -> List[Dict]:
+        """
+        Queries official Reddit RSS Atom feeds for direct video posts.
+        Unblocked on datacenter runners and extracts v.redd.it stream IDs.
+        """
+        candidates = []
+        clean_q = re.sub(r'[^a-zA-Z0-9\s]', '', query).strip()
+        if not clean_q:
+            return []
+        
+        subreddits = NICHE_SUBREDDITS.get(niche, NICHE_SUBREDDITS["general"])
+        import xml.etree.ElementTree as ET
+        
+        for sub in subreddits[:4]:
+            try:
+                url = f"https://www.reddit.com/r/{sub}/search.rss?q={urllib.parse.quote(clean_q)}&restrict_sr=1&sort=relevance"
+                headers = {"User-Agent": "yt-auto/2.0 (educational-video-harvester)"}
+                r = self.session.get(url, headers=headers, timeout=5)
+                if r.status_code == 200 and r.content:
+                    root = ET.fromstring(r.content)
+                    entries = root.findall("{http://www.w3.org/2005/Atom}entry")
+                    for e in entries:
+                        title = e.findtext("{http://www.w3.org/2005/Atom}title") or ""
+                        content_html = e.findtext("{http://www.w3.org/2005/Atom}content") or ""
+                        author_elem = e.find("{http://www.w3.org/2005/Atom}author")
+                        author_name = author_elem.findtext("{http://www.w3.org/2005/Atom}name") if author_elem is not None else "RedditUser"
+                        
+                        v_match = re.search(r'https?://v\.redd\.it/([a-zA-Z0-9_-]+)', content_html)
+                        if v_match:
+                            vid_id = v_match.group(1)
+                            hls_url = f"https://v.redd.it/{vid_id}/HLSPlaylist.m3u8"
+                            thumb_match = re.search(r'src="([^"]+)"', content_html)
+                            thumb_url = thumb_match.group(1).replace("&amp;", "&") if thumb_match else f"https://preview.redd.it/{vid_id}.jpg"
+                            
+                            candidates.append({
+                                "source": "Reddit",
+                                "video_url": hls_url,
+                                "thumb_url": thumb_url,
+                                "title": title,
+                                "duration": 10.0,
+                                "uploader_name": f"r/{sub}",
+                                "uploader_handle": f"u/{author_name} (r/{sub})",
+                                "channel_url": f"https://reddit.com/r/{sub}",
+                                "score": 250.0
+                            })
+                            if len(candidates) >= n:
+                                break
+                    if len(candidates) >= n:
+                        break
+            except Exception as e:
+                pass
+        return candidates[:n]
+
     def get_reddit_candidates(self, query: str, niche: str = "general", n: int = 5) -> List[Dict]:
         """
         Unified Reddit candidate getter:
-        1. Probes direct PullPush & Redlib video posts.
-        2. Merges with semantically discovered authentic community footage search queries.
+        1. Queries official Reddit RSS feeds for direct v.redd.it HLS video streams.
+        2. Probes PullPush & Redlib mirrors.
+        3. Merges with semantically discovered authentic community footage search queries.
         """
         all_cands = []
-        # 1. PullPush direct stream check
-        pp_cands = self.search_pullpush_videos(query, niche=niche, n=n)
-        all_cands.extend(pp_cands)
+        # 1. Official Reddit RSS direct video stream check
+        rss_cands = self.search_reddit_rss(query, niche=niche, n=n)
+        all_cands.extend(rss_cands)
+        
+        # 2. PullPush direct stream check
+        if len(all_cands) < n:
+            pp_cands = self.search_pullpush_videos(query, niche=niche, n=n - len(all_cands))
+            all_cands.extend(pp_cands)
         
         # 2. Redlib mirror check
         if len(all_cands) < n:

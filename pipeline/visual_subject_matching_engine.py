@@ -104,7 +104,7 @@ class SemanticEntityExtractor:
     def __init__(self, gemini_api_key: Optional[str] = None, gemini_api_base: Optional[str] = None):
         self.api_key = gemini_api_key or os.environ.get("GEMINI_API_KEY", "")
         self.api_base = gemini_api_base or os.environ.get("GEMINI_API_BASE", "https://generativelanguage.googleapis.com/v1beta")
-        self.model = os.environ.get("GEMINI_FLASH_MODEL", "gemini-1.5-flash")
+        self.model = os.environ.get("GEMINI_FLASH", "gemini-2.5-flash")
 
     def extract(self, sentence: str, topic_context: str = "") -> VisualEntityProfile:
         """
@@ -426,7 +426,7 @@ class FastVisionQualityGate:
     def __init__(self, gemini_api_key: Optional[str] = None, gemini_api_base: Optional[str] = None):
         self.api_key = gemini_api_key or os.environ.get("GEMINI_API_KEY", "")
         self.api_base = gemini_api_base or os.environ.get("GEMINI_API_BASE", "https://generativelanguage.googleapis.com/v1beta")
-        self.model = os.environ.get("GEMINI_FLASH_MODEL", "gemini-1.5-flash")
+        self.model = os.environ.get("GEMINI_FLASH", "gemini-2.5-flash")
 
     @staticmethod
     def extract_keyframes(video_path_or_url: str, timestamps: List[float]) -> List[Image.Image]:
