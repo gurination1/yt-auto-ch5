@@ -78,9 +78,11 @@ jobs:
 
       - name: Configure Rclone
         if: always()
+        env:
+          RCLONE_CONF_DATA: ${{ secrets.RCLONE_CONFIG }}
         run: |
           mkdir -p ~/.config/rclone
-          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+          printf "%s\n" "$RCLONE_CONF_DATA" > ~/.config/rclone/rclone.conf
 
       - name: Upload Final Video ONLY to Rclone Google Drive
         if: always()
