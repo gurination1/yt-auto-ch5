@@ -1803,11 +1803,39 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     for c in candidates:
         c["_score"] = _score_candidate(c, query, target_duration=duration)
 
-    # Sort descending by score
-    candidates.sort(key=lambda x: x.get("_score", 0.0), reverse=True)
+    # Multi-platform diversity interleaving: guarantee top candidates include Reddit, Archive, Wikimedia, NASA alongside YouTube
+    platform_buckets = {}
+    for c in candidates:
+        src = c.get("source", "Other").lower()
+        if src not in platform_buckets:
+            platform_buckets[src] = []
+        platform_buckets[src].append(c)
 
-    # Send only the top 8 to vision_rank_broll
-    candidates = candidates[:8]
+    # Sort each platform's candidates by score descending
+    for src in platform_buckets:
+        platform_buckets[src].sort(key=lambda x: x.get("_score", 0.0), reverse=True)
+
+    # Round-robin interleave from distinct platforms to guarantee multi-source coverage
+    interleaved_candidates = []
+    source_priority_order = ["reddit", "archive", "wikimedia", "nasa", "dvids", "youtube", "web"]
+    for sp in source_priority_order:
+        if sp in platform_buckets and platform_buckets[sp]:
+            interleaved_candidates.append(platform_buckets[sp].pop(0))
+            if len(interleaved_candidates) >= 8:
+                break
+
+    # Fill remaining slots with highest remaining scores across all platforms
+    remaining_all = []
+    for src, clist in platform_buckets.items():
+        remaining_all.extend(clist)
+    remaining_all.sort(key=lambda x: x.get("_score", 0.0), reverse=True)
+    for rc in remaining_all:
+        if len(interleaved_candidates) >= 8:
+            break
+        if rc not in interleaved_candidates:
+            interleaved_candidates.append(rc)
+
+    candidates = interleaved_candidates if interleaved_candidates else candidates[:8]
 
     # Print the top sources in order so the log shows ranking
     if candidates:

@@ -101,43 +101,8 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
             except Exception as harv_err:
                 print(f"[Assemble] Emergency harvester note: {harv_err}")
                 
-            # 2. Try Pexels video search if available
-            if not video_success:
-                pex_key = os.environ.get("PEXELS_API_KEY", "")
-                if pex_key:
-                    try:
-                        import urllib.request
-                        headers = {
-                            "Authorization": pex_key,
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                        }
-                        req = urllib.request.Request(
-                            f"https://api.pexels.com/videos/search?query={urllib.parse.quote(seg_query)}&per_page=5&orientation=portrait",
-                            headers=headers
-                        )
-                        with urllib.request.urlopen(req, timeout=10) as resp:
-                            pdata = json.loads(resp.read().decode())
-                            videos = pdata.get("videos", [])
-                            if videos:
-                                for vid in videos:
-                                    files = vid.get("video_files", [])
-                                    best_file = next((f for f in files if f.get("width") == 1080 and f.get("height") == 1920), None) or files[0]
-                                    video_link = best_file.get("link")
-                                    if video_link:
-                                        temp_vid = f"output/pexels_temp_{i}.mp4"
-                                        req_vid = urllib.request.Request(video_link, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-                                        with urllib.request.urlopen(req_vid, timeout=15) as vresp, open(temp_vid, "wb") as out_f:
-                                            out_f.write(vresp.read())
-                                        if os.path.exists(temp_vid) and os.path.getsize(temp_vid) > 20_000:
-                                            _image_to_ken_burns_video(temp_vid, broll_path, w, h, duration=duration)
-                                            if os.path.exists(temp_vid):
-                                                try: os.remove(temp_vid)
-                                                except Exception: pass
-                                            video_success = True
-                                            print(f"[Assemble] Successfully fetched 4K Pexels B-roll clip for segment {i}!")
-                                            break
-                    except Exception as pex_err:
-                        print(f"[Assemble] Pexels direct fetch note: {pex_err}")
+            # 2. Authentic Video Fallback: Strict MultiPlatform Harvester
+            # Unrelated stock footage is strictly banned from emergency b-rolls.
             
             # 3. Pollinations 4K motion generator fallback only if all video searches fail
             if not video_success:
