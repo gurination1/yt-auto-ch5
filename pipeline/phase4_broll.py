@@ -1752,11 +1752,17 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             if q not in queries_to_try:
                 queries_to_try.append(q)
         
-    clean_words = clean_fallback.split()
-    if len(clean_words) > 2:
-        general_fallback = " ".join(clean_words[:2])
-        if general_fallback not in queries_to_try:
-            queries_to_try.append(general_fallback)
+    # Generate ultra-targeted 2-3 noun keyword queries for stock APIs (Pexels / Pixabay)
+    stop_stock = {"4k", "1080p", "hd", "footage", "real", "authentic", "video", "discovery", "breakthrough", "logic", "superposition", "unprecedented", "fundamental", "revolution"}
+    core_nouns = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in stop_stock]
+    if len(core_nouns) >= 2:
+        q_pair1 = " ".join(core_nouns[:2])
+        q_pair2 = " ".join(core_nouns[-2:])
+        if q_pair1 not in queries_to_try: queries_to_try.insert(0, q_pair1)
+        if q_pair2 not in queries_to_try: queries_to_try.insert(1, q_pair2)
+    if len(core_nouns) >= 3:
+        q_tri = " ".join(core_nouns[:3])
+        if q_tri not in queries_to_try: queries_to_try.insert(0, q_tri)
 
     if not budget_exceeded():
         expanded = _expand_query(query, channel=channel, n=5)
@@ -1920,7 +1926,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
     # Round-robin interleave from distinct platforms to guarantee multi-source coverage
     interleaved_candidates = []
-    source_priority_order = ["reddit", "archive", "wikimedia", "nasa", "dvids", "youtube", "web"]
+    source_priority_order = ["pexels", "pixabay", "coverr", "nasa", "dvids", "wikimedia", "reddit"]
     for sp in source_priority_order:
         if sp in platform_buckets and platform_buckets[sp]:
             interleaved_candidates.append(platform_buckets[sp].pop(0))
