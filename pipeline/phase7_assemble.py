@@ -65,32 +65,40 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
         ss_offset = ss_offsets[i]
         norm_path = f"output/broll_{i}_norm.mp4"
         
-        # Handle missing/None broll_path by fetching real video (YouTube CC / Pexels) before image fallback
+        # Handle missing/None broll_path by harvesting real multi-platform footage before image fallback
         if not broll_path or not os.path.exists(broll_path) or os.path.getsize(broll_path) < 10_000:
             broll_path = f"output/emergency_broll_{i}.mp4"
-            print(f"[Assemble] B-roll for segment {i} missing. Searching real YouTube & stock video clips...")
+            print(f"[Assemble] B-roll for segment {i} missing. Running MultiPlatformVideoHarvester...")
             seg_info = script.get("segments", [])[i] if script and i < len(script.get("segments", [])) else {}
-            seg_query = seg_info.get("broll_query") or seg_info.get("narration") or "cinematic 4k footage"
+            seg_narration = seg_info.get("narration") or seg_info.get("broll_query") or "authentic documentary 4k footage"
             
             video_success = False
             
-            # 1. Try YouTube CC video search directly via yt-dlp
+            # 1. Try MultiPlatformVideoHarvester across YouTube, Reddit, DuckDuckGo, NASA, Archive, TikTok
             try:
-                from pipeline.phase4_broll import _youtube_candidates, _download_video_robust, _image_to_ken_burns_video
-                yt_cands = _youtube_candidates(seg_query, n=3)
-                for cand in yt_cands:
-                    temp_vid = f"output/emergency_yt_{i}.mp4"
-                    if _download_video_robust(cand["video_url"], temp_vid, i, candidate_info=cand):
+                from pipeline.video_harvester_engine import get_video_harvester
+                from pipeline.phase4_broll import _download_video_robust, _image_to_ken_burns_video
+                harvester = get_video_harvester()
+                profile, top_cands = harvester.harvest_for_sentence(seg_narration, niche=script.get("channel", "general"), max_candidates=5)
+                for cand in top_cands:
+                    temp_vid = f"output/emergency_harv_{i}.mp4"
+                    cand_dict = {
+                        "video_url": cand.stream_url or cand.url,
+                        "duration": cand.duration,
+                        "uploader_name": cand.channel_name,
+                        "uploader_handle": cand.channel_name
+                    }
+                    if _download_video_robust(cand.stream_url or cand.url, temp_vid, i, candidate_info=cand_dict):
                         _image_to_ken_burns_video(temp_vid, broll_path, w, h, duration=duration)
                         if os.path.exists(temp_vid):
                             try: os.remove(temp_vid)
                             except Exception: pass
                         if os.path.exists(broll_path) and os.path.getsize(broll_path) > 20_000:
                             video_success = True
-                            print(f"[Assemble] Successfully fetched real YouTube video clip for segment {i}!")
+                            print(f"[Assemble] Successfully harvested real footage '{cand.title}' for segment {i}!")
                             break
-            except Exception as yt_err:
-                print(f"[Assemble] YouTube fallback search note: {yt_err}")
+            except Exception as harv_err:
+                print(f"[Assemble] Emergency harvester note: {harv_err}")
                 
             # 2. Try Pexels video search if available
             if not video_success:

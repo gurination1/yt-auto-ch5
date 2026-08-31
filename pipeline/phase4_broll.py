@@ -1691,6 +1691,30 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         expanded = _expand_query(query, channel=channel, n=5)
         queries_to_try.extend(expanded)
 
+    # ── Phase 4.1: High-Precision Semantic Entity & Multi-Platform Harvester ──
+    try:
+        from pipeline.video_harvester_engine import get_video_harvester
+        harvester = get_video_harvester()
+        profile, harvested = harvester.harvest_for_sentence(narration or query, niche=channel, max_candidates=8)
+        if harvested:
+            print(f"[B-roll] Segment {segment_index}: Entity Harvester identified anchor '{profile.anchor_entity}' ({profile.entity_category}) with {len(harvested)} verified authentic candidates.")
+            for hc in harvested:
+                cand_dict = {
+                    "source": hc.platform.capitalize(),
+                    "video_url": hc.stream_url or hc.url,
+                    "thumb_url": hc.thumbnail_url or (f"https://img.youtube.com/vi/{hc.id}/hqdefault.jpg" if "youtube" in hc.platform.lower() else ""),
+                    "title": hc.title,
+                    "description": hc.description,
+                    "duration": hc.duration,
+                    "uploader_name": hc.channel_name,
+                    "uploader_handle": hc.channel_name if str(hc.channel_name).startswith(("@", "u/")) else f"@{hc.channel_name}",
+                    "channel_url": hc.url,
+                    "_score": float(hc.score + 50.0)
+                }
+                candidates.append(cand_dict)
+    except Exception as e_harv:
+        print(f"[B-roll] Entity Harvester note: {e_harv}")
+
     # Deduplicate final query list (case-insensitive while preserving order)
     seen_q = set()
     queries_to_try_dedup = []
