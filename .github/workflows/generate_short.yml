@@ -3,14 +3,12 @@ name: Generate Short Video
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 3 * * *'    # Short #1
-    - cron: '30 10 * * *'   # Short #2
-    - cron: '0 18 * * *'  # Short #3
-  push:
-    branches: [ main ]
+    - cron: '30 4 * * *'    # Short #1
+    - cron: '0 12 * * *'   # Short #2
+    - cron: '0 21 * * *'  # Short #3
 
 permissions:
-  contents: write             # needed to commit published_topics.json + voice_state.json
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -28,22 +26,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check Primary Server Upload Status (Fallback Guard)
-        id: fallback_check
-        run: |
-          python check_slot_fallback.py
-
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install System Dependencies (FFmpeg, Tesseract OCR, Fonts)
+      - name: Install System Dependencies (FFmpeg, Tesseract OCR, Fonts, Rclone)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg tesseract-ocr tesseract-ocr-eng fonts-dejavu-core fonts-liberation
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg tesseract-ocr tesseract-ocr-eng fonts-dejavu-core fonts-liberation rclone
 
       - name: Install Bebas Neue Font
         run: |
@@ -63,15 +55,11 @@ jobs:
         run: pip install -r requirements.txt && pip install -U --pre "yt-dlp[default]"
 
       - name: Generate Short
-        if: steps.fallback_check.outputs.should_run == 'true' || github.event_name == 'workflow_dispatch'
         timeout-minutes: 50
         env:
           GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
           PEXELS_API_KEY:    ${{ secrets.PEXELS_API_KEY }}
           PIXABAY_API_KEY:   ${{ secrets.PIXABAY_API_KEY }}
-          YT_CLIENT_ID:      ${{ secrets.YT_CLIENT_ID }}
-          YT_CLIENT_SECRET:  ${{ secrets.YT_CLIENT_SECRET }}
-          YT_REFRESH_TOKEN:  ${{ secrets.YT_REFRESH_TOKEN }}
           COVERR_API_KEY:    ${{ secrets.COVERR_API_KEY }}
           NASA_API_KEY:      ${{ secrets.NASA_API_KEY }}
           KLIPY_API_KEY:     ${{ secrets.KLIPY_API_KEY }}
@@ -81,60 +69,29 @@ jobs:
           BYPASS_VISION_MATCH: "0"
           DISABLE_HYPERFRAMES: "1"
           DISABLE_YT_UPLOAD: "1"
-          CHANNEL_NICHE: "engineering"
+          UPLOAD_PRIVACY: "private"
         run: |
-          for attempt in 1 2; do
-            echo "Generate attempt ${attempt}/2"
-            resume_arg=""
-            if [ "$attempt" -gt 1 ] && [ -d output ]; then
-              resume_arg="--resume"
-            fi
-            timeout 24m python run_generate.py --format short $resume_arg && exit 0
-            code=$?
-            if [ "$code" -eq 124 ]; then
-              echo "Generate attempt ${attempt} timed out"
-            else
-              echo "Generate attempt ${attempt} failed with exit ${code}"
-            fi
-            if [ "$attempt" -eq 1 ]; then
-              echo "Waiting 60s before retry"
-              sleep 60
-            fi
-          done
-          exit 1
+          python run_generate.py --format short
 
-      - name: Publish to YouTube
-        if: steps.fallback_check.outputs.should_run == 'true' || github.event_name == 'workflow_dispatch'
-        timeout-minutes: 15
-        env:
-          DM_API_KEY:       ${{ secrets.DM_API_KEY }}
-          DM_API_SECRET:    ${{ secrets.DM_API_SECRET }}
-          DM_USERNAME:      ${{ secrets.DM_USERNAME }}
-          DM_PASSWORD:      ${{ secrets.DM_PASSWORD }}
-          RUMBLE_EMAIL:      ${{ secrets.RUMBLE_EMAIL }}
-          RUMBLE_PASSWORD:   ${{ secrets.RUMBLE_PASSWORD }}
-          FB_PAGE_ID:        ${{ secrets.FB_PAGE_ID }}
-          FB_PAGE_TOKEN:     ${{ secrets.FB_PAGE_TOKEN }}
-          IG_USER_ID:        ${{ secrets.IG_USER_ID }}
-          THREADS_USER_ID:      ${{ secrets.THREADS_USER_ID }}
-          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
-          YT_CLIENT_ID:      ${{ secrets.YT_CLIENT_ID }}
-          YT_CLIENT_SECRET:  ${{ secrets.YT_CLIENT_SECRET }}
-          YT_REFRESH_TOKEN:  ${{ secrets.YT_REFRESH_TOKEN }}
-          GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_API_KEYS:   ${{ secrets.GEMINI_API_KEYS }}
-          GEMINI_JUDGE_API_KEY: ${{ secrets.GEMINI_JUDGE_API_KEY }}
+      - name: Configure Rclone
+        if: always()
         run: |
-          for attempt in 1 2 3; do
-            echo "Publish attempt ${attempt}/3"
-            timeout 12m python run_publish.py && exit 0
-            code=$?
-            echo "Publish attempt ${attempt} failed with exit ${code}"
-            if [ "$attempt" -lt 3 ]; then
-              sleep $((attempt * 60))
-            fi
-          done
-          exit 1
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+
+      - name: Upload Final Video ONLY to Rclone Google Drive
+        if: always()
+        run: |
+          if [ -d output ] && [ -f output/final_short.mp4 ]; then
+            echo "🚀 Uploading final video and metadata to gurination1:yt-auto-outputs..."
+            rclone copy output/final_short.mp4 gurination1:yt-auto-outputs/${{ github.event.repository.name }}-run-${{ github.run_id }}/ --progress
+            rclone copy output/thumbnail.jpg gurination1:yt-auto-outputs/${{ github.event.repository.name }}-run-${{ github.run_id }}/ --progress 2>/dev/null || true
+            rclone copy output/metadata.json gurination1:yt-auto-outputs/${{ github.event.repository.name }}-run-${{ github.run_id }}/ --progress 2>/dev/null || true
+            rclone copy output/script.json gurination1:yt-auto-outputs/${{ github.event.repository.name }}-run-${{ github.run_id }}/ --progress 2>/dev/null || true
+            echo "✅ Rclone upload complete!"
+          else
+            echo "⚠️ No output/final_short.mp4 found to upload."
+          fi
 
       - name: Upload video artifact
         if: always()
