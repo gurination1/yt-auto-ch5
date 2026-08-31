@@ -1262,7 +1262,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                     except Exception: pass
                 os.rename(temp_file, out_path)
                 
-                # Strict Resolution Quality Gate: Reject low-res vintage scans below 720p
+                # Strict Resolution & OCR Burnt-Text Quality Gate: Reject low-res or watermarked clips
                 try:
                     probe_cmd = [
                         "ffprobe", "-v", "error",
@@ -1279,6 +1279,34 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                             try: os.remove(out_path)
                             except Exception: pass
                             return False
+                    
+                    # OCR check: reject foreign burnt-in text, subtitles, or timeline sliders
+                    try:
+                        import cv2, pytesseract
+                        temp_chk = f"output/ocr_chk_{segment_index}.jpg"
+                        cmd_ocr = ["ffmpeg", "-y", "-ss", "00:00:01.5", "-i", out_path, "-vframes", "1", temp_chk]
+                        subprocess.run(cmd_ocr, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+                        if os.path.exists(temp_chk):
+                            oimg = cv2.imread(temp_chk)
+                            if oimg is not None:
+                                oh, ow = oimg.shape[:2]
+                                bot_crop = oimg[int(oh * 0.70):, :]
+                                top_crop = oimg[:int(oh * 0.25), :]
+                                bot_txt = pytesseract.image_to_string(bot_crop).strip()
+                                top_txt = pytesseract.image_to_string(top_crop).strip()
+                                combined_txt = f"{bot_txt} {top_txt}".strip()
+                                words = [w for w in combined_txt.split() if len(w) > 2 and w.isalpha()]
+                                if len(words) >= 2:
+                                    print(f"[B-roll] REJECTED clip with foreign burnt-in text/subtitles ({words}) for segment {segment_index}.")
+                                    try: os.remove(out_path)
+                                    except Exception: pass
+                                    try: os.remove(temp_chk)
+                                    except Exception: pass
+                                    return False
+                            try: os.remove(temp_chk)
+                            except Exception: pass
+                    except Exception:
+                        pass
                 except Exception:
                     pass
                 return True
