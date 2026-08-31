@@ -1585,9 +1585,7 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> fl
         matches = sum(1 for w in query_words if w in text_to_check.lower())
         overlap_score = (matches / len(query_words)) * 30.0
         
-    # YouTube candidates retrieved via YouTube API search are inherently semantically relevant
-    if str(item.get("source", "")).lower() == "youtube":
-        overlap_score += 100.0
+    # Pure merit-based semantic scoring across all sources (no artificial YouTube bonus)
         
     # Negative penalty for watermarked previews, timecode overlays, vlogs, podcasts, reactions
     bad_keywords = [
@@ -1639,13 +1637,14 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> fl
         dur_score = max(0.0, 20.0 - 2.0 * diff)
         
     source_weights = {
-        "pexels": 200.0,
-        "pixabay": 195.0,
-        "coverr": 190.0,
-        "nasa": 180.0,
-        "reddit": 160.0,
-        "dvids": 140.0,
-        "wikimedia": 120.0,
+        "pexels": 220.0,
+        "pixabay": 210.0,
+        "coverr": 200.0,
+        "nasa": 190.0,
+        "dvids": 170.0,
+        "wikimedia": 140.0,
+        "reddit": 100.0,
+        "youtube": 80.0,
         "archive": 10.0,
         "klipy": 20.0
     }
@@ -1771,12 +1770,12 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     queries_to_try = queries_to_try_dedup
 
     CHANNEL_SOURCE_PRIORITY = {
-        "mystery":     ["pexels", "pixabay", "coverr", "reddit", "wikimedia", "dvids"],
+        "mystery":     ["pexels", "pixabay", "coverr", "wikimedia", "reddit"],
         "nature":      ["pexels", "pixabay", "coverr", "wikimedia", "nasa", "reddit"],
-        "science":     ["pexels", "pixabay", "coverr", "nasa", "wikimedia", "reddit"],
-        "engineering": ["pexels", "pixabay", "coverr", "dvids", "wikimedia", "reddit", "nasa"],
+        "science":     ["pexels", "pixabay", "coverr", "nasa", "wikimedia"],
+        "engineering": ["pexels", "pixabay", "coverr", "dvids", "wikimedia", "nasa"],
         "business":    ["pexels", "pixabay", "coverr", "wikimedia"],
-        "general":     ["pexels", "pixabay", "coverr", "nasa", "dvids", "wikimedia", "reddit"],
+        "general":     ["pexels", "pixabay", "coverr", "nasa", "dvids", "wikimedia"],
     }
 
     def run_source_query(source: str, q: str) -> list[dict]:
