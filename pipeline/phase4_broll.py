@@ -1,4 +1,37 @@
 
+def _wikipedia_hd_image(query: str, img_path: str) -> bool:
+    """Fetches the official high-resolution authentic photograph of the entity from Wikipedia/Wikimedia."""
+    try:
+        # Extract core entity nouns
+        words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in [
+            "footage", "real", "authentic", "documentary", "megaproject", "construction", "colossal", "machinery",
+            "what", "inside", "secret", "incredible", "shocking"
+        ]]
+        entity = " ".join(words[:4]) if words else query
+        url = "https://en.wikipedia.org/w/api.php"
+        params = {
+            "action": "query",
+            "titles": entity,
+            "prop": "pageimages",
+            "format": "json",
+            "pithumbsize": 1920
+        }
+        r = requests.get(url, params=params, headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"}, timeout=10)
+        if r.status_code == 200:
+            pages = r.json().get("query", {}).get("pages", {})
+            for pid, pdata in pages.items():
+                thumb = pdata.get("thumbnail", {}).get("source")
+                if thumb:
+                    r_img = requests.get(thumb, headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"}, timeout=15)
+                    if r_img.status_code == 200 and len(r_img.content) > 10_000:
+                        with open(img_path, "wb") as f:
+                            f.write(r_img.content)
+                        print(f"[B-roll] Fetched official Wikipedia HD authentic photo for '{entity}'.")
+                        return True
+    except Exception as e:
+        print(f"[B-roll] Wikipedia HD image fetch note: {e}")
+    return False
+
 def _get_ytdlp_bin() -> list[str]:
     import shutil, sys
     for p in ["/usr/local/bin/yt-dlp", "/mnt/g/yt-auto-fleet/venv/bin/yt-dlp", "/home/manveer2/venv_yt_auto/bin/yt-dlp"]:
@@ -463,26 +496,35 @@ def _nasa_image(query: str) -> str | None:
 
 def _wikipedia_image(query: str) -> str | None:
     """
-    Fetches the Wikipedia article image for the query topic.
-    No API key required. Perfect for named people and well-known concepts.
+    Fetches the Wikipedia official HD article image for the query topic using summary + generator search.
+    No API key required. Perfect for named people, species, megaprojects, and historical events.
     """
+    words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in [
+        "footage", "real", "authentic", "documentary", "megaproject", "construction", "colossal", "machinery",
+        "what", "inside", "secret", "incredible", "shocking", "alps", "subterranean", "disaster", "radiation"
+    ]]
+    clean_q = " ".join(words[:3]) if words else query
     try:
-        title = urllib.parse.quote(query.replace(" ", "_"))
-        r = requests.get(
-            f"https://en.wikipedia.org/api/rest_v1/page/summary/{title}",
-            headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"},
-            timeout=15,
-        )
-        if r.status_code != 200:
-            return None
-        data = r.json()
-        # Prefer full-size original, fall back to thumbnail
-        img = data.get("originalimage", {}).get("source") \
-           or data.get("thumbnail", {}).get("source")
-        return img
+        url = "https://en.wikipedia.org/w/api.php"
+        params = {
+            "action": "query",
+            "generator": "search",
+            "gsrsearch": clean_q,
+            "gsrlimit": "3",
+            "prop": "pageimages",
+            "pithumbsize": 1920,
+            "format": "json"
+        }
+        r = requests.get(url, params=params, headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"}, timeout=10)
+        if r.status_code == 200:
+            pages = r.json().get("query", {}).get("pages", {})
+            for pid, pdata in pages.items():
+                thumb = pdata.get("thumbnail", {}).get("source")
+                if thumb:
+                    return thumb
     except Exception as e:
-        print(f"[B-roll] Wikipedia failed for '{query}': {e}")
-        return None
+        print(f"[B-roll] Wikipedia search image failed for '{query}': {e}")
+    return None
 
 
 def _wikimedia_video(query: str) -> str | None:
@@ -686,12 +728,24 @@ def _archive_candidates(query: str, n: int = 3) -> list[dict]:
             print(f"[B-roll] Archive broader search failed for '{query}': {e}")
             docs = []
 
+    # Strict keyword matching to reject unrelated fiction films
+    query_keywords = [w.lower() for w in query.split() if len(w) > 3 and w.lower() not in [
+        "engineering", "documentary", "footage", "4k", "1080p", "real", "subterranean", "authentic", "close", "megaproject", "machinery"
+    ]]
+
     for doc in docs:
         if len(candidates) >= n:
             break
         identifier = doc.get("identifier")
         title = doc.get("title", "")
         if not identifier:
+            continue
+        title_lower = title.lower()
+        # Strictly reject movies, feature films, TV shows, and dramas
+        if any(bad in title_lower for bad in ["brighter summer day", "feature film", "drama", "episode", "season", "movie", "trailer", "short film"]):
+            continue
+        # Require that the document title actually mentions one of the core topic keywords
+        if query_keywords and not any(kw in title_lower for kw in query_keywords):
             continue
         try:
             r_files = requests.get(
@@ -1265,11 +1319,14 @@ def _image_to_ken_burns_video(img_path: str, out_path: str, w: int, h: int, dura
 
 def _pollinations_image(query: str, img_path: str, w: int = 2160, h: int = 3840) -> bool:
     """Returns True if 4K cinematic stock image was downloaded successfully via Pollinations AI."""
-    clean_q = re.sub(r'[^a-zA-Z0-9\s]', '', query).strip()
+    # Extract only the core 3-4 nouns to avoid overloading URL length
+    words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in [
+        "footage", "real", "authentic", "documentary", "megaproject", "construction", "colossal", "machinery"
+    ]]
+    clean_q = " ".join(words[:4]) if words else query[:30]
     
-    # Request 4K 2160x3840 for crisp Ken Burns panning
     req_w, req_h = (w, h) if (w and h) else (1080, 1920)
-    encoded_prompt = urllib.parse.quote(f"4k cinematic documentary footage of {clean_q}, hyperrealistic, 8k, detailed, photorealistic, no text, no watermark")
+    encoded_prompt = urllib.parse.quote(f"4k cinematic documentary photo of {clean_q}, national geographic photography, hyperrealistic, 8k, highly detailed, photorealistic, no text, no watermark")
     for model in ["flux", "turbo"]:
         try:
             seed = random.randint(1, 100000)
