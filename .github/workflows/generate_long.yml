@@ -29,10 +29,10 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install System Dependencies (FFmpeg, Tesseract OCR, Fonts, Rclone)
+      - name: Install System Dependencies (FFmpeg, Tesseract OCR, Fonts)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends ffmpeg tesseract-ocr tesseract-ocr-eng fonts-dejavu-core fonts-liberation rclone
+          sudo apt-get install -y --no-install-recommends ffmpeg tesseract-ocr tesseract-ocr-eng fonts-dejavu-core fonts-liberation
 
       - name: Install Bebas Neue Font
         run: |
@@ -71,27 +71,28 @@ jobs:
         run: |
           python run_generate.py --format long
 
-      - name: Configure Rclone
-        if: always()
+      - name: Publish to 5 Platforms (YouTube, Dailymotion, Rumble, Meta, Threads)
+        timeout-minutes: 30
         env:
-          RCLONE_CONF_DATA: ${{ secrets.RCLONE_CONFIG }}
+          YT_CLIENT_ID:         ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET:     ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN:     ${{ secrets.YT_REFRESH_TOKEN }}
+          DM_API_KEY:          ${{ secrets.DM_API_KEY }}
+          DM_API_SECRET:       ${{ secrets.DM_API_SECRET }}
+          DM_USERNAME:         ${{ secrets.DM_USERNAME }}
+          DM_PASSWORD:         ${{ secrets.DM_PASSWORD }}
+          RUMBLE_EMAIL:         ${{ secrets.RUMBLE_EMAIL }}
+          RUMBLE_PASSWORD:      ${{ secrets.RUMBLE_PASSWORD }}
+          FB_PAGE_ID:           ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN:        ${{ secrets.FB_PAGE_TOKEN }}
+          IG_USER_ID:           ${{ secrets.IG_USER_ID }}
+          THREADS_USER_ID:      ${{ secrets.THREADS_USER_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          GEMINI_API_KEY:       ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEYS:      ${{ secrets.GEMINI_API_KEYS }}
+          GEMINI_JUDGE_API_KEY: ${{ secrets.GEMINI_JUDGE_API_KEY }}
         run: |
-          mkdir -p ~/.config/rclone
-          printf "%s\n" "$RCLONE_CONF_DATA" > ~/.config/rclone/rclone.conf
-
-      - name: Upload Final Long Video ONLY to Rclone Google Drive
-        if: always()
-        run: |
-          if [ -d output ] && [ -f output/final_long.mp4 ]; then
-            echo "🚀 Uploading final long video and metadata to gurination1:yt-auto-outputs..."
-            rclone copy output/final_long.mp4 gurination1:yt-auto-outputs/${{ github.event.repository.name }}-long-run-${{ github.run_id }}/ --progress
-            rclone copy output/thumbnail.jpg gurination1:yt-auto-outputs/${{ github.event.repository.name }}-long-run-${{ github.run_id }}/ --progress 2>/dev/null || true
-            rclone copy output/metadata.json gurination1:yt-auto-outputs/${{ github.event.repository.name }}-long-run-${{ github.run_id }}/ --progress 2>/dev/null || true
-            rclone copy output/script.json gurination1:yt-auto-outputs/${{ github.event.repository.name }}-long-run-${{ github.run_id }}/ --progress 2>/dev/null || true
-            echo "✅ Rclone upload complete!"
-          else
-            echo "⚠️ No output/final_long.mp4 found to upload."
-          fi
+          python run_publish.py
 
       - name: Upload video artifact
         if: always()

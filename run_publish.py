@@ -168,8 +168,7 @@ def main():
         print(f"⚠️ YouTube upload failed with error: {e}")
         
     if not yt_success:
-        print("❌ YouTube upload failed. Exiting with status 1 to trigger GHA retry.")
-        sys.exit(1)
+        print("⚠️ YouTube upload did not complete. Continuing with other platform uploads...")
         
     # 2. Dailymotion Upload
     try:
