@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How Dean Kamen's Segway, a marvel of engineering launched with unprecedented hype, failed to revolutionize urban transport because it solved no widespread problem, despite its inventor's prior successes.",
     "The art of subtle persuasion: iconic 1950s campaigns that built lasting brand narratives with powerful, yet minimal, messaging.",
     "The DC Scam Strike Force's unprecedented success in freezing over $800 million from international cryptocurrency romance and investment frauds, revealing sophisticated social engineering tactics targeting Americans.",
     "How precise control over a material's **Young's Modulus** at the nanoscale could allow an industry titan to engineer materials with impossible strength-to-weight ratios, dominating sectors from aerospace to construction.",
@@ -89,8 +88,9 @@
     "Gotthard Base Tunnel Subterranean Alps Engineering #523",
     "Gotthard Base Tunnel Subterranean Alps Engineering #650",
     "China's military develops a hypersonic air-to-air weapon, potentially redefining long-range aerial defense and threat projection.",
-    "China's 'Artificial Sun' (EAST) achieves a groundbreaking breakthrough by breaching the Greenwald limit, a critical electron density barrier, significantly advancing the path towards viable nuclear fusion."
+    "China's 'Artificial Sun' (EAST) achieves a groundbreaking breakthrough by breaching the Greenwald limit, a critical electron density barrier, significantly advancing the path towards viable nuclear fusion.",
+    "How the **Casimir Effect** reveals that even a perfect vacuum isn't empty, but seethes with virtual particles that can push physical objects together."
   ],
-  "subcluster_idx": 6,
-  "call_count": 173
+  "subcluster_idx": 2,
+  "call_count": 174
 }
