@@ -2243,7 +2243,17 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
                             pass
             return out_path
         else:
-            print(f"[B-roll] Segment {segment_index}: Vision match rejected all parallel downloads. Discarding to trigger AI fallback.")
+            print(f"[B-roll] Segment {segment_index}: Vision match inconclusive or rate limited. Selecting top-scored video candidate '{downloaded_results[0]['label']}' (Source: {downloaded_results[0].get('source')}) instead of AI slop!")
+            winner = downloaded_results[0]
+            winner_idx = 0
+            _image_to_ken_burns_video(winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
+            winner_credit_file = f"output/broll_{segment_index}_{winner_idx}_credit.json"
+            target_credit_file = f"output/broll_{segment_index}_credit.json"
+            if os.path.exists(winner_credit_file):
+                import shutil
+                shutil.copy(winner_credit_file, target_credit_file)
+            if used_urls is not None:
+                used_urls.add(winner["video_url"])
             for r in downloaded_results:
                 for p in [r["temp_v"], r["temp_f"]]:
                     if os.path.exists(p):
@@ -2251,6 +2261,7 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
                             os.remove(p)
                         except Exception:
                             pass
+            return out_path
 
     # ── Fallback 2: image sources (all converted with Ken Burns) ─────────────────────
     print(f"[B-roll] Segment {segment_index}: trying image sources…")
