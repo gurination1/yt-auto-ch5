@@ -33,10 +33,10 @@ def generate_script(topic: dict, format_type: str) -> dict:
         
         hook_pattern = random.choice(HOOK_PATTERNS)
         hook_formatted = hook_pattern.format(
-            subject=topic.get("topic", "science"),
-            thing=topic.get("topic", "science"),
+            subject=topic.get("topic", "engineering"),
+            thing=topic.get("topic", "engineering"),
             seconds="30",
-            topic=topic.get("topic", "science"),
+            topic=topic.get("topic", "engineering"),
             event="A discovery"
         )
         lang_instruction = ""
@@ -125,7 +125,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
   "title": "A catchy title under 40 chars, starting with a hook word/number and containing one emoji",
   "voiceover_plan": "A 2-3 sentence internal plan detailing the emotional arc of the voiceover. How should the narrator sound? Think step-by-step to plan the performance before writing.",
   "vocal_tone": "Select the single best vocal delivery style for this topic. Choose EXACTLY ONE from this list: 'dramatic_whisper' (best for secrets, hidden info, suppressed history), 'suspenseful_mystery' (best for crimes, conspiracies, unsolved puzzles), 'energetic_storytelling' (best for science breakthroughs, viral tech, amazing facts), 'deep_curiosity' (best for space, nature, philosophy, the unknown), 'bold_authority' (best for business, finance, economics, power dynamics), 'warm_storyteller' (best for human interest, culture, social stories), 'dark_revelation' (best for scandals, cover-ups, disturbing truths), 'playful_wit' (best for funny/ironic history, absurd facts, counter-intuitive discoveries). Match the tone to the emotional core of the topic.",
-  "description": "Line1: restate the hook\nLine2: Fast. Accurate. Mind-blowing.\nLine3: 📲 Follow our socials & links -> {BEACONS_LINK}\n\n#science #didyouknow #facts",
+  "description": "Line1: restate the hook\nLine2: Fast. Accurate. Mind-blowing.\nLine3: 📲 Follow our socials & links -> {BEACONS_LINK}\n\n#engineering #megaprojects #construction #machinery #civilengineering #didyouknow",
   "tags": ["8 to 12 relevant tags under 500 characters total"],
   "category_id": "27",
   "segments": [
@@ -300,7 +300,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
             elif any(w in lower_subj for w in ["mystery", "enigma", "unexplained", "strange", "anomaly", "alien", "ufo", "disappearance"]):
                 niche = "mystery"
             else:
-                niche = "science"
+                niche = "engineering"
 
         if niche == "engineering":
             script = {
@@ -468,7 +468,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
                 "voiceover_plan": "Deliver fast, energetic scientific narration.",
                 "vocal_tone": "deep_curiosity",
                 "description": f"The mind-blowing physics behind {entity_name}.\n\n#science #physics #technology",
-                "tags": ["science", "physics", "technology", "quantum", "universe", "didyouknow"],
+                "tags": ["engineering", "physics", "technology", "quantum", "universe", "didyouknow"],
                 "category_id": "28",
                 "segments": [
                     {

@@ -154,4 +154,10 @@ BEACONS_LINK = os.environ.get("BEACONS_LINK", "https://beacons.ai/edu_fun")
 NATURAL_WORLD_SUBCLUSTERS = SCIENCE_SUBCLUSTERS
 HISTORY_SUBCLUSTERS = SCIENCE_SUBCLUSTERS
 MYSTERY_SUBCLUSTERS = SCIENCE_SUBCLUSTERS
-ENGINEERING_SUBCLUSTERS = SCIENCE_SUBCLUSTERS
+ENGINEERING_SUBCLUSTERS = [
+    "colossal subsea tunnels and deep oceanic bridges",
+    "massive mega-dams and extreme hydraulic engineering",
+    "gigantic mining excavators and heavy industrial machinery",
+    "aerospace marvels and hypersonic transport systems",
+    "supertall skyscraper wind dampening and seismic engineering"
+]

@@ -309,7 +309,7 @@ def main():
 
         print("[Phase 8] Generating thumbnail...")
         thumb_text = script.get("thumbnail_text") or script.get("title") or "SECRET REVEALED"
-        thumbnail = phase8.generate_thumbnail(final_video, thumb_text, topic_prompt=script.get("title", ""))
+        thumbnail = phase8.generate_thumbnail(final_video, thumb_text, topic_prompt=script.get("title", ""), channel=channel_niche)
         
         # Append footage credits to description if footage_credits.json exists
         description_text = script["description"]
