@@ -33,10 +33,10 @@ def generate_script(topic: dict, format_type: str) -> dict:
         
         hook_pattern = random.choice(HOOK_PATTERNS)
         hook_formatted = hook_pattern.format(
-            subject=topic.get("topic", "engineering"),
-            thing=topic.get("topic", "engineering"),
+            subject=topic.get("topic", "science"),
+            thing=topic.get("topic", "science"),
             seconds="30",
-            topic=topic.get("topic", "engineering"),
+            topic=topic.get("topic", "science"),
             event="A discovery"
         )
         lang_instruction = ""
@@ -84,49 +84,25 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
   * TEXT OVERLAYS THAT REINFORCE, NOT REPEAT: Use text for key terms, surprising numbers, simple diagrams, or summary sentences. Do not transcribe verbatim.
   * CONTINUOUS CURIOSITY LOOP: Every 2-3 segments, give a new reason to stay with a new question (e.g., "But here's where it gets interesting...").
 
-For every `broll_query` field, write a SHORT, SPECIFIC, STOCK-FOOTAGE-FRIENDLY
-search term of 1-3 CONCRETE PHYSICAL NOUNS MAXIMUM (e.g., "water pipes", "ancient scroll", "mummy coffin", "sea sponges", "gold jewelry").
-Write exactly what a human would type into a stock video search bar. Use concrete nouns and visual objects — NOT instructions, verbs, or descriptions of what you want.
+- MANDATORY AUTHENTIC DOCUMENTARY SOURCING (ZERO AI SLOP / ZERO GENERIC STOCK):
+  * FORBIDDEN: Generic stock proxies, abstract glowing backgrounds, floating particles, CGI animations, generic office workers, or decorative filler (do NOT write 'abstract science background', 'glowing particles', 'blue fluid dynamics', 'futuristic concept').
+  * REQUIRED: Target the EXACT real-world documentary subject, scientific apparatus, historical artifact, living species binomial, or institutional archive:
+    - Specific Missions & Facilities: "James Webb NIRCam deep field", "Apollo 11 Saturn V staging", "CERN LHC beam pipe vacuum chamber", "Cold Atom Lab ISS quantum physics", "Gotthard Base Tunnel boring machine cutter"
+    - Exact Biological & Field Entities: "coelacanth Latimeria chalumnae underwater", "sperm whale spermaceti organ dive", "pistol shrimp snapping claw macro", "deep sea anglerfish bioluminescence"
+    - Authentic Historical Artifacts & Patents: "Antikythera mechanism bronze gear", "Byzantine Greek fire siphon dragon", "Archimedes claw syracuse crane", "Dead Sea scroll parchment Hebrew"
+    - Real Laboratory Apparatus & Scans: "scanning electron microscope crystal lattice", "cryogenic dilution refrigerator copper coils", "laser optical table beam splitter", "fluorescent cell mitosis petri dish"
+  * SYNTAX: [Specific Domain / Specimen / Mission] + [Physical Material / Mechanism] + [Authentic Optical State]
 
-CRITICAL BROLL QUERY RULES:
-- EVERY segment's broll_query MUST directly represent the exact physical subject mentioned in THAT SPECIFIC segment's narration line!
-- STRICT CONCRETE PHYSICAL TRANSLATION GRAMMAR:
-  * ZERO METAPHOR POLICY: NEVER use conceptual proxies or visual metaphors (e.g. FORBIDDEN: 'car crash', 'space fabric stretching', 'climate change graph', 'tweet screenshot', 'domino effect', 'ticking clock', 'lightbulb', 'car crash test dummy', 'graph acceleration').
-  * MANDATORY CONCRETE PHYSICAL MATTER: Translate abstract concepts into real physical matter, documentary artifacts, field specimens, or scientific instruments:
-    - Economy / Market Crash -> "wall street exchange trading floor panic", "stock ticker red screen trading floor", "bank vault gold bars"
-    - Spacetime / Dark Energy -> "hubble deep field galaxy cluster", "supernova explosion space telescope", "james webb space telescope nebula"
-    - Siege / Bone Injury -> "archaeology excavated skeleton femur", "medieval catapult siege wall impact", "ancient skull bone fracture"
-    - Social Media / Online News -> "press conference microphone podium", "broadcast television studio cameras", "smartphone news feed scrolling"
-    - Biology / Brain Organoids -> "electron microscope neuron synapse fluorescence", "petri dish cell culture laboratory", "microchip silicon wafer cleanroom"
-    - Climate / Nature Warming -> "ancient glacier ice core drilling", "wilted forest tree canopy aerial", "desert drought cracked earth"
-  * SYNTAX: [Physical Locale / Domain] + [Concrete Material Object] + [Observable Optical State]
-- MUST be 1-4 concrete physical nouns without meta-adjectives ('animated', 'concept', 'visualization', 'defect', 'dramatic', 'illustration').
-- Write queries that represent real physical footage found in stock video libraries or documentary archives.
+For each segment, provide a `broll_queries` array with 3-5 ALTERNATIVE hyper-specific search queries targeting real footage and institutional archives. The first entry must match `broll_query`.
 
-CORRECT examples: "Stephen Hawking wheelchair", "DNA double helix",
-"quantum computer chip", "black hole space", "astronaut spacewalk",
-"brain neurons firing", "atom particle collider", "coral reef fish"
-
-WRONG examples: "visually jarring close-up of the topic", "macro b-roll of scientific
-element", "closing beautiful shot returning to start", "diagram concept visualization",
-"animated gate valve defect", "ancient scroll unraveling dramatic", "cross section stuck"
-
-IMPORTANT B-ROLL RULES:
-- Stock video sites DO NOT HAVE specific molecules or rare deep-sea fish by name.
-- For chemicals or proteins, use terms like "abstract science background", "microscope biology animation", "glowing particles", or "fluid dynamics".
-- NEVER use the word "chemical" alone, as stock sites return industrial factories and smokestacks instead of biology. Use "chemistry laboratory" or "liquid mixture".
-
-For each segment, also provide a `broll_queries` array with 3-5 ALTERNATIVE search terms for the same visual concept. These should be synonyms, related concepts, or different angles on the same subject. The first entry should match `broll_query`.
-
-For any named person (scientist, historical figure): ALWAYS include their name in the query.
-For abstract science concepts: use the most recognizable visual symbol.
+For any named person, scientist, or historic figure: ALWAYS include their exact full name.
 
 You MUST return your response ONLY as a raw JSON object with no markdown syntax. The JSON structure MUST be exactly like this:
 {{
   "title": "A catchy title under 40 chars, starting with a hook word/number and containing one emoji",
   "voiceover_plan": "A 2-3 sentence internal plan detailing the emotional arc of the voiceover. How should the narrator sound? Think step-by-step to plan the performance before writing.",
   "vocal_tone": "Select the single best vocal delivery style for this topic. Choose EXACTLY ONE from this list: 'dramatic_whisper' (best for secrets, hidden info, suppressed history), 'suspenseful_mystery' (best for crimes, conspiracies, unsolved puzzles), 'energetic_storytelling' (best for science breakthroughs, viral tech, amazing facts), 'deep_curiosity' (best for space, nature, philosophy, the unknown), 'bold_authority' (best for business, finance, economics, power dynamics), 'warm_storyteller' (best for human interest, culture, social stories), 'dark_revelation' (best for scandals, cover-ups, disturbing truths), 'playful_wit' (best for funny/ironic history, absurd facts, counter-intuitive discoveries). Match the tone to the emotional core of the topic.",
-  "description": "Line1: restate the hook\nLine2: Fast. Accurate. Mind-blowing.\nLine3: 📲 Follow our socials & links -> {BEACONS_LINK}\n\n#engineering #megaprojects #construction #machinery #civilengineering #didyouknow",
+  "description": "Line1: restate the hook\nLine2: Fast. Accurate. Mind-blowing.\nLine3: 📲 Follow our socials & links -> {BEACONS_LINK}\n\n#science #didyouknow #facts",
   "tags": ["8 to 12 relevant tags under 500 characters total"],
   "category_id": "27",
   "segments": [
@@ -226,17 +202,13 @@ CORRECT examples: "Stephen Hawking wheelchair smiling", "DNA double helix blue",
 
 WRONG examples: "visually jarring close-up of the topic", "macro b-roll of scientific
 element", "closing beautiful shot returning to start", "diagram concept visualization",
-"TMAO molecular structure" (too specific for stock footage), "chemical" (too ambiguous, returns factories)
+- MANDATORY AUTHENTIC DOCUMENTARY SOURCING (ZERO AI SLOP / ZERO GENERIC STOCK):
+  * Target real physical objects, named historical missions, scientific apparatus, species binomials, or archival footage.
+  * FORBIDDEN: 'abstract science background', 'glowing particles', 'blue fluid dynamics', or generic stock models.
 
-IMPORTANT B-ROLL RULES:
-- Stock video sites DO NOT HAVE specific molecules or rare deep-sea fish by name.
-- For chemicals or proteins, use terms like "abstract science background", "microscope biology animation", "glowing particles", or "fluid dynamics".
-- NEVER use the word "chemical" alone, as stock sites return industrial factories and smokestacks instead of biology. Use "chemistry laboratory" or "liquid mixture".
+For each segment, provide a `broll_queries` array with 3-5 ALTERNATIVE hyper-specific search queries targeting real footage and institutional archives. The first entry must match `broll_query`.
 
-For each segment, also provide a `broll_queries` array with 3-5 ALTERNATIVE search terms for the same visual concept. These should be synonyms, related concepts, or different angles on the same subject. The first entry should match `broll_query`.
-
-For any named person (scientist, historical figure): ALWAYS include their name in the query.
-For abstract science concepts: use the most recognizable visual symbol.
+For any named person, scientist, or historic figure: ALWAYS include their exact full name.
 
 You MUST return your response ONLY as a raw JSON object with no markdown syntax. The JSON structure MUST be exactly like this:
 {{
@@ -301,7 +273,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
             elif any(w in lower_subj for w in ["mystery", "enigma", "unexplained", "strange", "anomaly", "alien", "ufo", "disappearance"]):
                 niche = "mystery"
             else:
-                niche = "engineering"
+                niche = "science"
 
         if niche == "engineering":
             script = {
@@ -469,7 +441,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
                 "voiceover_plan": "Deliver fast, energetic scientific narration.",
                 "vocal_tone": "deep_curiosity",
                 "description": f"The mind-blowing physics behind {entity_name}.\n\n#science #physics #technology",
-                "tags": ["engineering", "physics", "technology", "quantum", "universe", "didyouknow"],
+                "tags": ["science", "physics", "technology", "quantum", "universe", "didyouknow"],
                 "category_id": "28",
                 "segments": [
                     {

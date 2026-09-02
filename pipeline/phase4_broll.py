@@ -1665,19 +1665,20 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> fl
         dur_score = max(0.0, 20.0 - 2.0 * diff)
         
     source_weights = {
-        "pexels": 220.0,
-        "pixabay": 210.0,
-        "coverr": 200.0,
-        "nasa": 190.0,
-        "dvids": 170.0,
-        "wikimedia": 140.0,
-        "reddit": 100.0,
-        "youtube": 80.0,
-        "archive": 10.0,
-        "klipy": 20.0
+        "nasa": 260.0,
+        "wikimedia": 250.0,
+        "archive": 240.0,
+        "dvids": 230.0,
+        "wikipedia": 220.0,
+        "reddit": 180.0,
+        "youtube": 160.0,
+        "pexels": 90.0,
+        "pixabay": 80.0,
+        "coverr": 70.0,
+        "klipy": 30.0
     }
     source_lower = str(item.get("source", "")).lower()
-    source_score = source_weights.get(source_lower, 10.0)
+    source_score = source_weights.get(source_lower, 50.0)
     
     # Extra Fair Use bonus if YouTube candidate has verified uploader handle for attribution
     if source_lower == "youtube" and item.get("uploader_handle"):
@@ -1804,12 +1805,12 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     queries_to_try = queries_to_try_dedup
 
     CHANNEL_SOURCE_PRIORITY = {
-        "mystery":     ["pexels", "pixabay", "coverr", "wikimedia", "reddit"],
-        "nature":      ["pexels", "pixabay", "coverr", "wikimedia", "nasa", "reddit"],
-        "science":     ["pexels", "pixabay", "coverr", "nasa", "wikimedia"],
-        "engineering": ["pexels", "pixabay", "coverr", "dvids", "wikimedia", "nasa"],
-        "business":    ["pexels", "pixabay", "coverr", "wikimedia"],
-        "general":     ["pexels", "pixabay", "coverr", "nasa", "dvids", "wikimedia"],
+        "mystery":     ["wikimedia", "archive", "reddit", "youtube", "pexels", "pixabay", "coverr"],
+        "nature":      ["wikimedia", "nasa", "reddit", "youtube", "pexels", "pixabay", "coverr"],
+        "science":     ["nasa", "wikimedia", "archive", "reddit", "youtube", "pexels", "pixabay", "coverr"],
+        "engineering": ["dvids", "wikimedia", "nasa", "archive", "reddit", "youtube", "pexels", "pixabay", "coverr"],
+        "business":    ["archive", "wikimedia", "youtube", "pexels", "pixabay", "coverr"],
+        "general":     ["nasa", "wikimedia", "archive", "dvids", "reddit", "youtube", "pexels", "pixabay", "coverr"],
     }
 
     def run_source_query(source: str, q: str) -> list[dict]:
@@ -1926,7 +1927,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
     # Round-robin interleave from distinct platforms to guarantee multi-source coverage
     interleaved_candidates = []
-    source_priority_order = ["pexels", "pixabay", "coverr", "nasa", "dvids", "wikimedia", "reddit"]
+    source_priority_order = ["nasa", "wikimedia", "archive", "dvids", "reddit", "youtube", "pexels", "pixabay", "coverr"]
     for sp in source_priority_order:
         if sp in platform_buckets and platform_buckets[sp]:
             interleaved_candidates.append(platform_buckets[sp].pop(0))
