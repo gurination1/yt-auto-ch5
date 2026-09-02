@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 80
     env:
       PYTHONUNBUFFERED: "1"
-      CHANNEL_NICHE: "engineering"
+      CHANNEL_NICHE: "science"
       BROLL_SEGMENT_BUDGET_SECONDS: "120"
       JUDGE_MAX_ATTEMPTS: "6"
 
@@ -108,6 +108,22 @@ jobs:
             output/topic.json
             output/script.json
           retention-days: 7
+
+      - name: Upload to Rclone Cloud Drive
+        if: always()
+        env:
+          RCLONE_CONFIG_DATA: ${{ secrets.RCLONE_CONFIG }}
+        run: |
+          if [ -n "$RCLONE_CONFIG_DATA" ]; then
+            sudo apt-get install -y rclone
+            mkdir -p ~/.config/rclone
+            echo "$RCLONE_CONFIG_DATA" > ~/.config/rclone/rclone.conf
+            REMOTE=$(rclone listremotes | head -n 1)
+            if [ -n "$REMOTE" ]; then
+              echo "Uploading generated output to ${REMOTE}yt-auto-builds/${{ github.run_id }}/..."
+              rclone copy output/ "${REMOTE}yt-auto-builds/${{ github.run_id }}/" -v || true
+            fi
+          fi
 
       - name: Commit state files
         if: always()
