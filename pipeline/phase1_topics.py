@@ -79,11 +79,11 @@ Each object must have exactly these fields:
         import random, time
         rand_id = int(time.time()) % 1000
         diverse_eng_topics = [
-            {"topic": f"Gotthard Base Tunnel Alpine Boring Machine #{rand_id}", "short_hook": "World longest tunnel drilled 57km through solid granite.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "underground megastructures, subterranean tunnels and mining machines"},
-            {"topic": f"Bagger 293 Giant Mining Excavator Mechanics #{rand_id+1}", "short_hook": "Heaviest terrestrial vehicle weighs 14,000 metric tons.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "extreme heavy machinery and industrial titans"},
-            {"topic": f"Three Gorges Dam Hydrological Structural Resistance #{rand_id+2}", "short_hook": "Mega dam holds 40 billion cubic meters of water.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "extreme mega-bridges, oceanic dams and offshore platforms"},
-            {"topic": f"Channel Tunnel Underwater Subsea Tunneling #{rand_id+3}", "short_hook": "Engineers connected Britain and France 50 meters under sea.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "underground megastructures, subterranean tunnels and mining machines"},
-            {"topic": f"Burj Khalifa Vortex Shedding Structural Engineering #{rand_id+4}", "short_hook": "How world tallest skyscraper confuses supersonic desert wind.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "modern mega-skyscrapers and aerodynamic architectural feats"}
+            {"topic": f"Gotthard Base Tunnel Alpine Boring Machine", "short_hook": "World longest tunnel drilled 57km through solid granite.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "underground megastructures, subterranean tunnels and mining machines"},
+            {"topic": f"Bagger 293 Giant Mining Excavator Mechanics", "short_hook": "Heaviest terrestrial vehicle weighs 14,000 metric tons.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "extreme heavy machinery and industrial titans"},
+            {"topic": f"Three Gorges Dam Hydrological Structural Resistance", "short_hook": "Mega dam holds 40 billion cubic meters of water.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "extreme mega-bridges, oceanic dams and offshore platforms"},
+            {"topic": f"Channel Tunnel Underwater Subsea Tunneling", "short_hook": "Engineers connected Britain and France 50 meters under sea.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "underground megastructures, subterranean tunnels and mining machines"},
+            {"topic": f"Burj Khalifa Vortex Shedding Structural Engineering", "short_hook": "How world tallest skyscraper confuses supersonic desert wind.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "modern mega-skyscrapers and aerodynamic architectural feats"}
         ]
         random.shuffle(diverse_eng_topics)
         topics_list = diverse_eng_topics
