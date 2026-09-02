@@ -77,6 +77,7 @@ jobs:
           YT_CLIENT_ID:         ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET:     ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN:     ${{ secrets.YT_REFRESH_TOKEN }}
+          UPLOAD_PRIVACY:       "public"
           DM_API_KEY:          ${{ secrets.DM_API_KEY }}
           DM_API_SECRET:       ${{ secrets.DM_API_SECRET }}
           DM_USERNAME:         ${{ secrets.DM_USERNAME }}

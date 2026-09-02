@@ -45,7 +45,7 @@ def upload_to_youtube(video_path: str, thumbnail_path: str, metadata: dict) -> s
     category_id = metadata.get("category_id", "27")
     
     status_body = {
-        "privacyStatus":          os.environ.get("UPLOAD_PRIVACY", "private"),         # Upload as public for immediate views
+        "privacyStatus":          os.environ.get("UPLOAD_PRIVACY", "public"),         # Upload as public for immediate views
         "selfDeclaredMadeForKids": False,
         "madeForKids":            False,
         "containsSyntheticMedia": True,             # MANDATORY — May 2026 YouTube policy
