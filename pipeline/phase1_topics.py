@@ -24,7 +24,7 @@ def select_topic(format_type: str) -> dict:
 
     # ── 2. Determine subcluster + evergreen vs trending ──────────────────────
     current_subcluster = ENGINEERING_SUBCLUSTERS[subcluster_idx % len(ENGINEERING_SUBCLUSTERS)]
-    is_trending = (call_count % 3 != 0)   # 2 out of 3 calls = trending topic
+    is_trending = (call_count % 3 != 0)
 
     if is_trending:
         topic_instruction = (
@@ -37,7 +37,7 @@ def select_topic(format_type: str) -> dict:
             f"Generate 5 EVERGREEN topics about {current_subcluster}. "
             f"Each must reveal a bizarre, counterintuitive, or little-known fact "
             f"that educated adults don't know. Frame as 'What if X happened' or 'How Y actually works'. "
-            f"Every topic MUST name a specific mechanism, theory, machine, structure, or phenomenon — "
+            f"Every topic MUST name a specific mechanism, animal power, hunting behavior, or biological adaptation — "
             f"NOT a vague 'scientists are surprised' hook."
         )
 
@@ -53,10 +53,10 @@ SAFETY & COMPLIANCE CONSTRAINTS (MANDATORY):
 - The topics MUST be 100% advertiser-friendly, family-friendly, and compliant with YouTube/Meta community guidelines.
 - Strictly AVOID: medical advice, health/cure claims, Covid-19/vaccine/epidemic speculation, dangerous stunts/activities, illegal substances, or weapons.
 - Avoid political controversies, conspiracy theories, or tragic/graphic events.
-- Focus on educational, curious, and inspiring scientific information.
+- Focus on educational, curious, and inspiring wildlife and natural science information.
 
-AVOID: Stock market finance, crypto trading, retail business models, biology/animals, ancient history pharaohs, quantum physics math.
-FOCUS: Megaprojects, extreme civil and mechanical engineering, subsea tunnels, super-bridges, colossal machines, aerospace marvels, mega-dams, hypersonic transport, skyscraper wind engineering.
+AVOID: Theoretical quantum physics, Casimir effect, particle cosmology, black holes, animal biology, ancient history.
+FOCUS: Modern megaprojects, mega-structures, massive tunnel boring machines, deep-sea subsea cables, high-speed rail networks, colossal dams, extreme heavy machinery.
 
 Return ONLY a raw JSON array of objects. No markdown, no preamble.
 Each object must have exactly these fields:
@@ -72,15 +72,11 @@ Each object must have exactly these fields:
     try:
         response_text = client.generate_text(prompt, use_grounding=is_trending, temperature=0.75)
         topics_list = _robust_json_loads(response_text)
-        if not isinstance(topics_list, list):
-            raise ValueError("Response is not a JSON list")
-        if not topics_list:
-            raise ValueError("Response is an empty list")
+        if not isinstance(topics_list, list) or not topics_list:
+            raise ValueError("Response is not a valid non-empty JSON list")
     except Exception as e:
         print(f"[Phase1] Error fetching or parsing topics from Gemini: {e}")
         import random, time
-        rand_id = int(time.time()) % 1000
-                import random, time
         rand_id = int(time.time()) % 1000
         diverse_eng_topics = [
             {"topic": f"Gotthard Base Tunnel Alpine Boring Machine #{rand_id}", "short_hook": "World longest tunnel drilled 57km through solid granite.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "underground megastructures, subterranean tunnels and mining machines"},
@@ -89,8 +85,8 @@ Each object must have exactly these fields:
             {"topic": f"Channel Tunnel Underwater Subsea Tunneling #{rand_id+3}", "short_hook": "Engineers connected Britain and France 50 meters under sea.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "underground megastructures, subterranean tunnels and mining machines"},
             {"topic": f"Burj Khalifa Vortex Shedding Structural Engineering #{rand_id+4}", "short_hook": "How world tallest skyscraper confuses supersonic desert wind.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "modern mega-skyscrapers and aerodynamic architectural feats"}
         ]
-        random.shuffle(diverse_eng_fallbacks)
-        topics_list = diverse_eng_fallbacks
+        random.shuffle(diverse_eng_topics)
+        topics_list = diverse_eng_topics
 
     # ── 4. Pick first topic matching format_type and not a duplicate ─────────
     import re
@@ -145,9 +141,7 @@ Each object must have exactly these fields:
         except Exception as e:
             print(f"Error parsing retried topics: {e}")
 
-    # Fallback to first generated if no non-duplicate found
     if not selected_topic:
-        print("[Phase1] Warning: Could not generate a completely non-duplicate topic. Using first available as fallback.")
         for item in topics_list:
             if item.get("for_format", "both") in (format_type, "both"):
                 selected_topic = item
@@ -155,7 +149,6 @@ Each object must have exactly these fields:
         if not selected_topic:
             selected_topic = topics_list[0]
             selected_topic["for_format"] = format_type
-
 
     print(f"[Phase1] Selected: {selected_topic['topic']}")
 
