@@ -60,7 +60,7 @@ FOCUS: Megaprojects, extreme civil and mechanical engineering, subsea tunnels, s
 
 Return ONLY a raw JSON array of objects. No markdown, no preamble.
 Each object must have exactly these fields:
-- "topic": specific subject with a named fact, theory, or mechanism (e.g. "Quantum entanglement enables faster than light simulation without moving particles")
+- "topic": specific subject with a named fact, theory, or mechanism (e.g. "Gotthard Base Tunnel boring machines drilled 57 kilometers through solid Alpine granite")
 - "short_hook": opening question or statement, 8 words or less, creates a strong information gap
 - "hook_type": one of "curiosity_gap", "contrarian", "time_pressure", "self_identification", "narrative_pull"
 - "for_format": "short", "long", or "both"
@@ -80,13 +80,17 @@ Each object must have exactly these fields:
         print(f"[Phase1] Error fetching or parsing topics from Gemini: {e}")
         import random, time
         rand_id = int(time.time()) % 1000
-        topics_list = [
-            {"topic": f"Gotthard Base Tunnel Subterranean Alps Engineering #{rand_id}", "short_hook": "World's deepest railway tunnel carved through Alps.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": current_subcluster},
-            {"topic": f"Burj Khalifa Tuned Mass Damper Wind Engineering #{rand_id+1}", "short_hook": "How tallest skyscraper survives category 5 winds.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": current_subcluster},
-            {"topic": f"Danyang-Kunshan Grand Bridge High Speed Rail Engineering #{rand_id+2}", "short_hook": "World's longest bridge spans one hundred miles.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": current_subcluster},
-            {"topic": f"Bagger 288 Colossal Bucket-Wheel Excavator #{rand_id+3}", "short_hook": "Heaviest land vehicle on Earth digs mountains.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": current_subcluster},
-            {"topic": f"Three Gorges Dam Hydropower Civil Engineering #{rand_id+4}", "short_hook": "Mega-dam so massive it slows Earth's rotation.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": current_subcluster}
+                import random, time
+        rand_id = int(time.time()) % 1000
+        diverse_eng_topics = [
+            {"topic": f"Gotthard Base Tunnel Alpine Boring Machine #{rand_id}", "short_hook": "World longest tunnel drilled 57km through solid granite.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "underground megastructures, subterranean tunnels and mining machines"},
+            {"topic": f"Bagger 293 Giant Mining Excavator Mechanics #{rand_id+1}", "short_hook": "Heaviest terrestrial vehicle weighs 14,000 metric tons.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "extreme heavy machinery and industrial titans"},
+            {"topic": f"Three Gorges Dam Hydrological Structural Resistance #{rand_id+2}", "short_hook": "Mega dam holds 40 billion cubic meters of water.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "extreme mega-bridges, oceanic dams and offshore platforms"},
+            {"topic": f"Channel Tunnel Underwater Subsea Tunneling #{rand_id+3}", "short_hook": "Engineers connected Britain and France 50 meters under sea.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "underground megastructures, subterranean tunnels and mining machines"},
+            {"topic": f"Burj Khalifa Vortex Shedding Structural Engineering #{rand_id+4}", "short_hook": "How world tallest skyscraper confuses supersonic desert wind.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "modern mega-skyscrapers and aerodynamic architectural feats"}
         ]
+        random.shuffle(diverse_eng_fallbacks)
+        topics_list = diverse_eng_fallbacks
 
     # ── 4. Pick first topic matching format_type and not a duplicate ─────────
     import re

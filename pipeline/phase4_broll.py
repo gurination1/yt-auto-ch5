@@ -2103,7 +2103,7 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
                     "gettyimages", "videohive", "pond5", "envato", "rights reserved", "all rights",
                     "copyright", "subscribe", "no copyright", "stock footage", "preview",
                     "recommendatory", "disclaimer", "investment", "subject to", "terms",
-                    "upstox", "paytm", "zerodha", "groww", "download", "crystal maze"
+                    "upstox", "paytm", "zerodha", "groww", "download", "crystal maze", "nasa.gov", "press release", "public affairs", "media contact", "phone", "telecom", "www.", ".gov", ".com", "lift and load"
                 ]
                 if any(wm in full_text for wm in watermark_words):
                     if os.path.exists(tmp_full_path):
