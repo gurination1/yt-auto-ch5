@@ -4,12 +4,72 @@ import soundfile as sf
 import subprocess
 from typing import List, Dict, Any
 
+# 2026 Niche-Adaptive Typography Profiles
+NICHE_PRESETS = {
+    "science": {
+        "font_name": "Bebas Neue",
+        "font_size_short": 96,
+        "c_base": "&H00FFFFFF&",
+        "c_active": "&H00FFE500&",     # Electric Cyan (BGR: 00 E5 FF)
+        "c_power": "&H000088FF&",      # Neon Orange (BGR: FF 88 00)
+        "outline_w": 9,
+        "shadow_d": 3,
+        "blur": 1,
+        "margin_v": 440
+    },
+    "nature": {
+        "font_name": "Bebas Neue",
+        "font_size_short": 96,
+        "c_base": "&H00FFFFFF&",
+        "c_active": "&H0000E6FF&",     # Golden Sun (BGR: FF E6 00)
+        "c_power": "&H0066FF00&",      # Toxic Lime (BGR: 00 FF 66)
+        "outline_w": 10,
+        "shadow_d": 3,
+        "blur": 0,
+        "margin_v": 440
+    },
+    "history": {
+        "font_name": "Bebas Neue",
+        "font_size_short": 94,
+        "c_base": "&H00F4E8C1&",     # Antique Parchment
+        "c_active": "&H0087C6E6&",   # Burnished Gold (BGR: E6 C6 87)
+        "c_power": "&H000000CC&",    # Imperial Crimson
+        "outline_w": 8,
+        "shadow_d": 4,
+        "blur": 2,
+        "margin_v": 440
+    },
+    "mystery": {
+        "font_name": "Bebas Neue",
+        "font_size_short": 96,
+        "c_base": "&H00E0E0E0&",
+        "c_active": "&H0000FFDF&",   # Acid Neon Yellow (BGR: DF FF 00)
+        "c_power": "&H00FF009D&",    # Ultraviolet Purple (BGR: 9D 00 FF)
+        "outline_w": 10,
+        "shadow_d": 4,
+        "blur": 1,
+        "margin_v": 440
+    },
+    "engineering": {
+        "font_name": "Bebas Neue",
+        "font_size_short": 96,
+        "c_base": "&H00FFFFFF&",
+        "c_active": "&H000088FF&",   # Safety Neon Orange (BGR: FF 88 00)
+        "c_power": "&H00FFE500&",    # Blueprint Cyan (BGR: 00 E5 FF)
+        "outline_w": 9,
+        "shadow_d": 3,
+        "blur": 0,
+        "margin_v": 440
+    }
+}
+
 POWER_WORDS = {
     "TRUTH", "SECRET", "SHOCKING", "DANGEROUS", "CRITICAL", "BRUTAL", "SURPRISING",
     "REVEALED", "WARNING", "CAUTION", "ACCIDENT", "CRASH", "SAFE", "SAFETY",
     "IMPOSSIBLE", "MYSTERY", "KILL", "DIED", "ALIVE", "DEATH", "BANNED",
     "PROVEN", "HIDDEN", "DESTROYED", "BREAKTHROUGH", "DISCOVERY", "UNCOVERED",
-    "LIE", "LIES", "TWICE", "EXPLODED", "BRAINS", "SUPERPOWER", "HOT", "ANOMALY"
+    "LIE", "LIES", "TWICE", "EXPLODED", "BRAINS", "SUPERPOWER", "HOT", "ANOMALY",
+    "MONSTER", "WEAPON", "MILLION", "BILLION", "ANCIENT", "EXTINCT"
 }
 
 def fmt_time(seconds: float) -> str:
@@ -53,18 +113,14 @@ def align_words(script_words: List[str], whisper_words: List[Dict[str, Any]]) ->
     return aligned
 
 def generate_captions(audio_files: List[str], script: Dict[str, Any], format_type: str = "short") -> str:
-    """
-    2026 Kinetic Subtitle Engine:
-    - 2-3 word retention clustering (MrBeast / Hormozi style)
-    - Active word Neon Pop Highlight with elastic bounce
-    - High contrast solid black outline stroke
-    - Mobile UI safe margin alignment
-    """
+    niche = os.environ.get("CHANNEL_NICHE", "science").lower()
+    preset = NICHE_PRESETS.get(niche, NICHE_PRESETS["science"])
+    
     if format_type == "short":
         play_res_x = 1080
         play_res_y = 1920
-        font_size  = 96      # Ultra-readable mobile size
-        margin_v   = 440     # Positioned safely above YouTube Shorts bottom UI
+        font_size  = preset["font_size_short"]
+        margin_v   = preset["margin_v"]
         max_chunk_words = 3
     else:
         play_res_x = 1920
@@ -72,12 +128,6 @@ def generate_captions(audio_files: List[str], script: Dict[str, Any], format_typ
         font_size  = 64
         margin_v   = 140
         max_chunk_words = 5
-
-    # ASS Color Palettes (&HAABBGGRR&)
-    C_WHITE  = "&H00FFFFFF&"
-    C_ACTIVE = "&H0000E6FF&"      # Neon Yellow / Gold (BGR: FF E6 00)
-    C_POWER  = "&H0066FF00&"      # Neon Lime / Toxic Green (BGR: 00 FF 66)
-    C_DIM    = "&H00D0D0D0&"      # Soft White
 
     pos_x = play_res_x // 2
     pos_y = play_res_y - margin_v
@@ -111,7 +161,6 @@ def generate_captions(audio_files: List[str], script: Dict[str, Any], format_typ
             except Exception as e:
                 print(f"Failed to generate fallback TTS for missing {audio_path}: {e}")
 
-        # Duration detection
         duration = 5.0
         try:
             data, sr = sf.read(audio_path)
@@ -148,7 +197,6 @@ def generate_captions(audio_files: List[str], script: Dict[str, Any], format_typ
             except Exception as seg_err:
                 print(f"Warning: Whisper failed for segment {seg.get('id', i)} ({seg_err}). Using rule-based timing.")
 
-        # Fallback to even distribution if Whisper was unavailable
         if not aligned_words and script_words:
             word_dur = duration / len(script_words)
             for w_idx, word in enumerate(script_words):
@@ -158,12 +206,11 @@ def generate_captions(audio_files: List[str], script: Dict[str, Any], format_typ
                     "end": (w_idx + 1) * word_dur
                 })
 
-        # Apply global time offset
         for w in aligned_words:
             w["start"] += time_offset
             w["end"] += time_offset
 
-        # Group words into 2-3 word retention clusters
+        # Retention clusters of 2-3 words
         chunks = []
         cur_chunk = []
         for w in aligned_words:
@@ -174,7 +221,6 @@ def generate_captions(audio_files: List[str], script: Dict[str, Any], format_typ
         if cur_chunk:
             chunks.append(cur_chunk)
 
-        # Generate Active Word Karaoke Dialogue lines
         for chunk in chunks:
             for act_idx, act_word in enumerate(chunk):
                 start_t = act_word["start"]
@@ -192,17 +238,16 @@ def generate_captions(audio_files: List[str], script: Dict[str, Any], format_typ
                     clean_w = raw_w.strip(".,!?\"'()")
 
                     if idx == act_idx:
-                        # Highlight active word with scale pop
-                        highlight_c = C_POWER if clean_w in POWER_WORDS else C_ACTIVE
+                        highlight_c = preset["c_power"] if clean_w in POWER_WORDS else preset["c_active"]
+                        blur_tag = f"\\blur{preset['blur']}" if preset["blur"] > 0 else ""
                         part = (
-                            f"{{\\c{highlight_c}\\fscx92\\fscy92"
+                            f"{{\\c{highlight_c}{blur_tag}\\fscx92\\fscy92"
                             f"\\t(0,{pop_ms},1.3,\\fscx120\\fscy120)"
                             f"\\t({pop_ms},{settle_ms},0.8,\\fscx100\\fscy100)}}"
                             f"{raw_w}{{\\r}}"
                         )
                     else:
-                        # Inactive word
-                        part = f"{{\\c{C_WHITE}\\fscx100\\fscy100}}{raw_w}{{\\r}}"
+                        part = f"{{\\c{preset['c_base']}\\fscx100\\fscy100}}{raw_w}{{\\r}}"
                     line_parts.append(part)
 
                 full_text = " ".join(line_parts)
@@ -211,9 +256,8 @@ def generate_captions(audio_files: List[str], script: Dict[str, Any], format_typ
         time_offset += duration
         print(f"Segment {seg.get('id', i)} duration: {duration:.2f}s, Cumulative offset: {time_offset:.2f}s")
 
-    picked_font = "Bebas Neue"
     ass_header = f"""[Script Info]
-Title: 2026 Kinetic Shorts Typography
+Title: 2026 Kinetic Shorts Typography ({niche.capitalize()})
 ScriptType: v4.00+
 PlayResX: {play_res_x}
 PlayResY: {play_res_y}
@@ -221,7 +265,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{picked_font},{font_size},&H00FFFFFF,&H000000FF,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,1,10,3,5,30,30,0,1
+Style: Default,{preset['font_name']},{font_size},{preset['c_base']},&H000000FF,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,1,{preset['outline_w']},{preset['shadow_d']},5,30,30,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -233,5 +277,5 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         f.write("\n".join(ass_events))
         f.write("\n")
 
-    print(f"Generated Kinetic ASS captions saved to {ass_path}")
+    print(f"Generated Niche Kinetic ASS captions ({niche}) saved to {ass_path}")
     return ass_path
