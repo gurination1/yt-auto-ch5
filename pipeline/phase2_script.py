@@ -51,7 +51,8 @@ def generate_script(topic: dict, format_type: str) -> dict:
 Use the following hook concept as your core theme: "{hook_formatted}" (short hook: "{topic.get('short_hook', '')}").
 {lang_instruction}
 Narration Style Requirements :
-1. Pacing & Punchiness: 5 to 15 words per segment's narration. CRITICAL: NEVER split a single sentence across multiple segments! Each segment MUST contain 1 or 2 complete, self-contained sentences. If you split a sentence, the voiceover will pause awkwardly mid-sentence.
+1. Pacing & Punchiness: 5 to 15 words per segment's narration. CRITICAL: NEVER split a single sentence across multiple segments!
+- ZERO TOPIC REPETITION: Introduce the subject in Segment 1, but NEVER repeat the full topic string in subsequent segments! Use natural conversational references (e.g., "this predator", "the ancient weapon", "the signal", "this massive drill", "the particles"). Each segment MUST contain 1 or 2 complete, self-contained sentences. If you split a sentence, the voiceover will pause awkwardly mid-sentence.
 2. Conversational & Extreme Simplicity: Use ONLY 5th-grade vocabulary. Extremely simple words, no complex grammar, no SAT words. Must be so simple a 10-year-old understands instantly.
 3. Engaging Tone: The voiceover narration must be conversational, highly engaging, and relatable—like a friend telling an exciting story. Write the voiceover to be energetic, warm, and inviting.
 3. Hook/Pattern Interrupt: Segment 1 must immediately shatter attention. Start with a shocking visual or conceptual paradox in under 12 words.
@@ -147,7 +148,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
       "id": {segment_count},
       "narration": "Witty, sarcastic subject-aware Call-to-Action that MUST literally contain the exact phrase 'link in bio' or 'link in the description' AND grammatically flow into Segment 1's first sentence when read back-to-back — creating a seamless loop. Relaxed word count: up to 15 words.",
       "broll_query": "{topic['topic']} real experiment documentary footage",
-      "broll_queries": ["{topic['topic']} real experiment documentary footage", "{topic['topic']} laboratory demonstration", "{topic['topic']} real world footage 4k", "{topic['topic']} visual proof animation"],
+      "broll_queries": ["concrete physical object 4k", "action close up macro", "field specimen documentary footage", "laboratory demonstration"],
       "duration_target": 6
     }}
   ],
