@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Crypto Security Paradox: Billions Lost in Ongoing Exchange Failures",
     "How the **r-process (rapid neutron capture)** in colliding neutron stars actually creates all the gold, platinum, and other heavy elements in the universe.",
     "Quantum Teleportation Breakthrough Physics #1786071161",
     "Neutron Star Density Mysteries Astrophysics #1786075950",
@@ -89,8 +88,9 @@
     "Gotthard Base Tunnel Subterranean Alps Engineering #386",
     "The U.S. Army's Dark Eagle hypersonic weapon program faces continued delays in fielding its first battery, prompting a strategic shift towards low-cost, high-production rate demonstrator programs by the Air Force Research Laboratory (AFRL).",
     "Bagger 293 Giant Mining Excavator Mechanics",
-    "New design images and 2027 construction plans for OCEANIX Busan, the UN-backed floating city prototype, are sparking global conversations about climate-resilient urbanism."
+    "New design images and 2027 construction plans for OCEANIX Busan, the UN-backed floating city prototype, are sparking global conversations about climate-resilient urbanism.",
+    "Bagger 293 Giant Mining Excavator Mechanics"
   ],
-  "subcluster_idx": 1,
-  "call_count": 178
+  "subcluster_idx": 2,
+  "call_count": 179
 }
