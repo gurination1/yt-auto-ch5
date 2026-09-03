@@ -1647,19 +1647,27 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> fl
             text_to_check += " " + val
         elif isinstance(val, list):
             text_to_check += " " + " ".join(str(v) for v in val)
-            
+    text_lower = text_to_check.lower()
+
+    # Extract meaningful subject words (strip generic filler words)
+    stop_words = {
+        "4k", "1080p", "hd", "footage", "real", "authentic", "cinematic", "video", 
+        "broll", "the", "and", "for", "with", "from", "into", "that", "this", "science", "laboratory"
+    }
     query_words = [w.strip(",.?!:;-()\"'").lower() for w in query.split()]
-    query_words = [w for w in query_words if len(w) > 2]
-    if not query_words:
-        query_words = [w.strip(",.?!:;-()\"'").lower() for w in query.split() if w]
-        
-    overlap_score = 0.0
-    if query_words:
-        matches = sum(1 for w in query_words if w in text_to_check.lower())
-        overlap_score = (matches / len(query_words)) * 30.0
-        
-    # Pure merit-based semantic scoring across all sources (no artificial YouTube bonus)
-        
+    meaningful_words = [w for w in query_words if len(w) > 2 and w not in stop_words]
+    if not meaningful_words:
+        meaningful_words = [w for w in query_words if len(w) > 2]
+
+    # RELEVANCE GATING: Must match at least 1 meaningful subject keyword
+    matches = sum(1 for w in meaningful_words if w in text_lower) if meaningful_words else 0
+    if matches == 0:
+        # STRICT REJECTION: Candidate does not mention the actual topic subject at all
+        return 0.0
+
+    match_ratio = matches / len(meaningful_words) if meaningful_words else 0.0
+    overlap_score = match_ratio * 150.0  # Up to 150 points for keyword relevance
+
     # Negative penalty for watermarked previews, timecode overlays, vlogs, podcasts, reactions
     bad_keywords = [
         "stock footage", "preview", "watermark", "shutterstock", "getty", "pond5", 
@@ -1667,7 +1675,7 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> fl
         "interview", "talking head", "reaction", "daily vlog", "my day", "unboxing", "review", "vlogger"
     ]
     for bad_w in bad_keywords:
-        if bad_w in text_to_check.lower():
+        if bad_w in text_lower:
             overlap_score -= 150.0
 
     width = item.get("width")
@@ -1709,25 +1717,26 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> fl
         diff = abs(item_dur - target_duration)
         dur_score = max(0.0, 20.0 - 2.0 * diff)
         
+    # Balanced source weights: authentic institutions get quality bonus (+30-40),
+    # but CANNOT overcome lack of keyword relevance
     source_weights = {
-        "nasa": 260.0,
-        "wikimedia": 250.0,
-        "archive": 240.0,
-        "dvids": 230.0,
-        "wikipedia": 220.0,
-        "reddit": 180.0,
-        "youtube": 160.0,
-        "pexels": 90.0,
-        "pixabay": 80.0,
-        "coverr": 70.0,
-        "klipy": 30.0
+        "nasa": 40.0,
+        "wikimedia": 35.0,
+        "archive": 35.0,
+        "wikipedia": 30.0,
+        "reddit": 25.0,
+        "youtube": 25.0,
+        "dvids": 20.0,
+        "pexels": 10.0,
+        "pixabay": 10.0,
+        "coverr": 5.0,
+        "klipy": 0.0
     }
     source_lower = str(item.get("source", "")).lower()
-    source_score = source_weights.get(source_lower, 50.0)
+    source_score = source_weights.get(source_lower, 10.0)
     
-    # Extra Fair Use bonus if YouTube candidate has verified uploader handle for attribution
     if source_lower == "youtube" and item.get("uploader_handle"):
-        source_score += 20.0
+        source_score += 15.0
     
     return float(overlap_score + res_score + dur_score + source_score)
 
@@ -1934,12 +1943,14 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     queries_to_try = queries_to_try_dedup
 
     CHANNEL_SOURCE_PRIORITY = {
-        "mystery":     ["wikimedia", "archive", "reddit", "youtube", "pexels", "pixabay", "coverr"],
-        "nature":      ["wikimedia", "nasa", "reddit", "youtube", "pexels", "pixabay", "coverr"],
-        "science":     ["nasa", "wikimedia", "archive", "reddit", "youtube", "pexels", "pixabay", "coverr"],
-        "engineering": ["dvids", "wikimedia", "nasa", "archive", "reddit", "youtube", "pexels", "pixabay", "coverr"],
-        "business":    ["archive", "wikimedia", "youtube", "pexels", "pixabay", "coverr"],
-        "general":     ["nasa", "wikimedia", "archive", "dvids", "reddit", "youtube", "pexels", "pixabay", "coverr"],
+        "mystery":     ["wikimedia", "archive", "reddit", "youtube", "pexels", "pixabay"],
+        "nature":      ["wikimedia", "youtube", "archive", "reddit", "pexels", "pixabay"],
+        "science":     ["wikimedia", "youtube", "archive", "reddit", "nasa", "pexels", "pixabay"],
+        "space":       ["nasa", "wikimedia", "youtube", "archive", "reddit", "pexels"],
+        "engineering": ["wikimedia", "archive", "youtube", "reddit", "dvids", "pexels"],
+        "business":    ["archive", "wikimedia", "youtube", "pexels", "pixabay"],
+        "military":    ["dvids", "archive", "youtube", "wikimedia"],
+        "general":     ["wikimedia", "youtube", "archive", "reddit", "nasa", "pexels"],
     }
 
     def run_source_query(source: str, q: str) -> list[dict]:
@@ -2139,35 +2150,36 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         ("YouTube CC (fallback)", lambda: _youtube_candidates(clean_fallback, n=1)[0]["video_url"] if _youtube_candidates(clean_fallback, n=1) else None),
         ("YouTube CC (general)", lambda: _youtube_candidates(general_fallback, n=1)[0]["video_url"] if _youtube_candidates(general_fallback, n=1) else None),
     ]
-    if NASA_BROLL_ENABLED:
+    # Authentic institutional archives prioritized
+    other_videos.extend([
+        ("Wikimedia video (main)", lambda: _wikimedia_video(query)),
+        ("Wikimedia video (fallback)", lambda: _wikimedia_video(clean_fallback)),
+        ("Archive video (main)", lambda: _archive_video(query)),
+        ("Archive video (fallback)", lambda: _archive_video(clean_fallback)),
+    ])
+    
+    # NASA only for space/astronomy topics
+    is_space_topic = channel in ["space", "astrophysics", "astronomy"] or any(w in query.lower() for w in ["space", "nasa", "planet", "galaxy", "telescope", "orbit", "astronomy", "cosmos", "rocket", "apollo", "webb", "hubble", "mars", "moon"])
+    if is_space_topic and NASA_BROLL_ENABLED:
         other_videos.extend([
             ("NASA video (main)", lambda: _nasa_video(query)),
             ("NASA video (fallback)", lambda: _nasa_video(clean_fallback)),
-            ("NASA video (general)", lambda: _nasa_video(general_fallback)),
         ])
-    other_videos.extend([
-        ("DVIDS video (main)", lambda: _dvids_video(query)),
-        ("DVIDS video (fallback)", lambda: _dvids_video(clean_fallback)),
-        ("DVIDS video (general)", lambda: _dvids_video(general_fallback)),
-        ("Wikimedia video (main)", lambda: _wikimedia_video(query)),
-        ("Wikimedia video (fallback)", lambda: _wikimedia_video(clean_fallback)),
-        ("Wikimedia video (general)", lambda: _wikimedia_video(general_fallback)),
-        ("Archive video (main)", lambda: _archive_video(query)),
-        ("Archive video (fallback)", lambda: _archive_video(clean_fallback)),
-        ("Archive video (general)", lambda: _archive_video(general_fallback)),
-    ])
+
+    # DVIDS only for military/defense topics
+    is_military_topic = channel in ["military", "defense", "aviation", "geopolitics"] or any(w in query.lower() for w in ["military", "warfare", "army", "navy", "warship", "fighter jet", "weapon"])
+    if is_military_topic:
+        other_videos.extend([
+            ("DVIDS video (main)", lambda: _dvids_video(query)),
+            ("DVIDS video (fallback)", lambda: _dvids_video(clean_fallback)),
+        ])
     
-    # Stock sites are fallbacks at the bottom of the waterfall list
+    # Stock sites are low-priority fallbacks
     other_videos.extend([
         ("Pixabay (main)", lambda: _pixabay_video(query)),
         ("Pixabay (fallback)", lambda: _pixabay_video(clean_fallback)),
-        ("Pixabay (general)", lambda: _pixabay_video(general_fallback)),
         ("Coverr (main)", lambda: _coverr_video(query)),
         ("Coverr (fallback)", lambda: _coverr_video(clean_fallback)),
-        ("Coverr (general)", lambda: _coverr_video(general_fallback)),
-        ("Klipy GIF (main)", lambda: _klipy_video(query)),
-        ("Klipy GIF (fallback)", lambda: _klipy_video(clean_fallback)),
-        ("Klipy GIF (general)", lambda: _klipy_video(general_fallback)),
     ])
 
     # Gather candidate URLs to download in parallel (up to 5)
