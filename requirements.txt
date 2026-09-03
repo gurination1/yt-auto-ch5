@@ -12,3 +12,5 @@ dailymotion
 curl_cffi
 
 yt-dlp
+edge-tts>=7.0.0
+gTTS>=2.5.0

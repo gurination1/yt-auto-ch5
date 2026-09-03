@@ -281,8 +281,17 @@ def generate_audio(script: dict) -> list[str]:
             except Exception as g_err:
                 print(f"[TTS] gTTS fallback failed for segment {seg_id}: {g_err}")
 
+        # Pass 4: Final emergency guarantee: Ensure out_path always exists
+        if not os.path.exists(out_path) or os.path.getsize(out_path) < 1000:
+            print(f"[TTS] CRITICAL: All TTS methods failed for segment {seg_id}. Generating safety WAV.")
+            target_dur = float(seg.get("duration_target", 5.0))
+            subprocess.run(
+                ["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=r=24000:cl=mono", "-t", str(target_dur), out_path],
+                capture_output=True, check=True
+            )
+
         # Add slight trailing silence (0.10s) to prevent hard cuts at segment end
-        if generated and os.path.exists(out_path):
+        if os.path.exists(out_path):
             try:
                 padded_path = f"output/temp_pad_{seg_id}.wav"
                 subprocess.run(
