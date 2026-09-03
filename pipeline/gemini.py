@@ -5,7 +5,7 @@ import wave
 import urllib.parse
 import requests
 from pipeline.config import (
-    GEMINI_API_KEYS, GEMINI_FLASH, GEMINI_PRO, GEMINI_TTS_MODEL, GEMINI_API_BASE
+    GEMINI_API_KEYS, GEMINI_FLASH, GEMINI_FLASH_BACKUP, GEMINI_PRO, GEMINI_TTS_MODEL, GEMINI_API_BASE
 )
 
 import re as _re
@@ -230,7 +230,9 @@ def _is_daily_quota_exhausted(resp: requests.Response) -> bool:
         data = resp.json()
         error_data = data.get("error", {})
         details = error_data.get("details", [])
-        details_str = _json.dumps(details).lower()
+        # If retryDelay is provided (e.g. "20s", "30s"), it is a transient rate limit, NOT permanent daily lockout!
+        if "retrydelay" in details_str or "please retry in" in error_data.get("message", "").lower():
+            return False
 
         # Explicit per-minute/per-second → definitely NOT daily
         if "perminute" in details_str or "persecond" in details_str:
@@ -459,29 +461,21 @@ class GeminiClient:
         if use_grounding:
             payload["tools"] = [{"google_search": {}}]
 
-        # If using Pro, try ONE key only — don't burn all keys on Pro's 5 RPD limit
-        if model_name != GEMINI_FLASH:
-            key = _shared_pool.get_available_key()
-            if key:
-                try:
-                    single_url = url.replace("{key}", key)
-                    resp = requests.post(single_url, json=payload, timeout=120)
-                    if resp.status_code == 200:
-                        text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-                        print(f"[GeminiClient] ✅ {model_name} succeeded on first attempt.")
-                        return _clean_json_output(text)
-                    else:
-                        print(f"[GeminiClient] {model_name} returned {resp.status_code}. Falling back to {GEMINI_FLASH}...")
-                except Exception as exc:
-                    print(f"[GeminiClient] {model_name} failed: {exc}. Falling back to {GEMINI_FLASH}...")
-            else:
-                print(f"[GeminiClient] No keys available for {model_name}. Falling back to {GEMINI_FLASH}...")
-            # Fall through to Flash
-            url = f"{GEMINI_API_BASE}/models/{GEMINI_FLASH}:generateContent?key={{key}}"
+        models_to_try = [model_name]
+        for m in [GEMINI_FLASH, GEMINI_FLASH_BACKUP, "gemini-2.5-flash"]:
+            if m not in models_to_try:
+                models_to_try.append(m)
 
-        resp = self._post(url, payload)
-        text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-        return _clean_json_output(text)
+        for m in models_to_try:
+            try:
+                url = f"{GEMINI_API_BASE}/models/{m}:generateContent?key={{key}}"
+                resp = self._post(url, payload)
+                text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                return _clean_json_output(text)
+            except Exception as e:
+                print(f"[GeminiClient] Model {m} failed: {e}. Trying fallback model...")
+                continue
+        raise RuntimeError("All Gemini models exhausted across all key slots.")
 
     # ── Image generation (Pollinations – no key needed) ──────────────────────
 

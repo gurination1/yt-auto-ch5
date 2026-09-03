@@ -1,19 +1,18 @@
-# Output folder for generated videos
-output/
 
 # Local credentials
-.env
-local_env.sh
-*.env
-
-# Python caches
-__pycache__/
-*.py[cod]
-*$py.class
-
 # OS/IDE metadata
+# Output folder for generated videos
+# Python caches
+*$py.class
+*.env
+*.py[cod]
 .DS_Store
-.vscode/
+.env
 .idea/
-
+.vscode/
+__pycache__/
+gemini_state.json
+local_env.sh
+output/
+state/key_pool.json
 upload_*.py
