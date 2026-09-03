@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How the **r-process (rapid neutron capture)** in colliding neutron stars actually creates all the gold, platinum, and other heavy elements in the universe.",
     "Quantum Teleportation Breakthrough Physics #1786071161",
     "Neutron Star Density Mysteries Astrophysics #1786075950",
     "Solar Wind Cosmic Shields Science #1786077568",
@@ -89,8 +88,9 @@
     "The U.S. Army's Dark Eagle hypersonic weapon program faces continued delays in fielding its first battery, prompting a strategic shift towards low-cost, high-production rate demonstrator programs by the Air Force Research Laboratory (AFRL).",
     "Bagger 293 Giant Mining Excavator Mechanics",
     "New design images and 2027 construction plans for OCEANIX Busan, the UN-backed floating city prototype, are sparking global conversations about climate-resilient urbanism.",
-    "Bagger 293 Giant Mining Excavator Mechanics"
+    "Bagger 293 Giant Mining Excavator Mechanics",
+    "What if mega-scale continental canal construction relies on giant bucket-wheel excavators moving millions of cubic meters of earth daily via endless conveyor systems?"
   ],
-  "subcluster_idx": 2,
-  "call_count": 179
+  "subcluster_idx": 3,
+  "call_count": 180
 }
