@@ -1881,6 +1881,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     # Build fallback queries with sanitization
     sanitized_q = _sanitize_broll_query(query)
     clean_fallback = _make_clean_fallback(query)
+    general_fallback = sanitized_q or query
     
     queries_to_try = [sanitized_q, query, clean_fallback]
     if alt_queries:

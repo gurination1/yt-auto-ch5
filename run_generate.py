@@ -139,12 +139,20 @@ def main():
         print(f"[Phase 4] Using channel niche priority: '{channel_niche}'")
         for i, seg in enumerate(script["segments"]):
             dur = tts_durations[i] if tts_durations else 6.0
+            seg_query = (
+                seg.get("broll_query")
+                or (seg.get("broll_queries")[0] if seg.get("broll_queries") else "")
+                or seg.get("query")
+                or seg.get("visual")
+                or seg.get("narration", "")
+            )
+            seg_narration = seg.get("narration") or seg.get("text") or ""
             bpath = phase4.fetch_broll(
-                seg["broll_query"],
+                seg_query,
                 args.format,
                 i,
                 duration=dur,
-                narration=seg["narration"],
+                narration=seg_narration,
                 alt_queries=seg.get("broll_queries"),
                 used_urls=used_urls,
                 channel=channel_niche
