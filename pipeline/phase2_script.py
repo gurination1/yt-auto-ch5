@@ -226,12 +226,12 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
   "segments": [
     {{
       "id": 1,
-      "narration": "Opening narration hook...",
+      "narration": "Opening hook sentence delivering high intrigue...",
       "broll_query": "{topic['topic']} space stars universe",
       "broll_queries": ["{topic['topic']} space stars universe", "galaxy nebula deep space", "cosmos starfield timelapse", "astronomical observatory night sky"],
-      "duration_target": 30
+      "duration_target": 10
     }}
-    // ... total 15-18 segments
+    // ... total 25-35 concise, fast-paced segments (8 to 12 seconds each for cinematic pacing, avoiding static holds)
   ],
   "thumbnail_text": "3 to 5 bold words max for the thumbnail image",
   "loop_callout": false

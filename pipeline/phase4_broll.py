@@ -1680,36 +1680,38 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> fl
 
     width = item.get("width")
     height = item.get("height")
-    res_score = 5.0
+    res_score = 10.0
     url_str = str(item.get("video_url", "")).lower()
     
     if isinstance(width, (int, float)) and width > 0:
         if width >= 3840:
-            res_score = 25.0
+            res_score = 40.0   # 4K Ultra HD top tier
         elif width >= 1920:
-            res_score = 20.0
+            res_score = 30.0   # 1080p Full HD
         elif width >= 1280:
-            res_score = 10.0
+            res_score = 15.0   # 720p HD
         else:
-            res_score = 5.0
+            res_score = -80.0  # Disqualify sub-720p blurry/grainy clips
     elif isinstance(height, (int, float)) and height > 0:
         if height >= 2160:
-            res_score = 25.0
+            res_score = 40.0
         elif height >= 1080:
-            res_score = 20.0
+            res_score = 30.0
         elif height >= 720:
-            res_score = 10.0
+            res_score = 15.0
         else:
-            res_score = 5.0
+            res_score = -80.0
     else:
         if "4k" in url_str or "2160p" in url_str:
-            res_score = 25.0
-        elif "1080p" in url_str or "1920" in url_str or "hd" in url_str:
-            res_score = 20.0
+            res_score = 40.0
+        elif "1080p" in url_str or "1920" in url_str:
+            res_score = 30.0
         elif "720p" in url_str or "1280" in url_str:
-            res_score = 10.0
+            res_score = 15.0
+        elif "480p" in url_str or "360p" in url_str:
+            res_score = -80.0
         else:
-            res_score = 5.0
+            res_score = 15.0
             
     dur_score = 10.0
     item_dur = item.get("duration")
@@ -1717,23 +1719,22 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> fl
         diff = abs(item_dur - target_duration)
         dur_score = max(0.0, 20.0 - 2.0 * diff)
         
-    # Balanced source weights: authentic institutions get quality bonus (+30-40),
-    # but CANNOT overcome lack of keyword relevance
+    # High-definition video sources (Pexels, Pixabay, YouTube) prioritized for modern quality
     source_weights = {
-        "nasa": 40.0,
-        "wikimedia": 35.0,
-        "archive": 35.0,
-        "wikipedia": 30.0,
-        "reddit": 25.0,
-        "youtube": 25.0,
-        "dvids": 20.0,
-        "pexels": 10.0,
-        "pixabay": 10.0,
-        "coverr": 5.0,
+        "pexels": 35.0,
+        "pixabay": 30.0,
+        "youtube": 30.0,
+        "nasa": 30.0,
+        "archive": 20.0,
+        "wikimedia": 15.0,
+        "wikipedia": 15.0,
+        "dvids": 15.0,
+        "reddit": 15.0,
+        "coverr": 10.0,
         "klipy": 0.0
     }
     source_lower = str(item.get("source", "")).lower()
-    source_score = source_weights.get(source_lower, 10.0)
+    source_score = source_weights.get(source_lower, 15.0)
     
     if source_lower == "youtube" and item.get("uploader_handle"):
         source_score += 15.0
@@ -1944,14 +1945,14 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     queries_to_try = queries_to_try_dedup
 
     CHANNEL_SOURCE_PRIORITY = {
-        "mystery":     ["wikimedia", "archive", "reddit", "youtube", "pexels", "pixabay"],
-        "nature":      ["wikimedia", "youtube", "archive", "reddit", "pexels", "pixabay"],
-        "science":     ["wikimedia", "youtube", "archive", "reddit", "nasa", "pexels", "pixabay"],
-        "space":       ["nasa", "wikimedia", "youtube", "archive", "reddit", "pexels"],
-        "engineering": ["wikimedia", "archive", "youtube", "reddit", "dvids", "pexels"],
-        "business":    ["archive", "wikimedia", "youtube", "pexels", "pixabay"],
-        "military":    ["dvids", "archive", "youtube", "wikimedia"],
-        "general":     ["wikimedia", "youtube", "archive", "reddit", "nasa", "pexels"],
+        "mystery":     ["pexels", "pixabay", "youtube", "archive", "wikimedia"],
+        "nature":      ["pexels", "pixabay", "youtube", "wikimedia", "archive"],
+        "science":     ["pexels", "pixabay", "youtube", "archive", "wikimedia", "nasa"],
+        "space":       ["nasa", "youtube", "pexels", "pixabay", "archive"],
+        "engineering": ["pexels", "pixabay", "youtube", "wikimedia", "archive", "dvids"],
+        "business":    ["pexels", "pixabay", "youtube", "archive"],
+        "military":    ["dvids", "youtube", "archive", "pexels"],
+        "general":     ["pexels", "pixabay", "youtube", "archive", "wikimedia"],
     }
 
     def run_source_query(source: str, q: str) -> list[dict]:
