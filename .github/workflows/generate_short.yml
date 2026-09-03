@@ -1,6 +1,10 @@
 name: Generate Short Video
 
 on:
+  schedule:
+    - cron: '0 3 * * *'   # Slot 03: 03:00 UTC / 08:30 IST (Ch5 Short #1)
+    - cron: '30 10 * * *' # Slot 08: 10:30 UTC / 16:00 IST (Ch5 Short #2)
+    - cron: '0 18 * * *'  # Slot 13: 18:00 UTC / 23:30 IST (Ch5 Short #3)
   workflow_dispatch:
 
 permissions:
@@ -16,7 +20,7 @@ jobs:
     timeout-minutes: 80
     env:
       PYTHONUNBUFFERED: "1"
-      CHANNEL_NICHE: "science"
+      CHANNEL_NICHE: "engineering"
       BROLL_SEGMENT_BUDGET_SECONDS: "120"
       JUDGE_MAX_ATTEMPTS: "6"
 

@@ -99,17 +99,20 @@ THUMBNAIL_LAYOUTS = [
     "split_left",         # dark left panel with text, right panel shows frame
 ]
 
-# topic sub-cluster rotation for Science and Technology channel
+# topic sub-cluster rotation for Megaprojects and Engineering channel
+CHANNEL_NICHE = os.environ.get("CHANNEL_NICHE", "engineering")
 SCIENCE_SUBCLUSTERS = [
-    "space exploration and astrophysics",
-    "physics and quantum mechanics mysteries",
-    "advanced chemistry and materials science",
-    "biotechnology and genetic engineering",
-    "future technology and computing breakthroughs",
+    "colossal civil engineering and subsea megastructures",
+    "massive industrial machinery and extreme mining haulers",
+    "deep tunnel boring machines and continental canal systems",
+    "extreme skyscraper engineering and seismic defense systems",
+    "heavy aerospace launch complexes and hypersonic engineering",
 ]
+ENGINEERING_SUBCLUSTERS = SCIENCE_SUBCLUSTERS
 
 YT_CATEGORY_EDUCATION = "27"
-YT_CATEGORY_SCIENCE   = "28"
+YT_CATEGORY_SCIENCE   = "28"  # Science & Technology
+YT_CATEGORY_DEFAULT   = "28"
 NASA_BROLL_ENABLED    = True
 
 
