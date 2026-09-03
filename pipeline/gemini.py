@@ -142,18 +142,22 @@ class _KeyPool:
                 self._idx = candidate_idx
                 return self._keys[candidate_idx]
         
-        # Fallback: if all non-disabled keys are on cooldown, reset non-disabled keys and retry after short pause
+        # If all non-disabled keys are daily_exhausted, do not reset endlessly — trigger graceful fallback
+        if all(self._statuses[i] in ("disabled", "daily_exhausted") for i in range(len(self._keys))):
+            print("[KeyPool] All Gemini keys have exhausted daily quota. Returning None to trigger graceful fallback.")
+            return None
+
+        # Fallback: if keys are only on short transient rate limit cooldown, wait 5s and reset
         print("[KeyPool] All non-disabled keys on cooldown. Waiting 5s for rate limit window to expire & resetting key pool...")
         time.sleep(5)
         for i in range(len(self._keys)):
-            if self._statuses[i] != "disabled":
+            if self._statuses[i] == "active":
                 self._cooldowns[i] = 0.0
-                self._statuses[i] = "active"
                 self._failures[i] = 0
         self._save_state()
 
         for i in range(len(self._keys)):
-            if self._statuses[i] != "disabled":
+            if self._statuses[i] == "active":
                 self._idx = i
                 return self._keys[i]
         return None

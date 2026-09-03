@@ -335,82 +335,9 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
     ]
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    # Step 5: Adding premium hook overlays and transitions
-    print("Step 5: Adding premium hook overlays and transitions...")
-    assembled_flashed_path = "output/assembled_flashed.mp4"
-    if format_type == "short":
-        clean_title = "".join(c for c in script.get("title", "").upper() if c.isalnum() or c.isspace()).strip()
-        
-        filters = []
-        # 1. Pattern interrupt flashes at the start of each segment (0.15s transparent white/black/color overlay)
-        overlay_colors = ["white@0.3", "black@0.45", "yellow@0.15", "orange@0.2"]
-        for idx, t_start in enumerate([0.0] + boundary_times):
-            color = overlay_colors[idx % len(overlay_colors)]
-            filters.append(f"drawbox=y=0:color={color}:t=fill:enable='between(t,{t_start:.3f},{t_start+0.15:.3f})'")
-            
-        # Get font name as a separate variable to avoid backslash inside f-string expression (unsupported in Python 3.11)
-        font_name = script.get('font_name', 'Bebas Neue')
-            
-        # 2. Big title hook card (first 1.5s) - Yellow font with premium box padding
-        # Clamp title to max 28 chars per line to prevent overflow, reduce fontsize if very long
-        words = clean_title.split()
-        title_lines = []
-        current_line = ""
-        for word in words:
-            test_line = f"{current_line} {word}".strip() if current_line else word
-            if len(test_line) <= 22:
-                current_line = test_line
-            else:
-                if current_line:
-                    title_lines.append(current_line)
-                current_line = word
-        if current_line:
-            title_lines.append(current_line)
-        
-        # Use smaller font if title is multi-line
-        title_fontsize = 64 if len(title_lines) <= 1 else 50
-        y_start = 0.16
-        for t_idx, line in enumerate(title_lines):
-            clean_l = line.replace("'", "").replace(":", "\\:").strip()
-            y_pos = f"h*{y_start + t_idx * 0.06:.2f}"
-            filters.append(
-                f"drawtext=text='{clean_l}':fontsize={title_fontsize}:fontcolor=yellow:font='{font_name}':"
-                f"x=(w-text_w)/2:y={y_pos}:enable='between(t,0,1.8)':shadowcolor=black@0.9:shadowx=4:shadowy=4:borderw=4:bordercolor=black"
-            )
-                       
-        if len(durations) >= 4:
-            seg4_start = sum(durations[:3])
-            seg4_end = seg4_start + 0.8
-            # 3. Rewatch trigger positioned cleanly at lower third
-            filters.append(
-                f"drawtext=text='PAUSE - CATCH THE DETAIL':fontsize=42:fontcolor=yellow:font='{font_name}':"
-                f"x=(w-text_w)/2:y=h*0.82:enable='between(t,{seg4_start:.3f},{seg4_end:.3f})':"
-                f"shadowcolor=black@0.9:shadowx=3:shadowy=3:borderw=3:bordercolor=black"
-            )
-            
-        cmd = [
-            "ffmpeg", "-y", "-i", assembled_capped_path,
-            "-vf", ",".join(filters),
-            "-c:v", "libx264", "-preset", "superfast", "-crf", "18", "-pix_fmt", "yuv420p",
-            assembled_flashed_path
-        ]
-        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    else:
-        # For long form, apply subtle black dip transitions at boundaries (0.25s)
-        filters = []
-        for t_start in boundary_times:
-            filters.append(f"drawbox=y=0:color=black@0.7:t=fill:enable='between(t,{t_start-0.125:.3f},{t_start+0.125:.3f})'")
-        
-        if filters:
-            cmd = [
-                "ffmpeg", "-y", "-i", assembled_capped_path,
-                "-vf", ",".join(filters),
-                "-c:v", "libx264", "-preset", "superfast", "-crf", "18", "-pix_fmt", "yuv420p",
-                assembled_flashed_path
-            ]
-            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        else:
-            shutil.copy(assembled_capped_path, assembled_flashed_path)
+    # Step 5: Clean cinematic finishing pass (clean passthrough, zero text slop or strobe boxes)
+    print("Step 5: Clean video finishing pass...")
+    assembled_flashed_path = assembled_capped_path
 
     # Step 6: Final mix: video + TTS + music + SFX
     print("Step 6: Final audio mix with SFX…")

@@ -71,7 +71,7 @@ GEMINI_PRO       = "gemini-2.5-pro"
 GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts"
 GEMINI_API_BASE  = "https://generativelanguage.googleapis.com/v1beta"
 
-GEMINI_VOICES    = ["Aoede","Charon","Fenrir","Kore","Puck","Leda","Orus","Callirrhoe","Achird","Iapetus"]
+GEMINI_VOICES    = ["Fenrir", "Puck", "Charon", "Orus", "Kore"]
 KOKORO_VOICES    = ["af_heart","af_bella","af_nicole","af_sarah","af_sky","af_aoede","am_adam","am_michael","am_fenrir","am_puck"]
 
 # ── Video Specs ──────────────────────────────────────────────────────────────
@@ -154,10 +154,4 @@ BEACONS_LINK = os.environ.get("BEACONS_LINK", "https://beacons.ai/edu_fun")
 NATURAL_WORLD_SUBCLUSTERS = SCIENCE_SUBCLUSTERS
 HISTORY_SUBCLUSTERS = SCIENCE_SUBCLUSTERS
 MYSTERY_SUBCLUSTERS = SCIENCE_SUBCLUSTERS
-ENGINEERING_SUBCLUSTERS = [
-    "colossal subsea tunnels and deep oceanic bridges",
-    "massive mega-dams and extreme hydraulic engineering",
-    "gigantic mining excavators and heavy industrial machinery",
-    "aerospace marvels and hypersonic transport systems",
-    "supertall skyscraper wind dampening and seismic engineering"
-]
+ENGINEERING_SUBCLUSTERS = SCIENCE_SUBCLUSTERS

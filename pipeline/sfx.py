@@ -175,7 +175,22 @@ def _read_wav_file(filepath: str) -> np.ndarray:
 
 
 def _fetch_cached_sfx(category: str) -> str | None:
-    # Categories: "transition_whoosh", "pop_ding", "dramatic_boom", "success_chime", "record_scratch"
+    # 1. Check local repository cache_sfx first
+    cache_dir = "cache_sfx"
+    category_files = {
+        "dramatic_boom": ["sfx_19284.wav", "sfx_19288.wav", "sfx_461943.wav"],
+        "pop_ding": ["sfx_644944.wav", "sfx_644945.wav", "sfx_644946.wav", "sfx_644947.wav"],
+        "record_scratch": ["sfx_633719.wav", "sfx_824189.wav"],
+        "success_chime": ["sfx_706089.wav", "sfx_741580.wav"],
+        "transition_whoosh": ["sfx_59537.wav", "sfx_575239.wav", "sfx_221361.wav", "sfx_584176.wav"]
+    }
+    candidates = category_files.get(category, [])
+    for c_file in candidates:
+        p = os.path.join(cache_dir, c_file)
+        if os.path.exists(p) and os.path.getsize(p) > 500:
+            return p
+
+    # 2. Remote Freesound fallback
     queries = {
         "pop_ding": ["cartoon pop sfx", "ui button pop click", "bubble pop sound"],
         "dramatic_boom": ["vine boom", "cinematic shock boom hit", "sub bass drop"],
@@ -262,7 +277,16 @@ def create_sfx_track(
 
     # Whooshes at clip boundaries
     whoosh_pool = []
-    if topic:
+    cache_dir = "cache_sfx"
+    whoosh_filenames = ["sfx_59537.wav", "sfx_575239.wav", "sfx_221361.wav", "sfx_584176.wav", "sfx_392697.wav", "sfx_423930.wav"]
+    for wf in whoosh_filenames:
+        wp = os.path.join(cache_dir, wf)
+        if os.path.exists(wp):
+            try:
+                whoosh_pool.append(_read_wav_file(wp))
+            except Exception:
+                pass
+    if not whoosh_pool and topic:
         topic_words = [w for w in topic.lower().split() if len(w) > 4]
         queries = ["whoosh", "swoosh", "transition swoosh", "cinematic transition", "digital transition"]
         if topic_words:

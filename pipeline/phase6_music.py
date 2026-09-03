@@ -252,7 +252,45 @@ def generate_music(topic: str, duration_seconds: int = 35) -> str:
         print("Background music already exists, skipping generation.")
         return out_path
 
-    # ── Try Freesound CC0 first ──────────────────────────────────────────────
+    # ── Priority 1: High-Quality Studio Fleet Music Library in cache_music/ ──
+    cache_dir = "cache_music"
+    if os.path.exists(cache_dir):
+        niche = os.environ.get("CHANNEL_NICHE", "").lower()
+        if not niche:
+            # Detect from subclusters or topic
+            if "space" in topic.lower() or "science" in topic.lower() or "quantum" in topic.lower() or "crystal" in topic.lower() or "chemistry" in topic.lower():
+                niche = "science"
+            elif "mystery" in topic.lower() or "unsolved" in topic.lower() or "secret" in topic.lower() or "cryptid" in topic.lower():
+                niche = "mystery"
+            elif "history" in topic.lower() or "war" in topic.lower() or "ancient" in topic.lower() or "battle" in topic.lower():
+                niche = "history"
+            elif "animal" in topic.lower() or "ocean" in topic.lower() or "nature" in topic.lower() or "species" in topic.lower():
+                niche = "nature"
+            elif "mega" in topic.lower() or "engine" in topic.lower() or "build" in topic.lower():
+                niche = "engineering"
+            else:
+                niche = "science"
+
+        niche_tracks = {
+            "science": ["freesound_620197.wav", "freesound_432835.wav", "freesound_672905.wav"],
+            "mystery": ["freesound_579263.wav", "freesound_592783.wav", "freesound_785704.wav"],
+            "nature": ["freesound_649777.wav", "freesound_726346.wav"],
+            "history": ["freesound_442180.wav", "freesound_785704.wav"],
+            "engineering": ["freesound_672905.wav", "freesound_434737.wav"]
+        }
+        preferred = niche_tracks.get(niche, [])
+        valid_candidates = [os.path.join(cache_dir, f) for f in preferred if os.path.exists(os.path.join(cache_dir, f))]
+        if not valid_candidates:
+            valid_candidates = [os.path.join(cache_dir, f) for f in os.listdir(cache_dir) if f.endswith(".wav") and os.path.getsize(os.path.join(cache_dir, f)) > 10000]
+
+        if valid_candidates:
+            chosen = random.choice(valid_candidates)
+            print(f"[Music] Selected authentic studio production track from fleet cache ({niche}): {chosen}")
+            os.makedirs("output", exist_ok=True)
+            shutil.copy(chosen, out_path)
+            return out_path
+
+    # ── Priority 2: Freesound CC0 ambient track search ────────────────────────
     try:
         fs_wav = _fetch_freesound_music(topic, duration_seconds)
         if fs_wav and os.path.exists(fs_wav) and os.path.getsize(fs_wav) > 1000:

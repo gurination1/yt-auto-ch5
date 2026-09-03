@@ -177,100 +177,97 @@ def split_combined_audio(combined_path: str, segments: list[dict]):
 
 def generate_audio(script: dict) -> list[str]:
     """
-    Generates TTS for all segments using a SINGLE voice for the whole video.
-    To ensure perfect voice tone consistency and prevent shifting depth/pitch,
-    we generate the entire voiceover script as a SINGLE combined audio file, 
-    then split it back into segment files using word-level alignment (Whisper).
+    Generates TTS for each segment individually using a SINGLE consistent voice.
+    This guarantees 100% sentence-level audio accuracy, prevents words from getting
+    cut off or bleeding across segments, and ensures B-roll transitions synchronize
+    exactly with the narration.
     """
     gemini_client = GeminiClient()
     os.makedirs("output", exist_ok=True)
 
     gemini_voice = pick_voice(GEMINI_VOICES, "gemini")
-    ko_voice     = pick_voice(KOKORO_VOICES, "kokoro")
-
     segments = script["segments"]
-    combined_raw_path = "output/tts_combined_raw.wav"
-    
-    # Clean up any previously generated segment files to prevent stale state
-    for seg in segments:
-        p = f"output/tts_segment_{seg['id']}.wav"
-        if os.path.exists(p):
-            try:
-                os.remove(p)
-            except Exception:
-                pass
 
-    # We join segments with a period and newline for natural pauses between sentences
-    full_text = "\n\n".join(seg["narration"] for seg in segments)
-
-    # ── Pass 1: Try Gemini combined ──────────────────────────────────────────
-    print(f"[TTS] Using Gemini voice '{gemini_voice}' for this video.")
-    gemini_failed = False
-
-    try:
-        vocal_tone = script.get("vocal_tone")
-        voiceover_plan = script.get("voiceover_plan")
-        
-        audio_bytes, mime_type = gemini_client.generate_tts(
-            full_text,
-            voice=gemini_voice,
-            vocal_tone=vocal_tone,
-            voiceover_plan=voiceover_plan
-        )
-        
-        if audio_bytes.startswith(b"RIFF") or "wav" in mime_type.lower():
-            with open(combined_raw_path, "wb") as wf:
-                wf.write(audio_bytes)
-        else:
-            with wave.open(combined_raw_path, "wb") as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(24000)
-                wf.writeframes(audio_bytes)
-        print(f"[TTS] Gemini combined generated successfully.")
-    except Exception as e:
-        print(f"[TTS] Gemini combined failed: {e}")
-        gemini_failed = True
-
-    if not gemini_failed:
-        try:
-            split_combined_audio(combined_raw_path, segments)
-            return [f"output/tts_segment_{seg['id']}.wav" for seg in segments]
-        except Exception as split_err:
-            print(f"[TTS] Split combined audio failed: {split_err}")
-            gemini_failed = True
-
-    # ── Pass 2: Gemini combined splitting failed. Fallback to per-segment TTS ──
-    print(f"[TTS] Fallback: Generating TTS per-segment directly...")
+    print(f"[TTS] Generating per-segment audio using voice '{gemini_voice}' for {len(segments)} segments...")
     audio_files = []
-    for seg in segments:
+
+    # Detect language for gTTS fallback
+    has_gurmukhi = any(any(0x0A00 <= ord(c) <= 0x0A7F for c in seg.get("narration", "")) for seg in segments)
+    fallback_lang = 'pa' if has_gurmukhi else (os.environ.get("LANGUAGE", "en")[:2].lower())
+
+    for idx_seg, seg in enumerate(segments):
         seg_id = seg["id"]
         out_path = f"output/tts_segment_{seg_id}.wav"
         text = seg["narration"]
-        
-        # Try per-segment Gemini TTS
+
+        # Clean up existing file
+        if os.path.exists(out_path):
+            try:
+                os.remove(out_path)
+            except Exception:
+                pass
+
         generated = False
+
+        prev_text = segments[idx_seg - 1]["narration"] if idx_seg > 0 else None
+        next_text = segments[idx_seg + 1]["narration"] if idx_seg < len(segments) - 1 else None
+
+        # Pass 1: Gemini TTS per-segment with full director instructions & neighbor context
         try:
             audio_bytes, mime_type = gemini_client.generate_tts(
                 text,
                 voice=gemini_voice,
-                vocal_tone=script.get("vocal_tone"),
-                voiceover_plan=None
+                vocal_tone=script.get("vocal_tone", "energetic_storytelling"),
+                voiceover_plan=script.get("voiceover_plan"),
+                prev_text=prev_text,
+                next_text=next_text,
+                segment_num=seg_id,
+                total_segments=len(segments)
             )
-            with wave.open(out_path, "wb") as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(24000)
-                wf.writeframes(audio_bytes)
+            if audio_bytes.startswith(b"RIFF") or "wav" in mime_type.lower():
+                with open(out_path, "wb") as wf:
+                    wf.write(audio_bytes)
+            else:
+                with wave.open(out_path, "wb") as wf:
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)
+                    wf.setframerate(24000)
+                    wf.writeframes(audio_bytes)
             generated = True
+            print(f"[TTS] Segment {seg_id} generated via Gemini TTS ({gemini_voice}) with full context.")
         except Exception as e:
             print(f"[TTS] Per-segment Gemini failed for segment {seg_id}: {e}")
 
-        # Fallback to gTTS if per-segment Gemini fails
+        # Pass 2: High-Quality Edge-TTS Neural Voice fallback
+        if not generated:
+            try:
+                import asyncio
+                import edge_tts
+                edge_voice = "en-US-AndrewNeural" if gemini_voice in ["Fenrir", "Charon", "Orus"] else "en-US-ChristopherNeural"
+                temp_mp3 = f"output/temp_tts_{seg_id}.mp3"
+
+                async def _run_edge():
+                    comm = edge_tts.Communicate(text, voice=edge_voice, rate="+6%", pitch="+1Hz")
+                    await comm.save(temp_mp3)
+
+                asyncio.run(_run_edge())
+
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", temp_mp3, "-ac", "1", "-ar", "24000", out_path],
+                    capture_output=True, check=True
+                )
+                if os.path.exists(temp_mp3):
+                    os.remove(temp_mp3)
+                generated = True
+                print(f"[TTS] Segment {seg_id} generated via Edge-TTS Neural voice ({edge_voice}).")
+            except Exception as e_edge:
+                print(f"[TTS] Edge-TTS fallback failed for segment {seg_id}: {e_edge}")
+
+        # Pass 3: Fallback to gTTS if both fail
         if not generated:
             try:
                 from gtts import gTTS
-                tts = gTTS(text=text, lang='en')
+                tts = gTTS(text=text, lang=fallback_lang)
                 temp_mp3 = f"output/temp_tts_{seg_id}.mp3"
                 tts.save(temp_mp3)
                 subprocess.run(
@@ -280,8 +277,22 @@ def generate_audio(script: dict) -> list[str]:
                 if os.path.exists(temp_mp3):
                     os.remove(temp_mp3)
                 generated = True
+                print(f"[TTS] Segment {seg_id} generated via gTTS fallback ({fallback_lang}).")
             except Exception as g_err:
                 print(f"[TTS] gTTS fallback failed for segment {seg_id}: {g_err}")
+
+        # Add slight trailing silence (0.10s) to prevent hard cuts at segment end
+        if generated and os.path.exists(out_path):
+            try:
+                padded_path = f"output/temp_pad_{seg_id}.wav"
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", out_path, "-af", "apad=pad_dur=0.10", padded_path],
+                    capture_output=True, check=True
+                )
+                if os.path.exists(padded_path):
+                    shutil.move(padded_path, out_path)
+            except Exception:
+                pass
 
         audio_files.append(out_path)
 

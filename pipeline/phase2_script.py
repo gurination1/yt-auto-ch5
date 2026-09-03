@@ -92,6 +92,12 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
     - Authentic Historical Artifacts & Patents: "Antikythera mechanism bronze gear", "Byzantine Greek fire siphon dragon", "Archimedes claw syracuse crane", "Dead Sea scroll parchment Hebrew"
     - Real Laboratory Apparatus & Scans: "scanning electron microscope crystal lattice", "cryogenic dilution refrigerator copper coils", "laser optical table beam splitter", "fluorescent cell mitosis petri dish"
   * SYNTAX: [Specific Domain / Specimen / Mission] + [Physical Material / Mechanism] + [Authentic Optical State]
+  * ZERO BUZZWORDS IN BROLL QUERIES:
+    - ABSOLUTELY FORBIDDEN: Do NOT write marketing adjectives or vague descriptors like 'futuristic', 'next-generation', 'super bright', 'incredible', 'amazing', 'shocking', 'impossible', 'visualization', 'concept', 'animation', 'effect', 'demonstration', 'presenting'.
+    - REQUIRED: Name ONLY the concrete physical noun of the object/specimen/machine being discussed:
+      * Right: 'Gallium nitride light emitting diode wafer' (NOT 'next-generation LED light emission super bright')
+      * Right: 'Titanium neural implant microelectrode' (NOT 'futuristic transparent medical implant visualization')
+      * Right: 'Scanning electron microscope crystal lattice' (NOT 'high-speed crystal growth macro photography time-lapse')
 
 For each segment, provide a `broll_queries` array with 3-5 ALTERNATIVE hyper-specific search queries targeting real footage and institutional archives. The first entry must match `broll_query`.
 

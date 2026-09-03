@@ -499,10 +499,13 @@ def _wikipedia_image(query: str) -> str | None:
     Fetches the Wikipedia official HD article image for the query topic using summary + generator search.
     No API key required. Perfect for named people, species, megaprojects, and historical events.
     """
-    words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in [
+    STOPLIST = [
         "footage", "real", "authentic", "documentary", "megaproject", "construction", "colossal", "machinery",
-        "what", "inside", "secret", "incredible", "shocking", "alps", "subterranean", "disaster", "radiation"
-    ]]
+        "what", "inside", "secret", "incredible", "shocking", "alps", "subterranean", "disaster", "radiation",
+        "next-generation", "nextgen", "futuristic", "super", "bright", "visualization", "concept", "impossible",
+        "amazing", "presenting", "presentation", "laboratory", "transparent", "unlock", "unlocked", "unlocking"
+    ]
+    words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in STOPLIST]
     clean_q = " ".join(words[:3]) if words else query
     try:
         url = "https://en.wikipedia.org/w/api.php"
@@ -524,6 +527,47 @@ def _wikipedia_image(query: str) -> str | None:
                     return thumb
     except Exception as e:
         print(f"[B-roll] Wikipedia search image failed for '{query}': {e}")
+    return None
+
+
+def _wikimedia_image(query: str) -> str | None:
+    """Search Wikimedia Commons for authentic high-resolution documentary and scientific photos/diagrams."""
+    STOPLIST = [
+        "footage", "real", "authentic", "documentary", "megaproject", "construction", "colossal", "machinery",
+        "what", "inside", "secret", "incredible", "shocking", "alps", "subterranean", "disaster", "radiation",
+        "next-generation", "nextgen", "futuristic", "super", "bright", "visualization", "concept", "impossible",
+        "amazing", "presenting", "presentation", "laboratory", "transparent", "unlock", "unlocked", "unlocking"
+    ]
+    words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in STOPLIST]
+    clean_q = " ".join(words[:4]) if words else query
+    try:
+        url = "https://commons.wikimedia.org/w/api.php"
+        params = {
+            "action": "query",
+            "generator": "search",
+            "gsrsearch": f"{clean_q} filetype:bitmap",
+            "gsrnamespace": "6",
+            "gsrlimit": "5",
+            "prop": "imageinfo",
+            "iiprop": "url|size|mime",
+            "iiurlwidth": "1920",
+            "format": "json"
+        }
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"}
+        r = requests.get(url, params=params, headers=headers, timeout=12)
+        if r.status_code == 200:
+            pages = r.json().get("query", {}).get("pages", {})
+            for pid, pdata in pages.items():
+                ii_list = pdata.get("imageinfo", [])
+                if ii_list:
+                    ii = ii_list[0]
+                    mime = ii.get("mime", "")
+                    if "image" in mime and not mime.endswith("svg+xml"):
+                        thumb = ii.get("thumburl") or ii.get("url")
+                        if thumb:
+                            return thumb
+    except Exception as e:
+        print(f"[B-roll] Wikimedia image search failed for '{query}': {e}")
     return None
 
 
@@ -909,7 +953,7 @@ def _parse_iso_duration(duration_str: str) -> float:
     return float(hours * 3600 + minutes * 60 + seconds)
 
 
-def _reddit_candidates(query: str, n: int = 4) -> list[dict]:
+def _reddit_candidates(query: str, n: int = 4, channel: str = "general") -> list[dict]:
     """
     Search Reddit for genuine viral user footage, sightings, anomalies, and authentic video posts.
     Uses multi-tiered RedditVideoEngine (PullPush streams + semantic community footage grounding)
@@ -918,7 +962,7 @@ def _reddit_candidates(query: str, n: int = 4) -> list[dict]:
     try:
         from pipeline.reddit_engine import get_reddit_engine
         engine = get_reddit_engine()
-        cands = engine.get_reddit_candidates(query, niche="mystery", n=n)
+        cands = engine.get_reddit_candidates(query, niche=channel, n=n)
         if cands:
             return cands
     except Exception as e:
@@ -1248,10 +1292,11 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
             if is_webm or is_gif:
                 cmd = [
                     "ffmpeg", "-y", "-i", temp_file,
-                    "-c:v", "libx264", "-preset", "fast", "-crf", "20",
+                    "-t", "15",
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "22",
                     "-pix_fmt", "yuv420p", "-an", out_path
                 ]
-                res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=25)
+                res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=45)
                 if os.path.exists(temp_file):
                     try: os.remove(temp_file)
                     except Exception: pass
@@ -1816,7 +1861,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     def run_source_query(source: str, q: str) -> list[dict]:
         try:
             if source == "reddit":
-                return _reddit_candidates(q, n=4)
+                return _reddit_candidates(q, n=4, channel=channel)
             elif source == "youtube":
                 return _youtube_candidates(q, n=5)
             elif source == "nasa":
@@ -1961,7 +2006,11 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             if budget_exceeded():
                 break
             try:
-                r_thumb = requests.get(cand["thumb_url"], timeout=15)
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                    "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*"
+                }
+                r_thumb = requests.get(cand["thumb_url"], headers=headers, timeout=15)
                 r_thumb.raise_for_status()
                 from PIL import Image
                 import io
@@ -1977,24 +2026,14 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             from pipeline.vision_match import vision_rank_broll
             best_idx, match_found = vision_rank_broll(thumbs, narration, query)
 
-            # Sort valid_candidates so best_idx is chosen; always try remaining candidates
-            candidate_order = []
             if match_found and best_idx is not None and best_idx < len(valid_candidates):
-                candidate_order.append(valid_candidates[best_idx])
-                for idx_cand, c in enumerate(valid_candidates):
-                    if idx_cand != best_idx:
-                        candidate_order.append(c)
-            else:
-                print(f"[B-roll] Segment {segment_index}: Vision match did not pick a single winner. Trying candidates in score order...")
-                candidate_order = list(valid_candidates)
-
-            for chosen in candidate_order:
-                print(f"[B-roll] Attempting download for source: {chosen.get('source', 'Unknown')} ({chosen['video_url'][:50]}...)")
+                chosen = valid_candidates[best_idx]
+                print(f"[B-roll] Vision Match ACCEPTED verified candidate: {chosen.get('source', 'Unknown')} ({chosen['video_url'][:50]}...) for segment {segment_index}!")
                 temp_video_path = f"output/temp_video_{segment_index}.mp4"
                 if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen):
                     if used_urls is not None:
                         used_urls.add(chosen["video_url"])
-                    print(f"[B-roll] Video downloaded. Running Hyperframes overlays...")
+                    print(f"[B-roll] Video downloaded. Normalizing into assembly format...")
                     _image_to_ken_burns_video(temp_video_path, out_path, w, h, duration, niche=channel, caption="")
                     if os.path.exists(temp_video_path):
                         try:
@@ -2003,7 +2042,9 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                             pass
                     return out_path
                 else:
-                    print(f"[B-roll] Video download failed for {chosen['video_url'][:50]}, trying next candidate...")
+                    print(f"[B-roll] Verified video download failed for {chosen['video_url'][:50]}. Will seek authentic documentary stills rather than generic stock.")
+            else:
+                print(f"[B-roll] Segment {segment_index}: Vision match strictly rejected all video candidates as unrelated stock slop.")
 
     # ── Fallback 1: Single Frame fallback search on other videos waterfall ─────────────────
     print(f"[B-roll] Segment {segment_index}: falling back to parallel waterfall search...")
@@ -2274,10 +2315,12 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
             (_nasa_image, clean_fallback),
         ])
     img_sources.extend([
+        (_wikimedia_image, query),
+        (_wikimedia_image, clean_fallback),
+        (_wikipedia_image, query),
+        (_wikipedia_image, clean_fallback),
         (_openverse_image, query),
         (_openverse_image, clean_fallback),
-        (_wikipedia_image, query),
-        (_wikipedia_image, clean_fallback)
     ])
 
     img_url = None
