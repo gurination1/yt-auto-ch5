@@ -125,5 +125,7 @@ def vision_rank_broll(
         return None, False
 
     except Exception as e:
-        print(f"[VisionMatch] API error/rate-limited ({e}). Strictly returning reject (None, False) to prevent unrelated footage.")
+        print(f"[VisionMatch] API unavailable/rate-limited ({e}). Falling back to top metadata candidate (Index 0).")
+        if thumbnails:
+            return 0, True
         return None, False

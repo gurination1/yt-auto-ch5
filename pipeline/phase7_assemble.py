@@ -112,13 +112,30 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
                 if _pollinations_image(prompt_clean, synth_img, w=2160, h=3840):
                     _image_to_ken_burns_video(synth_img, broll_path, w, h, duration=duration)
                 else:
-                    cmd_synth = [
-                        "ffmpeg", "-y", "-f", "lavfi",
-                        "-i", f"gradients=s={w}x{h}:r=30:c0=0x0a2244:c1=0x00d4ff:c2=0xff007f:x0=0:y0=0:x1={w}:y1={h}:speed=0.01",
-                        "-t", str(duration),
-                        "-c:v", "libx264", "-pix_fmt", "yuv420p", broll_path
-                    ]
-                    subprocess.run(cmd_synth, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    # 4. Authentic Wikimedia/Wikipedia image fallback
+                    from pipeline.phase4_broll import _wikimedia_image, _wikipedia_image
+                    wiki_img = _wikimedia_image(seg_query) or _wikipedia_image(seg_query) or _wikimedia_image(seg_narration)
+                    if wiki_img:
+                        try:
+                            import requests
+                            r_img = requests.get(wiki_img, timeout=15, headers={"User-Agent": "DocuHarvester/2.0"})
+                            if r_img.status_code == 200 and len(r_img.content) > 5000:
+                                with open(synth_img, "wb") as f_img:
+                                    f_img.write(r_img.content)
+                                _image_to_ken_burns_video(synth_img, broll_path, w, h, duration=duration)
+                                video_success = True
+                        except Exception as e_w:
+                            print(f"[Assemble] Wikimedia emergency fallback error: {e_w}")
+
+                    if not video_success:
+                        # Dark cinematic technical aesthetic instead of neon blue gradient
+                        cmd_synth = [
+                            "ffmpeg", "-y", "-f", "lavfi",
+                            "-i", f"color=c=0x080c14:s={w}x{h}:r=30,drawgrid=w=120:h=120:t=1:c=0x1a2638@0.35,vignette=angle=0.5",
+                            "-t", str(duration),
+                            "-c:v", "libx264", "-pix_fmt", "yuv420p", broll_path
+                        ]
+                        subprocess.run(cmd_synth, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         print(f"Normalizing segment {i} B-roll to duration {duration:.3f}s (offset: {ss_offset:.3f}s)...")
 

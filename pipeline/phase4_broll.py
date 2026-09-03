@@ -1759,6 +1759,90 @@ def _sanitize_broll_query(query: str) -> str:
     return sanitize_broll_query(query)
 
 
+def _has_baked_text_ocr(frame_path: str) -> bool:
+    """Uses Tesseract OCR to detect hardcoded subtitle banners or text lines on candidate video frame top/bottom strips."""
+    if not frame_path or not os.path.exists(frame_path):
+        return False
+    try:
+        import cv2, subprocess, re, tempfile
+        img = cv2.imread(frame_path)
+        if img is None:
+            return False
+        h, w = img.shape[:2]
+        
+        # If it is a multi-frame collage (w > h * 2), split into individual frame images
+        frames = []
+        if w > h * 2:
+            fw = w // 3
+            frames = [img[:, :fw], img[:, fw:fw*2], img[:, fw*2:]]
+        else:
+            frames = [img]
+            
+        for f in frames:
+            fh, fw = f.shape[:2]
+            top_crop = f[:int(fh * 0.25), :]
+            mid_crop = f[int(fh * 0.25):int(fh * 0.70), :]
+            bot_crop = f[int(fh * 0.70):, :]
+            
+            # 1) Check for commercial stock watermark/disclaimer keywords anywhere on full frame
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_full:
+                tmp_full_path = tmp_full.name
+            cv2.imwrite(tmp_full_path, f)
+            try:
+                cmd = ['tesseract', tmp_full_path, 'stdout', '--oem', '1', '--psm', '11', '-l', 'eng']
+                res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                full_text = res.stdout.lower()
+                watermark_words = [
+                    "stocksubmitter", "shutterstock", "watermark", "depositphotos", "dreamstime",
+                    "gettyimages", "videohive", "pond5", "envato", "rights reserved", "all rights",
+                    "copyright", "subscribe", "no copyright", "stock footage", "preview",
+                    "recommendatory", "disclaimer", "investment", "subject to", "terms",
+                    "upstox", "paytm", "zerodha", "groww", "download", "crystal maze"
+                ]
+                if any(wm in full_text for wm in watermark_words):
+                    if os.path.exists(tmp_full_path):
+                        os.remove(tmp_full_path)
+                    return True
+            except Exception:
+                pass
+            if os.path.exists(tmp_full_path):
+                os.remove(tmp_full_path)
+
+            # 2) Check top and bottom strips for multi-word subtitles and disclaimers
+            disclaimer_words = {"recommendatory", "disclaimer", "copyright", "reserved", "investment", "upstox", "paytm", "zerodha", "groww", "subscribe", "terms", "condition"}
+            for crop in (top_crop, bot_crop):
+                if crop.size == 0:
+                    continue
+                gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+                _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                
+                for img_to_ocr in (crop, thresh):
+                    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+                        tmp_path = tmp.name
+                    cv2.imwrite(tmp_path, img_to_ocr)
+                    try:
+                        for psm in ('11', '6'):
+                            cmd = ['tesseract', tmp_path, 'stdout', '--oem', '1', '--psm', psm, '-l', 'eng']
+                            res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                            text = res.stdout.strip().lower()
+                            words = re.findall(r'\b[a-z]{3,}\b', text)
+                            if any(w in disclaimer_words for w in words):
+                                if os.path.exists(tmp_path):
+                                    os.remove(tmp_path)
+                                return True
+                            if len(words) >= 2:
+                                if os.path.exists(tmp_path):
+                                    os.remove(tmp_path)
+                                return True
+                    except Exception:
+                        pass
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
+        return False
+    except Exception:
+        return False
+
+
 def fetch_broll(query: str, format_type: str, segment_index: int, duration: float = 6.0, narration: str = "", alt_queries: list[str] | None = None, used_urls: set[str] | None = None, channel: str = "general") -> str:
     """
     Unified B-roll candidate ranking across multiple platforms (Reddit & YouTube prioritized, Coverr, Pexels, Pixabay, NASA, Wikimedia)
@@ -2106,90 +2190,6 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                     break
         except Exception as e:
             print(f"[B-roll] Failed to fetch URL for {label}: {e}")
-
-def _has_baked_text_ocr(frame_path: str) -> bool:
-    """Uses Tesseract OCR to detect hardcoded subtitle banners or text lines on candidate video frame top/bottom strips."""
-    if not frame_path or not os.path.exists(frame_path):
-        return False
-    try:
-        import cv2, subprocess, re, tempfile
-        img = cv2.imread(frame_path)
-        if img is None:
-            return False
-        h, w = img.shape[:2]
-        
-        # If it is a multi-frame collage (w > h * 2), split into individual frame images
-        frames = []
-        if w > h * 2:
-            fw = w // 3
-            frames = [img[:, :fw], img[:, fw:fw*2], img[:, fw*2:]]
-        else:
-            frames = [img]
-            
-        for f in frames:
-            fh, fw = f.shape[:2]
-            top_crop = f[:int(fh * 0.25), :]
-            mid_crop = f[int(fh * 0.25):int(fh * 0.70), :]
-            bot_crop = f[int(fh * 0.70):, :]
-            
-            # 1) Check for watermark/disclaimer keywords anywhere on full frame
-            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_full:
-                tmp_full_path = tmp_full.name
-            cv2.imwrite(tmp_full_path, f)
-            try:
-                cmd = ['tesseract', tmp_full_path, 'stdout', '--oem', '1', '--psm', '11', '-l', 'eng']
-                res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-                full_text = res.stdout.lower()
-                watermark_words = [
-                    "stocksubmitter", "shutterstock", "watermark", "depositphotos", "dreamstime",
-                    "gettyimages", "videohive", "pond5", "envato", "rights reserved", "all rights",
-                    "copyright", "subscribe", "no copyright", "stock footage", "preview",
-                    "recommendatory", "disclaimer", "investment", "subject to", "terms",
-                    "upstox", "paytm", "zerodha", "groww", "download", "crystal maze", "nasa.gov", "press release", "public affairs", "media contact", "phone", "telecom", "www.", ".gov", ".com", "lift and load"
-                ]
-                if any(wm in full_text for wm in watermark_words):
-                    if os.path.exists(tmp_full_path):
-                        os.remove(tmp_full_path)
-                    return True
-            except Exception:
-                pass
-            if os.path.exists(tmp_full_path):
-                os.remove(tmp_full_path)
-
-            # 2) Check top and bottom strips for multi-word subtitles and disclaimers
-            disclaimer_words = {"recommendatory", "disclaimer", "copyright", "reserved", "investment", "upstox", "paytm", "zerodha", "groww", "subscribe", "terms", "condition"}
-            for crop in (top_crop, bot_crop):
-                if crop.size == 0:
-                    continue
-                # Create both raw crop and binary high-contrast crop
-                gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-                _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-                
-                for img_to_ocr in (crop, thresh):
-                    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
-                        tmp_path = tmp.name
-                    cv2.imwrite(tmp_path, img_to_ocr)
-                    try:
-                        for psm in ('11', '6'):
-                            cmd = ['tesseract', tmp_path, 'stdout', '--oem', '1', '--psm', psm, '-l', 'eng']
-                            res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-                            text = res.stdout.strip().lower()
-                            words = re.findall(r'\b[a-z]{3,}\b', text)
-                            if any(w in disclaimer_words for w in words):
-                                if os.path.exists(tmp_path):
-                                    os.remove(tmp_path)
-                                return True
-                            if len(words) >= 2:
-                                if os.path.exists(tmp_path):
-                                    os.remove(tmp_path)
-                                return True
-                    except Exception:
-                        pass
-                    if os.path.exists(tmp_path):
-                        os.remove(tmp_path)
-        return False
-    except Exception:
-        return False
 
     # Helper function for parallel downloads and frame extraction
     def download_and_extract_frame(cand, idx):
