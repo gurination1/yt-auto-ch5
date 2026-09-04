@@ -275,6 +275,7 @@ def _post_with_rotation(
     POST using the shared key pool with backoffs and git-persisted cooldowns.
     """
     max_attempts = len(_shared_pool)
+    server_error_count = 0
     for attempt in range(max_attempts):
         key = _shared_pool.get_available_key()
         if not key:
@@ -343,9 +344,15 @@ def _post_with_rotation(
                             break
                             
                 elif resp.status_code in (500, 502, 503, 504):
+                    server_error_count += 1
+                    err_hint = resp.text[:120].replace('\n', ' ')
+                    if server_error_count >= 2:
+                        print(f"[GeminiClient] Server error {resp.status_code} repeated ({err_hint}). Fast-failing over to next model...")
+                        _shared_pool.mark_failed(key, resp.status_code, transient=True)
+                        raise RuntimeError(f"Server {resp.status_code} persistent on model ({err_hint})")
                     if k_attempt < same_key_attempts - 1:
                         wait_s = (k_attempt + 1) * 2
-                        print(f"[GeminiClient] {resp.status_code} server error on key slot {slot} (attempt {k_attempt+1}/{same_key_attempts}). Waiting {wait_s}s...")
+                        print(f"[GeminiClient] {resp.status_code} server error on key slot {slot} (attempt {k_attempt+1}/{same_key_attempts}): {err_hint}. Waiting {wait_s}s...")
                         time.sleep(wait_s)
                         continue
                     else:
@@ -462,8 +469,8 @@ class GeminiClient:
             payload["tools"] = [{"google_search": {}}]
 
         models_to_try = [model_name]
-        for m in [GEMINI_FLASH, GEMINI_FLASH_BACKUP, "gemini-2.5-flash"]:
-            if m not in models_to_try:
+        for m in [GEMINI_FLASH, GEMINI_FLASH_BACKUP, "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest"]:
+            if m and m not in models_to_try:
                 models_to_try.append(m)
 
         for m in models_to_try:
