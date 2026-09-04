@@ -1314,8 +1314,18 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
 
         # 3. Direct HTTP/HTTPS Video stream (NASA, Archive.org, DVIDS, Wikimedia)
         print(f"[B-roll] Downloading direct media stream for segment {segment_index}: {url[:80]}...")
-        r = requests.get(url, stream=True, timeout=35, headers={"User-Agent": "yt-auto/2.0 (educational-video-pipeline)"})
-        r.raise_for_status()
+        stream_ua = WIKIMEDIA_USER_AGENT if "wikimedia.org" in url else "yt-auto/2.0 (educational-video-pipeline)"
+        try:
+            r = requests.get(url, stream=True, timeout=35, headers={"User-Agent": stream_ua})
+            r.raise_for_status()
+        except requests.HTTPError as he:
+            if he.response is not None and he.response.status_code == 429:
+                warp_proxy = os.environ.get("WARP_SOCKS_PROXY", "socks5h://127.0.0.1:40000")
+                print(f"[B-roll] Direct stream returned 429. Retrying via WARP proxy ({warp_proxy})...")
+                r = requests.get(url, stream=True, timeout=35, headers={"User-Agent": stream_ua}, proxies={"http": warp_proxy, "https": warp_proxy})
+                r.raise_for_status()
+            else:
+                raise he
 
         content_type = r.headers.get("Content-Type", "").lower()
         if "html" in content_type or "text" in content_type:
