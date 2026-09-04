@@ -286,7 +286,8 @@ class MultiPlatformVideoHarvester:
         self,
         sentence: str,
         niche: str = "general",
-        max_candidates: int = 15
+        max_candidates: int = 15,
+        topic: str = ""
     ) -> Tuple[VisualEntityProfile, List[HarvesterCandidate]]:
         """
         1. Extracts mandatory visual anchor entity & targeted queries.
@@ -294,7 +295,8 @@ class MultiPlatformVideoHarvester:
         3. Applies Hard Entity Gatekeeper scoring.
         4. Returns strictly verified, high-scoring authentic candidates.
         """
-        profile = self.extractor.extract(sentence, topic_context=niche)
+        effective_context = f"{topic} ({niche})" if topic else niche
+        profile = self.extractor.extract(sentence, topic_context=effective_context)
         raw_candidates: List[HarvesterCandidate] = []
         seen_urls = set()
 

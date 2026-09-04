@@ -1982,7 +1982,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     try:
         from pipeline.video_harvester_engine import get_video_harvester
         harvester = get_video_harvester()
-        profile, harvested = harvester.harvest_for_sentence(narration or query, niche=channel, max_candidates=8)
+        profile, harvested = harvester.harvest_for_sentence(narration or query, niche=channel, max_candidates=8, topic=topic)
         if harvested:
             print(f"[B-roll] Segment {segment_index}: Entity Harvester identified anchor '{profile.anchor_entity}' ({profile.entity_category}) with {len(harvested)} verified authentic candidates.")
             for hc in harvested:

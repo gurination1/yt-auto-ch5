@@ -155,7 +155,7 @@ Return ONLY valid JSON matching this schema:
   }}
 }}
 """
-        url = f"{self.api_base}/models/{self.model}:generateContent?key={self.api_key}"
+        url = f"{self.api_base}/models/{self.model}:generateContent?key={{key}}"
         payload = {
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {
@@ -163,26 +163,20 @@ Return ONLY valid JSON matching this schema:
                 "responseMimeType": "application/json"
             }
         }
-        
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"}
-        )
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
-            parsed = json.loads(raw_text)
+        from pipeline.gemini import _post_with_rotation
+        resp = _post_with_rotation(url, payload, timeout=20)
+        raw_text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        parsed = json.loads(raw_text)
 
-            return VisualEntityProfile(
-                raw_sentence=sentence,
-                anchor_entity=parsed.get("anchor_entity", "").strip(),
-                scientific_or_alt_names=parsed.get("scientific_or_alt_names", []),
-                entity_category=parsed.get("entity_category", "general"),
-                visual_action=parsed.get("visual_action", "").strip(),
-                negative_banwords=parsed.get("negative_banwords", []),
-                targeted_queries=parsed.get("targeted_queries", {})
-            )
+        return VisualEntityProfile(
+            raw_sentence=sentence,
+            anchor_entity=parsed.get("anchor_entity", "").strip(),
+            scientific_or_alt_names=parsed.get("scientific_or_alt_names", []),
+            entity_category=parsed.get("entity_category", "general"),
+            visual_action=parsed.get("visual_action", "").strip(),
+            negative_banwords=parsed.get("negative_banwords", []),
+            targeted_queries=parsed.get("targeted_queries", {})
+        )
 
     def _extract_rule_based(self, sentence: str, topic_context: str) -> VisualEntityProfile:
         """High-precision offline NLP / rule-based fallback entity extractor."""
@@ -239,13 +233,29 @@ Return ONLY valid JSON matching this schema:
             negs = info["neg"]
         else:
             words = re.findall(r'[A-Za-z0-9\'-]+', clean_s)
-            stopwords = {"the", "a", "an", "this", "that", "these", "those", "in", "on", "at", "by", "for", "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did", "and", "but", "if", "or", "because", "as", "until", "while", "of", "it", "its", "they", "them", "their"}
+            stopwords = {"the", "a", "an", "this", "that", "these", "those", "in", "on", "at", "by", "for", "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did", "and", "but", "if", "or", "because", "as", "until", "while", "of", "it", "its", "they", "them", "their", "every", "single", "day", "many", "billions", "millions", "inside", "outside"}
             content_words = [w for w in words if w.lower() not in stopwords]
-            anchor = " ".join(content_words[:3]) if content_words else "nature wildlife"
-            alts = []
-            category = "general"
-            auth_q = f'"{anchor}" ("BBC" OR "Documentary" OR "4K Footage" OR "Archive")'
-            negs = ["cartoon", "animation", "toy", "cosplay", "cgi", "gameplay", "parody"]
+
+            # Prioritize celestial bodies or known entities in sentence or topic
+            combined = f"{topic_context} {clean_s}".lower()
+            celestial = ["neptune", "jupiter", "mars", "saturn", "uranus", "venus", "mercury", "pluto", "europa", "titan", "moon", "sun", "supernova", "black hole", "galaxy", "nebula", "asteroid", "comet"]
+            found_celestial = [c for c in celestial if c in combined]
+
+            if found_celestial:
+                primary = found_celestial[0].title()
+                category = "astronomy"
+                other_words = [w for w in content_words if w.lower() != found_celestial[0].lower()]
+                secondary = other_words[0] if other_words else "space"
+                anchor = f"{primary} {secondary}"
+                alts = [f"{primary} planet space 4k", f"{primary} celestial atmosphere 4k"]
+                auth_q = f'"{primary}" ("NASA" OR "ESA" OR "James Webb" OR "Hubble" OR "4K Space Footage" OR "Documentary")'
+                negs = ["foundry", "steel mill", "factory", "car", "modern office", "sunset", "beach", "mining", "diamond mine", "cartoon", "animation", "toy", "cosplay", "cgi"]
+            else:
+                anchor = " ".join(content_words[:2]) if content_words else "nature wildlife"
+                alts = []
+                category = "general"
+                auth_q = f'"{anchor}" ("Documentary" OR "4K Footage" OR "Archive")'
+                negs = ["cartoon", "animation", "toy", "cosplay", "cgi", "gameplay", "parody"]
 
         targeted_queries = {
             "youtube_authority": auth_q,
