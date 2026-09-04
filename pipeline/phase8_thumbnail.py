@@ -7,31 +7,39 @@ import re
 
 def _extract_punchy_hook(topic: str, title: str) -> tuple[str, str]:
     """Generate or extract a 2-4 word ultra-punchy ALL CAPS hook for high CTR."""
-    hook_words = []
-    try:
-        from pipeline.gemini import GeminiClient
-        client = GeminiClient()
-        prompt = (
-            f"Topic: '{topic}' | Title: '{title}'\n"
-            f"Write an ultra-punchy 2 to 4 word YouTube thumbnail text hook. "
-            f"Must create massive curiosity or shock. ALL CAPS. Zero punctuation.\n"
-            f"Examples: 'QUANTUM TRAP', 'DEEP SEA BEAST', 'SECRET WEAPON', 'THEY LIED', 'IMPOSSIBLE ENGINE', 'FORBIDDEN RUIN'.\n"
-            f"Return ONLY the 2-4 words."
-        )
-        res = client.generate_text(prompt, max_tokens=15).strip().upper()
-        clean = re.sub(r'[^A-Z0-9\s]', '', res).strip()
-        words = clean.split()
-        if 2 <= len(words) <= 4:
-            hook_words = words
-    except Exception as e:
-        print(f"[Thumbnail] Gemini hook generation fallback: {e}")
+    meta_words = {"THUMBNAIL", "TEXT", "THUMBNAILTEXT", "HOOK", "TITLE", "JSON", "RESPONSE"}
+    candidate = title.strip() or topic.strip()
+    clean_candidate = re.sub(r'[^A-Za-z0-9\s]', ' ', candidate).strip()
+    cand_words = [w.upper() for w in clean_candidate.split() if w.upper() not in meta_words]
+    if 2 <= len(cand_words) <= 4:
+        hook_words = cand_words
+    else:
+        hook_words = []
+        try:
+            from pipeline.gemini import GeminiClient, _robust_json_loads
+            client = GeminiClient()
+            prompt = (
+                f"Topic: '{topic}' | Title: '{title}'\n"
+                f"Generate a 2 to 4 word ultra-punchy YouTube thumbnail text hook. "
+                f"ALL CAPS, 2-4 words only, high curiosity. "
+                f"Return JSON: {{\"hook\": \"OCEANS OF DIAMONDS\"}}"
+            )
+            res = client.generate_text(prompt, max_tokens=60).strip()
+            data = _robust_json_loads(res)
+            hook_str = data.get("hook", "")
+            clean = re.sub(r'[^A-Za-z0-9\s]', ' ', hook_str).strip()
+            words = [w.upper() for w in clean.split() if w.upper() not in meta_words]
+            if 2 <= len(words) <= 4:
+                hook_words = words
+        except Exception as e:
+            print(f"[Thumbnail] Gemini hook generation fallback: {e}")
 
     if not hook_words:
         stop = {
             "breakthrough", "logic", "superposition", "fundamental", "discovery", "the", "and", "for", "with",
             "how", "why", "what", "in", "of", "to", "a", "an", "is", "by", "that", "this", "inside", "overturns"
         }
-        raw_words = [w.upper() for w in re.findall(r'[A-Za-z0-9]+', topic or title) if len(w) > 2 and w.lower() not in stop]
+        raw_words = [w.upper() for w in re.findall(r'[A-Za-z0-9]+', title or topic) if len(w) > 2 and w.lower() not in stop and w.upper() not in meta_words]
         hook_words = raw_words[:3] if raw_words else ["DISCOVERY", "UNLOCKED"]
 
     if len(hook_words) == 1:
