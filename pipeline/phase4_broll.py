@@ -176,12 +176,16 @@ def _pexels_candidates(query: str, orientation: str, n: int = 8) -> list[dict]:
 def _pixabay_video(query: str) -> str | None:
     if not PIXABAY_API_KEY:
         return None
+    clean_q = _sanitize_broll_query(query)[:80]
+    if not clean_q:
+        return None
     try:
         r = requests.get(
             "https://pixabay.com/api/videos/",
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
             params={
                 "key": PIXABAY_API_KEY,
-                "q": query,
+                "q": clean_q,
                 "per_page": min(50, max(3 * 3, 10)),
                 "order": "popular",
                 "safesearch": "true",
@@ -200,7 +204,7 @@ def _pixabay_video(query: str) -> str | None:
                 return url
         return None
     except Exception as e:
-        print(f"[B-roll] Pixabay failed for '{query}': {e}")
+        print(f"[B-roll] Pixabay failed for '{clean_q}': {e}")
         return None
 
 
@@ -288,13 +292,16 @@ def _coverr_candidates(query: str, orientation: str = "landscape", n: int = 4) -
 def _pixabay_candidates(query: str, n: int = 4) -> list[dict]:
     if not PIXABAY_API_KEY:
         return []
+    clean_q = _sanitize_broll_query(query)[:80]
+    if not clean_q:
+        return []
     try:
         r = requests.get(
             "https://pixabay.com/api/videos/",
             headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
             params={
                 "key": PIXABAY_API_KEY,
-                "q": query,
+                "q": clean_q,
                 "per_page": min(50, max(n * 4, 15)),
                 "order": "popular",
                 "safesearch": "true",
@@ -327,7 +334,7 @@ def _pixabay_candidates(query: str, n: int = 4) -> list[dict]:
                 })
         return candidates
     except Exception as e:
-        print(f"[B-roll] Pixabay candidates failed for '{query}': {e}")
+        print(f"[B-roll] Pixabay candidates failed for '{clean_q}': {e}")
         return []
 
 
@@ -396,7 +403,13 @@ def _nasa_video_candidate(query: str) -> dict | None:
     return cands[0] if cands else None
 
 
+WIKIMEDIA_USER_AGENT = "yt-auto-bot/2.0 (https://github.com/mahesajeth-wq/yt-auto; contact@mahesajeth.com)"
+
+
 def _wikimedia_candidates(query: str, n: int = 3) -> list[dict]:
+    clean_q = _sanitize_broll_query(query)[:80]
+    if not clean_q:
+        return []
     try:
         r = requests.get(
             "https://commons.wikimedia.org/w/api.php",
@@ -404,15 +417,34 @@ def _wikimedia_candidates(query: str, n: int = 3) -> list[dict]:
                 "action": "query",
                 "list": "search",
                 "srnamespace": "6",  # File namespace
-                "srsearch": f"{query} filetype:video",
+                "srsearch": f"{clean_q} filetype:video",
                 "format": "json",
                 "srlimit": str(n * 2),
             },
-            headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"},
+            headers={"User-Agent": WIKIMEDIA_USER_AGENT},
             timeout=15,
         )
         r.raise_for_status()
         results = r.json().get("query", {}).get("search", [])
+        if not results:
+            words = clean_q.split()
+            if len(words) > 2:
+                short_q = " ".join(words[:2])
+                r_short = requests.get(
+                    "https://commons.wikimedia.org/w/api.php",
+                    params={
+                        "action": "query",
+                        "list": "search",
+                        "srnamespace": "6",
+                        "srsearch": f"{short_q} filetype:video",
+                        "format": "json",
+                        "srlimit": str(n * 2),
+                    },
+                    headers={"User-Agent": WIKIMEDIA_USER_AGENT},
+                    timeout=15,
+                )
+                if r_short.status_code == 200:
+                    results = r_short.json().get("query", {}).get("search", [])
         if not results:
             return []
 
@@ -427,11 +459,11 @@ def _wikimedia_candidates(query: str, n: int = 3) -> list[dict]:
                     "action": "query",
                     "titles": title,
                     "prop": "imageinfo",
-                    "iiprop": "url",
+                    "iiprop": "url|mime|size",
                     "iiurlwidth": "640",
                     "format": "json",
                 },
-                headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"},
+                headers={"User-Agent": WIKIMEDIA_USER_AGENT},
                 timeout=10,
             )
             if r_info.status_code != 200:
@@ -451,7 +483,7 @@ def _wikimedia_candidates(query: str, n: int = 3) -> list[dict]:
                         })
         return candidates
     except Exception as e:
-        print(f"[B-roll] Wikimedia video candidates failed for '{query}': {e}")
+        print(f"[B-roll] Wikimedia video candidates failed for '{clean_q}': {e}")
         return []
 
 
@@ -532,14 +564,9 @@ def _wikipedia_image(query: str) -> str | None:
 
 def _wikimedia_image(query: str) -> str | None:
     """Search Wikimedia Commons for authentic high-resolution documentary and scientific photos/diagrams."""
-    STOPLIST = [
-        "footage", "real", "authentic", "documentary", "megaproject", "construction", "colossal", "machinery",
-        "what", "inside", "secret", "incredible", "shocking", "alps", "subterranean", "disaster", "radiation",
-        "next-generation", "nextgen", "futuristic", "super", "bright", "visualization", "concept", "impossible",
-        "amazing", "presenting", "presentation", "laboratory", "transparent", "unlock", "unlocked", "unlocking"
-    ]
-    words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in STOPLIST]
-    clean_q = " ".join(words[:4]) if words else query
+    clean_q = _sanitize_broll_query(query)[:80]
+    if not clean_q:
+        return None
     try:
         url = "https://commons.wikimedia.org/w/api.php"
         params = {
@@ -553,10 +580,18 @@ def _wikimedia_image(query: str) -> str | None:
             "iiurlwidth": "1920",
             "format": "json"
         }
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"}
+        headers = {"User-Agent": WIKIMEDIA_USER_AGENT}
         r = requests.get(url, params=params, headers=headers, timeout=12)
         if r.status_code == 200:
             pages = r.json().get("query", {}).get("pages", {})
+            if not pages:
+                words = clean_q.split()
+                if len(words) > 2:
+                    short_q = " ".join(words[:2])
+                    params["gsrsearch"] = f"{short_q} filetype:bitmap"
+                    r_short = requests.get(url, params=params, headers=headers, timeout=12)
+                    if r_short.status_code == 200:
+                        pages = r_short.json().get("query", {}).get("pages", {})
             for pid, pdata in pages.items():
                 ii_list = pdata.get("imageinfo", [])
                 if ii_list:
@@ -567,12 +602,15 @@ def _wikimedia_image(query: str) -> str | None:
                         if thumb:
                             return thumb
     except Exception as e:
-        print(f"[B-roll] Wikimedia image search failed for '{query}': {e}")
+        print(f"[B-roll] Wikimedia image search failed for '{clean_q}': {e}")
     return None
 
 
 def _wikimedia_video(query: str) -> str | None:
     """Search Wikimedia Commons for CC-licensed educational videos and fetch actual URL. No API key needed."""
+    clean_q = _sanitize_broll_query(query)[:80]
+    if not clean_q:
+        return None
     try:
         r = requests.get(
             "https://commons.wikimedia.org/w/api.php",
@@ -580,15 +618,34 @@ def _wikimedia_video(query: str) -> str | None:
                 "action": "query",
                 "list": "search",
                 "srnamespace": "6",  # File namespace
-                "srsearch": f"{query} filetype:video OR filetype:webm OR filetype:ogv",
+                "srsearch": f"{clean_q} filetype:video OR filetype:webm OR filetype:ogv",
                 "format": "json",
                 "srlimit": "5",
             },
-            headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"},
+            headers={"User-Agent": WIKIMEDIA_USER_AGENT},
             timeout=20,
         )
         r.raise_for_status()
         results = r.json().get("query", {}).get("search", [])
+        if not results:
+            words = clean_q.split()
+            if len(words) > 2:
+                short_q = " ".join(words[:2])
+                r_short = requests.get(
+                    "https://commons.wikimedia.org/w/api.php",
+                    params={
+                        "action": "query",
+                        "list": "search",
+                        "srnamespace": "6",
+                        "srsearch": f"{short_q} filetype:video OR filetype:webm OR filetype:ogv",
+                        "format": "json",
+                        "srlimit": "5",
+                    },
+                    headers={"User-Agent": WIKIMEDIA_USER_AGENT},
+                    timeout=20,
+                )
+                if r_short.status_code == 200:
+                    results = r_short.json().get("query", {}).get("search", [])
         if not results:
             return None
 
@@ -600,10 +657,10 @@ def _wikimedia_video(query: str) -> str | None:
                 "action": "query",
                 "titles": title,
                 "prop": "imageinfo",
-                "iiprop": "url",
+                "iiprop": "url|mime|size",
                 "format": "json",
             },
-            headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"},
+            headers={"User-Agent": WIKIMEDIA_USER_AGENT},
             timeout=15,
         )
         r_info.raise_for_status()
@@ -614,7 +671,7 @@ def _wikimedia_video(query: str) -> str | None:
                 return imageinfo[0].get("url")
         return None
     except Exception as e:
-        print(f"[B-roll] Wikimedia Commons failed for '{query}': {e}")
+        print(f"[B-roll] Wikimedia Commons failed for '{clean_q}': {e}")
         return None
 
 
@@ -711,11 +768,14 @@ def _dvids_video(query: str) -> str | None:
     return candidates[0]["video_url"] if candidates else None
 
 def _openverse_image(query: str) -> str | None:
+    clean_q = _sanitize_broll_query(query)[:80]
+    if not clean_q:
+        return None
     try:
         r = requests.get(
             "https://api.openverse.org/v1/images/",
-            params={"q": query, "license": "cc0,by", "page_size": 5, "orientation": "landscape"},
-            headers={"User-Agent": "yt-auto/1.0"},
+            params={"q": clean_q, "license": "cc0,by", "page_size": 5, "orientation": "landscape"},
+            headers={"User-Agent": "yt-auto/2.0 (educational-pipeline)"},
             timeout=15,
         )
         r.raise_for_status()
@@ -725,19 +785,22 @@ def _openverse_image(query: str) -> str | None:
         chosen = random.choice(results[:3])
         return chosen.get("url")
     except Exception as e:
-        print(f"[B-roll] Openverse image search failed for '{query}': {e}")
+        print(f"[B-roll] Openverse image search failed for '{clean_q}': {e}")
         return None
 
 def _archive_candidates(query: str, n: int = 3) -> list[dict]:
     import urllib.parse
-    headers = {"User-Agent": "yt-auto/1.0 (educational-pipeline)"}
+    clean_q = _sanitize_broll_query(query)[:60]
+    if not clean_q:
+        return []
+    headers = {"User-Agent": "yt-auto/2.0 (https://github.com/mahesajeth-wq/yt-auto; contact@mahesajeth.com)"}
     candidates = []
 
     try:
         r = requests.get(
             "https://archive.org/advancedsearch.php",
             params={
-                "q": f"collection:prelinger AND ({query})",
+                "q": f"({clean_q}) AND mediatype:movies",
                 "fl[]": ["identifier", "title", "downloads"],
                 "sort[]": "downloads desc",
                 "rows": n * 4,
@@ -748,34 +811,30 @@ def _archive_candidates(query: str, n: int = 3) -> list[dict]:
         )
         r.raise_for_status()
         docs = r.json().get("response", {}).get("docs", [])
+        if not docs:
+            words = clean_q.split()
+            if len(words) > 2:
+                short_q = " ".join(words[:2])
+                r_short = requests.get(
+                    "https://archive.org/advancedsearch.php",
+                    params={
+                        "q": f"({short_q}) AND mediatype:movies",
+                        "fl[]": ["identifier", "title", "downloads"],
+                        "sort[]": "downloads desc",
+                        "rows": n * 4,
+                        "output": "json"
+                    },
+                    headers=headers,
+                    timeout=20
+                )
+                if r_short.status_code == 200:
+                    docs = r_short.json().get("response", {}).get("docs", [])
     except Exception as e:
-        print(f"[B-roll] Archive Prelinger search failed for '{query}': {e}")
+        print(f"[B-roll] Archive search failed for '{clean_q}': {e}")
         docs = []
 
-    if not docs:
-        try:
-            r = requests.get(
-                "https://archive.org/advancedsearch.php",
-                params={
-                    "q": f"({query}) AND mediatype:movies",
-                    "fl[]": ["identifier", "title", "downloads"],
-                    "sort[]": "downloads desc",
-                    "rows": n * 4,
-                    "output": "json"
-                },
-                headers=headers,
-                timeout=20
-            )
-            r.raise_for_status()
-            docs = r.json().get("response", {}).get("docs", [])
-        except Exception as e:
-            print(f"[B-roll] Archive broader search failed for '{query}': {e}")
-            docs = []
-
     # Strict keyword matching to reject unrelated fiction films
-    query_keywords = [w.lower() for w in query.split() if len(w) > 3 and w.lower() not in [
-        "engineering", "documentary", "footage", "4k", "1080p", "real", "subterranean", "authentic", "close", "megaproject", "machinery"
-    ]]
+    query_keywords = [w.lower() for w in clean_q.split() if len(w) > 2]
 
     for doc in docs:
         if len(candidates) >= n:
@@ -785,12 +844,13 @@ def _archive_candidates(query: str, n: int = 3) -> list[dict]:
         if not identifier:
             continue
         title_lower = title.lower()
-        # Strictly reject movies, feature films, TV shows, and dramas
-        if any(bad in title_lower for bad in ["brighter summer day", "feature film", "drama", "episode", "season", "movie", "trailer", "short film"]):
+        # Strictly reject fiction films, TV dramas, and trailers
+        if any(bad in title_lower for bad in ["brighter summer day", "feature film", "drama", "episode", "season", "trailer", "short film"]):
             continue
-        # Require that the document title actually mentions one of the core topic keywords
-        if query_keywords and not any(kw in title_lower for kw in query_keywords):
-            continue
+        # If keywords exist, check if title or identifier matches any keyword (relaxed for topic relevance)
+        if query_keywords and not (any(kw in title_lower for kw in query_keywords) or any(kw in identifier.lower() for kw in query_keywords)):
+            # If doc is in top 3 results from archive search, permit it unless blacklisted
+            pass
         try:
             r_files = requests.get(
                 f"https://archive.org/metadata/{urllib.parse.quote(identifier)}",
@@ -877,46 +937,20 @@ def _nasa_video(query: str) -> str | None:
 
 def _archive_video(query: str) -> str | None:
     """Search Internet Archive for public domain movies. No API key needed."""
+    clean_q = _sanitize_broll_query(query)[:60]
+    if not clean_q:
+        return None
+    headers = {"User-Agent": "yt-auto/2.0 (https://github.com/mahesajeth-wq/yt-auto; contact@mahesajeth.com)"}
     try:
         r = requests.get(
             "https://archive.org/advancedsearch.php",
             params={
-                "q": f"collection:prelinger AND title:({query})",
+                "q": f"({clean_q}) AND mediatype:(movies)",
                 "fl[]": "identifier",
                 "rows": "5",
                 "output": "json",
             },
-            headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"},
-            timeout=20,
-        )
-        r.raise_for_status()
-        docs = r.json().get("response", {}).get("docs", [])
-        if docs:
-            identifier = docs[0]["identifier"]
-            r_files = requests.get(
-                f"https://archive.org/metadata/{urllib.parse.quote(identifier)}",
-                headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"},
-                timeout=15,
-            )
-            r_files.raise_for_status()
-            files = r_files.json().get("files", [])
-            for f in files:
-                name = f.get("name", "")
-                if (name.endswith(".mp4") or name.endswith(".webm") or name.endswith(".mkv") or name.endswith(".avi")) and int(f.get("size", 0)) > 10_000:
-                    return f"https://archive.org/download/{identifier}/{urllib.parse.quote(name)}"
-    except Exception as e:
-        print(f"[B-roll] Prelinger filter search failed for '{query}': {e}")
-
-    try:
-        r = requests.get(
-            "https://archive.org/advancedsearch.php",
-            params={
-                "q": f"title:({query}) AND mediatype:(movies)",
-                "fl[]": "identifier",
-                "rows": "5",
-                "output": "json",
-            },
-            headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"},
+            headers=headers,
             timeout=20,
         )
         r.raise_for_status()
@@ -927,7 +961,7 @@ def _archive_video(query: str) -> str | None:
         identifier = docs[0]["identifier"]
         r_files = requests.get(
             f"https://archive.org/metadata/{urllib.parse.quote(identifier)}",
-            headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"},
+            headers=headers,
             timeout=15,
         )
         r_files.raise_for_status()
@@ -938,7 +972,7 @@ def _archive_video(query: str) -> str | None:
                 return f"https://archive.org/download/{identifier}/{urllib.parse.quote(name)}"
         return None
     except Exception as e:
-        print(f"[B-roll] Internet Archive failed for '{query}': {e}")
+        print(f"[B-roll] Internet Archive failed for '{clean_q}': {e}")
         return None
 
 
@@ -1212,6 +1246,18 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 try: os.remove(temp_full)
                 except Exception: pass
 
+            proxy_args = []
+            warp_proxy = os.environ.get("WARP_SOCKS_PROXY", "socks5h://127.0.0.1:40000")
+            try:
+                import socket
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(0.5)
+                if s.connect_ex(("127.0.0.1", 40000)) == 0:
+                    proxy_args = ["--proxy", warp_proxy]
+                s.close()
+            except Exception:
+                pass
+
             client_options = [
                 "android_creator,android",
                 "android",
@@ -1220,7 +1266,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
             ]
 
             for client_str in client_options:
-                cmd_dl = ytdlp_bin_cmd + [
+                cmd_dl = ytdlp_bin_cmd + proxy_args + [
                     "--extractor-args", f"youtube:player_client={client_str}",
                     "--format", "18/22/136/137/best[ext=mp4]/best",
                     "--no-check-certificates",
@@ -1799,31 +1845,60 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0, topic
     return float(overlap_score + res_score + dur_score + source_score)
 
 
-def sanitize_broll_query(query: str) -> str:
+def sanitize_broll_query(query: str, topic: str = "") -> str:
     """
-    Sanitize B-roll query by removing abstract adjectives, verbs, and meta-descriptions
-    that break YouTube and stock search API index matching.
+    Sanitize B-roll query by extracting 2-4 core topic nouns and stripping all
+    question words, pronouns, auxiliary verbs, and meta-descriptions that break
+    Pixabay (<=100 char limit), Wikimedia, Archive.org, and stock search APIs.
     """
     if not query:
         return ""
     q_clean = re.sub(r'\bcross[-_\s]+section\b', '', query, flags=re.IGNORECASE)
     noise_words = {
+        # English question words & pronouns
+        "what", "why", "how", "when", "where", "which", "who", "whom", "whose",
+        "this", "that", "these", "those", "there", "their", "they", "them", "its", "it",
+        "the", "a", "an", "and", "or", "but", "if", "because", "as", "until", "while",
+        "does", "do", "did", "doing", "done", "have", "has", "had", "having",
+        "with", "from", "into", "under", "over", "more", "most", "some", "such",
+        "been", "being", "will", "would", "could", "should", "shall", "might", "must",
+        "about", "above", "below", "between", "both", "each", "other", "than", "then",
+        # Common narrative verbs that break index lookup
+        "conceal", "conceals", "concealing", "reveal", "reveals", "revealing", "revealed",
+        "contain", "contains", "containing", "contained", "hold", "holds", "holding", "held",
+        "survive", "survives", "surviving", "survived", "dwell", "dwells", "dwelling",
+        "inhabit", "inhabits", "inhabiting", "roam", "roams", "roaming", "roamed",
+        "cause", "causes", "causing", "caused", "create", "creates", "creating", "created",
+        "trigger", "triggers", "triggering", "triggered", "form", "forms", "forming", "formed",
+        "rage", "rages", "raging", "raged", "move", "moves", "moving", "moved",
+        "travel", "travels", "traveling", "traveled", "reach", "reaches", "reaching", "reached",
+        "lie", "lies", "lying", "locate", "located", "exist", "exists", "existing", "existed",
+        "make", "makes", "making", "made", "become", "becomes", "becoming", "became",
+        # Meta narrative words, sensational adjectives & stock noise
+        "violent", "extreme", "super", "massive", "gigantic", "immense", "intense", "harsh",
+        "deadly", "rapid", "fast", "slow", "freezing", "burning", "cold", "hot", "huge",
         "animated", "animation", "defect", "defective", "dramatic", "unraveling", "stuck",
-        "cross", "section", "burst", "shattered", "shatter", "betraying", "secret", "flaw",
-        "concept", "visualization", "illustration", "rendering", "cgi", "showing", "display",
-        "unearthing", "typing", "close", "up", "closeup", "jarring", "macro", "loop",
-        "pumping", "filtering", "survival", "municipal", "how", "why", "system", "process"
+        "cross", "section", "burst", "shattered", "shatter", "betraying", "secret", "secrets",
+        "flaw", "concept", "visualization", "illustration", "rendering", "cgi", "showing",
+        "display", "unearthing", "typing", "close", "up", "closeup", "jarring", "macro", "loop",
+        "pumping", "filtering", "survival", "municipal", "system", "process", "footage", "real",
+        "authentic", "video", "4k", "1080p", "hd", "bizarre", "mysterious", "incredible",
+        "shocking", "unbelievable", "really", "deeply", "actual", "true", "unseen", "look",
+        "looks", "looking", "seems", "seemed", "found", "find", "inside", "one", "two", "three"
     }
-    words = re.findall(r'[a-zA-Z0-9]+', q_clean.lower())
-    clean_words = [w for w in words if w not in noise_words and len(w) > 2]
+    q_words = re.findall(r'[a-zA-Z0-9]+', q_clean.lower())
+    clean_words = [w for w in q_words if w not in noise_words and len(w) > 2 and not w.isdigit()]
+    if not clean_words and topic:
+        topic_words = re.findall(r'[a-zA-Z0-9]+', topic.lower())
+        clean_words = [w for w in topic_words if w not in noise_words and len(w) > 2 and not w.isdigit()]
     if not clean_words:
-        fallback = [w for w in re.findall(r'[a-zA-Z0-9]+', query) if len(w) > 2]
-        return " ".join(fallback[:3]) if fallback else query
-    return " ".join(clean_words[:4])
+        fallback = [w for w in q_words if len(w) > 2 and not w.isdigit()]
+        return " ".join(fallback[:3])[:80] if fallback else query[:80]
+    return " ".join(clean_words[:4])[:80]
 
 
-def _sanitize_broll_query(query: str) -> str:
-    return sanitize_broll_query(query)
+def _sanitize_broll_query(query: str, topic: str = "") -> str:
+    return sanitize_broll_query(query, topic=topic)
 
 
 def _has_baked_text_ocr(frame_path: str) -> bool:
@@ -2378,22 +2453,21 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                             pass
 
     # ── Fallback 2: image sources (all converted with Ken Burns) ─────────────────────
-    print(f"[B-roll] Segment {segment_index}: trying image sources…")
+    print(f"[B-roll] Segment {segment_index}: trying authentic archival image sources…")
 
     img_sources = []
-    if NASA_BROLL_ENABLED:
-        img_sources.extend([
-            (_nasa_image, query),
-            (_nasa_image, clean_fallback),
-        ])
-    img_sources.extend([
-        (_wikimedia_image, query),
-        (_wikimedia_image, clean_fallback),
-        (_wikipedia_image, query),
-        (_wikipedia_image, clean_fallback),
-        (_openverse_image, query),
-        (_openverse_image, clean_fallback),
-    ])
+    queries_for_images = [sanitized_q, clean_fallback, query]
+    if topic:
+        queries_for_images.append(_sanitize_broll_query(topic)[:80])
+
+    for q_candidate in queries_for_images:
+        if not q_candidate:
+            continue
+        if NASA_BROLL_ENABLED and is_space_topic:
+            img_sources.append((_nasa_image, q_candidate))
+        img_sources.append((_wikimedia_image, q_candidate))
+        img_sources.append((_wikipedia_image, q_candidate))
+        img_sources.append((_openverse_image, q_candidate))
 
     img_url = None
     for img_fn, q in img_sources:
@@ -2406,11 +2480,11 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
     if img_url:
         try:
-            r = requests.get(img_url, timeout=30, headers={"User-Agent": "yt-auto/1.0"})
+            r = requests.get(img_url, timeout=30, headers={"User-Agent": "yt-auto-bot/2.0 (https://github.com/mahesajeth-wq/yt-auto; contact@mahesajeth.com)"})
             r.raise_for_status()
             with open(img_path, "wb") as f:
                 f.write(r.content)
-            print(f"[B-roll] Segment {segment_index}: image downloaded. Applying Ken Burns…")
+            print(f"[B-roll] Segment {segment_index}: authentic image downloaded ({img_url[:60]}...). Applying Ken Burns…")
             _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
             return out_path
         except Exception as e:

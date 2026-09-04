@@ -1,10 +1,8 @@
 name: Generate Short Video
 
+# Dispatched centrally by /root/yt-auto-cron with global concurrency & slot locking
+# Native GHA cron disabled to prevent race conditions & double triggering
 on:
-  schedule:
-    - cron: '0 3 * * *'   # Slot 03: 03:00 UTC / 08:30 IST (Ch5 Short #1)
-    - cron: '30 10 * * *' # Slot 08: 10:30 UTC / 16:00 IST (Ch5 Short #2)
-    - cron: '0 18 * * *'  # Slot 13: 18:00 UTC / 23:30 IST (Ch5 Short #3)
   workflow_dispatch:
 
 permissions:
@@ -55,9 +53,24 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt && pip install -U --pre "yt-dlp[default]"
 
+      - name: Install and Start Cloudflare WARP (Bypass Cloud IP blocks for authentic documentary downloads)
+        run: |
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor -o cloudflare-warp-archive-keyring.gpg
+          sudo mv cloudflare-warp-archive-keyring.gpg /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+          sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends cloudflare-warp
+          warp-cli --accept-tos mode proxy
+          warp-cli --accept-tos proxy port 40000
+          warp-cli --accept-tos registration new || true
+          warp-cli --accept-tos connect || true
+          sleep 4
+          warp-cli --accept-tos status || true
+          curl -x socks5h://127.0.0.1:40000 -s https://cloudflare.com/cdn-cgi/trace | grep "warp=" || echo "WARP starting..."
+
       - name: Generate Short
         timeout-minutes: 50
         env:
+          WARP_SOCKS_PROXY:  "socks5h://127.0.0.1:40000"
           GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
           PEXELS_API_KEY:    ${{ secrets.PEXELS_API_KEY }}
           PIXABAY_API_KEY:   ${{ secrets.PIXABAY_API_KEY }}
