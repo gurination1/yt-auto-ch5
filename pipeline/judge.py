@@ -203,24 +203,23 @@ class JudgeClient:
 Video Metadata:
 {json.dumps(metadata, indent=2)}
 
-Please watch the video and evaluate it against these 5 rubrics:
+Please watch the video and evaluate it against these rubrics:
 1. **Cohesiveness & Alignment (CRITICAL)**: Does the voiceover audio match the visual B-roll clips and the text captions shown on screen?
-- Check for any mismatch (e.g. if the audio discusses "Quantum Computing" but the text caption or B-roll displays terms like "CRISPR" or "Gene Editing").
+   - Check for any mismatch (e.g. if the audio discusses "Quantum Computing" but the text caption or B-roll displays terms like "CRISPR" or "Gene Editing").
    - Look out for generic or symbolic placeholders (e.g. a generic man with glasses looking at a screen, generic office workers) that do not directly represent specific scientific/technical/space concepts described in the audio (like 'asteroid wobble', 'planetary defense', 'Bose-Einstein condensate', etc.).
-   - IMPORTANT EXCEPTION (Scientific Abstractions): Stock video libraries DO NOT have specialized animations for exact scientific terms (e.g., specific protein names, TMAO molecules, specific rare fish like Mariana snailfish). You MUST ACCEPT generic scientific abstractions (e.g., "symbolic squishy balls", glowing orbs, fluid dynamics, generic laboratories, generic underwater scenes/bubbles, generic deep sea fish) as VALID matches for specific microscopic, chemical, or biological narration. Do NOT penalize or fail the video for these abstractions.
-   - IMPORTANT: Skip false alarms for abstract concepts. When the narration discusses abstract ideas like "profound implications", "mysteries of life", or "time passing", broader thematic visuals (like sunsets, horizons, oceans, or glowing particles) are valid artistic choices and MUST NOT be flagged as generic placeholders.
-   - However, you MUST STILL REJECT completely contradictory or jarring mismatches (e.g., showing a cityscape or smokestack when discussing deep sea biology, or showing a desert when discussing ocean water).
+   - STRICT BAN ON IRRELEVANT TERRESTRIAL ANALOGIES: If the video is about Space, Astronomy, Planets, Deep Sea, or Nature, REJECT ANY terrestrial stock footage such as steel mills, factories, foundries, metal smelting, blast furnaces, modern office spaces, traffic, city streets, or beach sunsets. (For example: showing a steel mill foundry when discussing planetary core compression or diamond rain is an UNACCEPTABLE mismatch).
+   - All visual B-roll clips must visually and contextually represent the core topic entity and narration sentence.
    - Check if the SAME visual clip is repeated or looped twice in different parts of the video. Repeating the same B-roll clip is a critical quality failure.
-   - If there is any mismatched topic (like a cityscape for the ocean), symbolic placeholder (except for abstract concepts and scientific abstractions as noted above), or repeated clip, you MUST set status="REJECTED" and score below 80, and list the exact segment numbers that failed.
+   - If there is any mismatched topic (like a factory or city for space, or a desert for deep sea), symbolic placeholder, or repeated clip, you MUST set status="REJECTED", set score below 80, and list the exact 0-based segment numbers that failed in failed_segments.
 2. **Hook Appeal**: Is the hook in the first 3-5 seconds of the video engaging and curiosity-inducing?
 3. **Subtitles/Captions (CRITICAL)**: Are subtitles present, readable, and synchronized with the narration?
    - This video uses modern rapid-fire single-word (karaoke) subtitle style. This is EXPECTED and CORRECT.
    - REJECT if: subtitles are visibly out of sync (words appearing long after they are spoken, or appearing before), if subtitles get "stuck" on one word while narration moves on, or if subtitles disappear mid-video.
    - REJECT if: the title hook text card at the start of the video (first 1-2 seconds) has text that goes outside the frame boundaries or is cut off on either side. Text must be fully visible and centered.
    - ACCEPT if: subtitles are single-word style and appear roughly in sync (within 0.5 seconds of spoken word).
-4. **Music & Audio Quality**: Is the background music clean, and is it mixed correctly without overpowering the voiceover?
+4. **Music & Audio Quality (CRITICAL)**: Is the background music clean, and is it mixed correctly without overpowering the voiceover? Is the voiceover narrator voice 100% uniform and consistent throughout? REJECT if multiple voices, jarring voice shifts, or different voice engines are heard in a single video.
 5. **Zero Black Screens (CRITICAL)**: Verify there are NO black screen sections, black placeholders, or blank dark screens anywhere in the video. If any segment or transition shows a black screen or blank canvas for > 0.8 seconds, you MUST set status="REJECTED", set score below 50, and list the failed segment numbers in issues!
-6. **Loop / Retention**: Is there a thematic transition or rewatch trigger from the final segment back to the first? loop back seamlessly from the last segment to the first segment's narration? Note: Segment 5 echoing Segment 1's THEME (not its exact wording) is the desired outcome — flag verbatim repetition of Segment 1's sentence as a script-quality issue.
+6. **Loop / Retention**: Is there a thematic transition or rewatch trigger from the final segment back to the first? Note: Segment 5 echoing Segment 1's THEME (not its exact wording) is the desired outcome.
 
 Scoring target: a publishable video should land around 91-94 when it has coherent visuals, readable captions, clean audio, strong hook, and no repeated clips. Reserve 80-90 for technically acceptable but weak videos that should be repaired before publishing.
 

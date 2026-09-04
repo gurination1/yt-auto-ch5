@@ -573,30 +573,13 @@ class GeminiClient:
         if vocal_tone and vocal_tone not in tone_prompts:
             print(f"[TTS] Unknown vocal_tone '{vocal_tone}', using default.")
             vocal_tone = None
-        prefix = tone_prompts.get(vocal_tone, "Speak with natural warmth and genuine engagement. Vary your pace — slower for big facts, quicker for action beats. Emphasize key words with subtle punch. Sound like a brilliant friend sharing the most interesting thing they learned this week.")
-        
-        # Build a highly contextual director instructions block
-        director_instructions = []
-        if prefix:
-            director_instructions.append(f"Vocal Delivery Guide: {prefix}")
-        if voiceover_plan:
-            director_instructions.append(f"Overall Video Voiceover Plan: {voiceover_plan}")
-        if segment_num and total_segments:
-            director_instructions.append(f"This is segment {segment_num} of {total_segments}.")
-        if prev_text:
-            director_instructions.append(f"For context, the previous spoken line was: '{prev_text}'")
-        if next_text:
-            director_instructions.append(f"For context, the next spoken line will be: '{next_text}'")
-            
-        instructions_str = "\n".join(director_instructions)
         full_prompt = (
-            f"Director Instructions:\n{instructions_str}\n\n"
-            f"IMPORTANT RULES:\n"
-            f"- Speak ONLY the exact narration text. Do NOT add filler words, intros, or ad libs.\n"
-            f"- Vary your vocal energy — do not speak every sentence at the same flat pace.\n"
-            f"- Emphasize key nouns and numbers naturally (e.g., '400 years', 'NASA', 'breakthrough').\n"
-            f"- Leave a very brief natural breath at the start and end of each paragraph.\n"
-            f"- Keep one consistent voice character throughout. Do NOT shift voice depth mid-sentence.\n\n"
+            "You are a top-tier viral documentary narrator speaking directly to an engaged viewer.\n"
+            "DELIVERY & VOCAL CONSISTENCY:\n"
+            "- Speak in a clear, natural, confident, and energetic conversational tone.\n"
+            "- Maintain ONE consistent human voice character, pitch register, volume, and microphone presence throughout.\n"
+            "- Do NOT whisper. Do NOT shout. Do NOT drop into vocal fry or dramatically shift vocal registers between sentences.\n"
+            "- Speak ONLY the exact narration text below. No intros, no ad-libs, no filler.\n\n"
             f"Narration text to speak:\n{text}"
         )
         

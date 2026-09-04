@@ -195,24 +195,15 @@ def generate_audio(script: dict) -> list[str]:
     has_gurmukhi = any(any(0x0A00 <= ord(c) <= 0x0A7F for c in seg.get("narration", "")) for seg in segments)
     fallback_lang = 'pa' if has_gurmukhi else (os.environ.get("LANGUAGE", "en")[:2].lower())
 
+    # Pass 1: Try Gemini TTS for ALL segments
+    gemini_success = True
+    gemini_audio_data = {}
     for idx_seg, seg in enumerate(segments):
         seg_id = seg["id"]
-        out_path = f"output/tts_segment_{seg_id}.wav"
         text = seg["narration"]
-
-        # Clean up existing file
-        if os.path.exists(out_path):
-            try:
-                os.remove(out_path)
-            except Exception:
-                pass
-
-        generated = False
-
         prev_text = segments[idx_seg - 1]["narration"] if idx_seg > 0 else None
         next_text = segments[idx_seg + 1]["narration"] if idx_seg < len(segments) - 1 else None
 
-        # Pass 1: Gemini TTS per-segment with full director instructions & neighbor context
         try:
             audio_bytes, mime_type = gemini_client.generate_tts(
                 text,
@@ -224,6 +215,17 @@ def generate_audio(script: dict) -> list[str]:
                 segment_num=seg_id,
                 total_segments=len(segments)
             )
+            gemini_audio_data[seg_id] = (audio_bytes, mime_type)
+        except Exception as e:
+            print(f"[TTS] Gemini TTS failed for segment {seg_id}: {e}. Switching ENTIRE video to Edge-TTS for 100% voice consistency.")
+            gemini_success = False
+            break
+
+    if gemini_success and len(gemini_audio_data) == len(segments):
+        for seg in segments:
+            seg_id = seg["id"]
+            out_path = f"output/tts_segment_{seg_id}.wav"
+            audio_bytes, mime_type = gemini_audio_data[seg_id]
             if audio_bytes.startswith(b"RIFF") or "wav" in mime_type.lower():
                 with open(out_path, "wb") as wf:
                     wf.write(audio_bytes)
@@ -233,22 +235,25 @@ def generate_audio(script: dict) -> list[str]:
                     wf.setsampwidth(2)
                     wf.setframerate(24000)
                     wf.writeframes(audio_bytes)
-            generated = True
-            print(f"[TTS] Segment {seg_id} generated via Gemini TTS ({gemini_voice}) with full context.")
-        except Exception as e:
-            print(f"[TTS] Per-segment Gemini failed for segment {seg_id}: {e}")
+            print(f"[TTS] Segment {seg_id} generated via Gemini TTS ({gemini_voice}).")
+    else:
+        # Pass 2: High-Quality Edge-TTS Neural Voice for ENTIRE video
+        edge_voice = "en-US-AndrewNeural" if gemini_voice in ["Fenrir", "Charon"] else "en-US-ChristopherNeural"
+        print(f"[TTS] Synthesizing ALL {len(segments)} segments with Edge-TTS ({edge_voice}) for 100% uniform voice consistency...")
+        edge_success = True
+        try:
+            import asyncio
+            import edge_tts
 
-        # Pass 2: High-Quality Edge-TTS Neural Voice fallback
-        if not generated:
-            try:
-                import asyncio
-                import edge_tts
-                edge_voice = "en-US-AndrewNeural" if gemini_voice in ["Fenrir", "Charon", "Orus"] else "en-US-ChristopherNeural"
+            for seg in segments:
+                seg_id = seg["id"]
+                out_path = f"output/tts_segment_{seg_id}.wav"
                 temp_mp3 = f"output/temp_tts_{seg_id}.mp3"
+                text = seg["narration"]
 
-                async def _run_edge():
-                    comm = edge_tts.Communicate(text, voice=edge_voice, rate="+6%", pitch="+1Hz")
-                    await comm.save(temp_mp3)
+                async def _run_edge(t=text, p=temp_mp3):
+                    comm = edge_tts.Communicate(t, voice=edge_voice, rate="+6%", pitch="+1Hz")
+                    await comm.save(p)
 
                 asyncio.run(_run_edge())
 
@@ -258,28 +263,34 @@ def generate_audio(script: dict) -> list[str]:
                 )
                 if os.path.exists(temp_mp3):
                     os.remove(temp_mp3)
-                generated = True
-                print(f"[TTS] Segment {seg_id} generated via Edge-TTS Neural voice ({edge_voice}).")
-            except Exception as e_edge:
-                print(f"[TTS] Edge-TTS fallback failed for segment {seg_id}: {e_edge}")
+                print(f"[TTS] Segment {seg_id} generated via Edge-TTS ({edge_voice}).")
+        except Exception as e_edge:
+            print(f"[TTS] Edge-TTS full fallback failed: {e_edge}. Falling back to gTTS for all segments.")
+            edge_success = False
 
-        # Pass 3: Fallback to gTTS if both fail
-        if not generated:
+        if not edge_success:
+            # Pass 3: Fallback to gTTS for ENTIRE video
             try:
                 from gtts import gTTS
-                tts = gTTS(text=text, lang=fallback_lang)
-                temp_mp3 = f"output/temp_tts_{seg_id}.mp3"
-                tts.save(temp_mp3)
-                subprocess.run(
-                    ["ffmpeg", "-y", "-i", temp_mp3, "-ac", "1", "-ar", "24000", out_path],
-                    capture_output=True, check=True
-                )
-                if os.path.exists(temp_mp3):
-                    os.remove(temp_mp3)
-                generated = True
-                print(f"[TTS] Segment {seg_id} generated via gTTS fallback ({fallback_lang}).")
+                for seg in segments:
+                    seg_id = seg["id"]
+                    out_path = f"output/tts_segment_{seg_id}.wav"
+                    temp_mp3 = f"output/temp_tts_{seg_id}.mp3"
+                    tts = gTTS(text=seg["narration"], lang=fallback_lang)
+                    tts.save(temp_mp3)
+                    subprocess.run(
+                        ["ffmpeg", "-y", "-i", temp_mp3, "-ac", "1", "-ar", "24000", out_path],
+                        capture_output=True, check=True
+                    )
+                    if os.path.exists(temp_mp3):
+                        os.remove(temp_mp3)
+                    print(f"[TTS] Segment {seg_id} generated via gTTS ({fallback_lang}).")
             except Exception as g_err:
-                print(f"[TTS] gTTS fallback failed for segment {seg_id}: {g_err}")
+                print(f"[TTS] gTTS full fallback failed: {g_err}")
+
+    for idx_seg, seg in enumerate(segments):
+        seg_id = seg["id"]
+        out_path = f"output/tts_segment_{seg_id}.wav"
 
         # Pass 4: Final emergency guarantee: Ensure out_path always exists
         if not os.path.exists(out_path) or os.path.getsize(out_path) < 1000:

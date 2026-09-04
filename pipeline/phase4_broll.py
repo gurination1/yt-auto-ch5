@@ -1410,13 +1410,13 @@ def _image_to_ken_burns_video(img_path: str, out_path: str, w: int, h: int, dura
 
 # ── Fallback: Pollinations.ai (AI-generated, 4K resolution) ────────────────
 
-def _pollinations_image(query: str, img_path: str, w: int = 2160, h: int = 3840) -> bool:
+def _pollinations_image(query: str, img_path: str, w: int = 1080, h: int = 1920) -> bool:
     """Returns True if 4K cinematic stock image was downloaded successfully via Pollinations AI."""
-    # Extract only the core 3-4 nouns to avoid overloading URL length
+    # Extract core nouns to avoid overloading URL length while preserving subject entity
     words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in [
         "footage", "real", "authentic", "documentary", "megaproject", "construction", "colossal", "machinery"
     ]]
-    clean_q = " ".join(words[:4]) if words else query[:30]
+    clean_q = " ".join(words[:6]) if words else query[:60]
     
     req_w, req_h = (w, h) if (w and h) else (1080, 1920)
     encoded_prompt = urllib.parse.quote(f"4k cinematic documentary photo of {clean_q}, national geographic photography, hyperrealistic, 8k, highly detailed, photorealistic, no text, no watermark")
@@ -1639,15 +1639,62 @@ def _expand_query(query: str, channel: str, n: int = 5) -> list[str]:
         return []
 
 
-def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> float:
+def _score_candidate(item: dict, query: str, target_duration: float = 8.0, topic: str = "", channel: str = "") -> float:
     text_to_check = ""
-    for field in ["title", "tags", "video_url", "thumb_url"]:
+    for field in ["title", "tags", "video_url", "thumb_url", "description"]:
         val = item.get(field)
         if isinstance(val, str):
             text_to_check += " " + val
         elif isinstance(val, list):
             text_to_check += " " + " ".join(str(v) for v in val)
     text_lower = text_to_check.lower()
+
+    # Detect domain context from topic, query, and channel
+    combined_context = f"{topic} {query} {channel}".lower()
+    is_space = any(w in combined_context for w in [
+        "space", "planet", "neptune", "jupiter", "mars", "saturn", "uranus", "venus", "mercury",
+        "pluto", "astronomy", "astrophysics", "cosmos", "cosmic", "galaxy", "nebula", "black hole",
+        "supernova", "telescope", "nasa", "esa", "orbit", "exoplanet", "asteroid", "comet"
+    ])
+    is_nature = any(w in combined_context for w in [
+        "ocean", "deep sea", "underwater", "marine", "shark", "whale", "fish", "snailfish", "coelacanth",
+        "hydrothermal", "abyss", "trench", "coral", "species", "wildlife", "animal", "biology"
+    ])
+    is_history = any(w in combined_context for w in [
+        "ancient", "roman", "greek", "medieval", "archaeology", "ruins", "pharaoh", "pyramid",
+        "empire", "emperor", "gladiator", "antiquity", "century bc"
+    ])
+
+    # HARD DOMAIN NEGATIVE DISQUALIFIERS (Instant disqualification -200.0)
+    if is_space:
+        banned_space = [
+            "foundry", "steel mill", "steel factory", "metal factory", "blast furnace", "smelting",
+            "car factory", "traffic", "highway", "car driving", "modern office", "boardroom",
+            "corporate office", "beach sunset", "tropical beach", "palm trees", "bikini",
+            "coffee shop", "cocktail", "supermarket", "shopping mall", "skateboarding",
+            "fashion model", "yoga", "kitchen cooking", "city skyline", "subway train"
+        ]
+        for bad in banned_space:
+            if bad in text_lower:
+                return -200.0
+
+    if is_nature:
+        banned_nature = [
+            "factory floor", "modern office", "boardroom", "corporate meeting", "traffic jam",
+            "highway driving", "assembly line", "warehouse", "nightclub", "casino", "cryptocurrency"
+        ]
+        for bad in banned_nature:
+            if bad in text_lower:
+                return -200.0
+
+    if is_history:
+        banned_history = [
+            "modern office", "laptop", "smartphone", "skyscraper", "electric car",
+            "jet airliner", "factory floor", "highway traffic"
+        ]
+        for bad in banned_history:
+            if bad in text_lower:
+                return -200.0
 
     # Extract meaningful subject words (strip generic filler words)
     stop_words = {
@@ -1667,6 +1714,16 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0) -> fl
 
     match_ratio = matches / len(meaningful_words) if meaningful_words else 0.0
     overlap_score = match_ratio * 150.0  # Up to 150 points for keyword relevance
+
+    # Anchor Entity check: if topic has a distinct subject, verify presence
+    if topic:
+        topic_words = [w.strip(",.?!:;-()\"'").lower() for w in topic.split() if len(w) > 3 and w.lower() not in stop_words]
+        if topic_words:
+            topic_matches = sum(1 for tw in topic_words if tw in text_lower)
+            if topic_matches > 0:
+                overlap_score += 50.0  # Big bonus for matching topic subject
+            elif is_space and not any(sw in text_lower for sw in ["space", "planet", "nasa", "orbit", "astronomy", "galaxy", "telescope"]):
+                return -150.0
 
     # Negative penalty for watermarked previews, timecode overlays, vlogs, podcasts, reactions
     bad_keywords = [
@@ -1853,7 +1910,7 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
         return False
 
 
-def fetch_broll(query: str, format_type: str, segment_index: int, duration: float = 6.0, narration: str = "", alt_queries: list[str] | None = None, used_urls: set[str] | None = None, channel: str = "general") -> str:
+def fetch_broll(query: str, format_type: str, segment_index: int, duration: float = 6.0, narration: str = "", alt_queries: list[str] | None = None, used_urls: set[str] | None = None, channel: str = "general", topic: str = "") -> str:
     """
     Unified B-roll candidate ranking across multiple platforms (Reddit & YouTube prioritized, Coverr, Pexels, Pixabay, NASA, Wikimedia)
     using Gemini Vision matching and URL de-duplication.
@@ -1865,6 +1922,15 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     budget_default = "180" if format_type == "short" else "240"
     budget_seconds = int(os.environ.get("BROLL_SEGMENT_BUDGET_SECONDS", budget_default))
     deadline = time.monotonic() + budget_seconds
+
+    # If topic is not provided, try reading from output/topic.json
+    if not topic and os.path.exists("output/topic.json"):
+        try:
+            with open("output/topic.json", "r") as tf:
+                topic_data = json.load(tf)
+                topic = topic_data.get("topic", "")
+        except Exception:
+            pass
 
     def budget_exceeded() -> bool:
         if time.monotonic() <= deadline:
@@ -1897,8 +1963,9 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     stop_stock = {"4k", "1080p", "hd", "footage", "real", "authentic", "video", "discovery", "breakthrough", "logic", "superposition", "unprecedented", "fundamental", "revolution"}
     core_nouns = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in stop_stock]
     if len(core_nouns) >= 2:
+        anchor = core_nouns[0]
         q_pair1 = " ".join(core_nouns[:2])
-        q_pair2 = " ".join(core_nouns[-2:])
+        q_pair2 = f"{anchor} {core_nouns[-1]}"  # Retain anchor noun so subject entity is NEVER lost
         if q_pair1 not in queries_to_try: queries_to_try.insert(0, q_pair1)
         if q_pair2 not in queries_to_try: queries_to_try.insert(1, q_pair2)
     if len(core_nouns) >= 3:
@@ -2053,7 +2120,10 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
     # Score all candidates
     for c in candidates:
-        c["_score"] = _score_candidate(c, query, target_duration=duration)
+        c["_score"] = _score_candidate(c, query, target_duration=duration, topic=topic, channel=channel)
+
+    # Disqualify candidates that triggered domain bans or scored <= 0
+    candidates = [c for c in candidates if c.get("_score", 0.0) > 0.0]
 
     # Multi-platform diversity interleaving: guarantee top candidates include Reddit, Archive, Wikimedia, NASA alongside YouTube
     platform_buckets = {}
@@ -2121,7 +2191,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         if valid_candidates:
             print(f"[B-roll] Segment {segment_index}: Ranking {len(valid_candidates)} candidates from: {', '.join(set(c.get('source', 'Unknown') for c in valid_candidates))}…")
             from pipeline.vision_match import vision_rank_broll
-            best_idx, match_found = vision_rank_broll(thumbs, narration, query)
+            best_idx, match_found = vision_rank_broll(thumbs, narration, query, topic=topic)
 
             if match_found and best_idx is not None and best_idx < len(valid_candidates):
                 chosen = valid_candidates[best_idx]
@@ -2267,9 +2337,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     if downloaded_results:
         print(f"[B-roll] Segment {segment_index}: Ranking {len(downloaded_results)} downloaded candidates in batch...")
         thumbs = [r["frame_data"] for r in downloaded_results]
-        best_idx, match_found = vision_rank_broll(thumbs, narration, query)
+        best_idx, match_found = vision_rank_broll(thumbs, narration, query, topic=topic)
         
-        winner = None
         if match_found and best_idx is not None and 0 <= best_idx < len(downloaded_results):
             winner = downloaded_results[best_idx]
             winner_idx = best_idx
@@ -2299,17 +2368,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                             pass
             return out_path
         else:
-            print(f"[B-roll] Segment {segment_index}: Vision match inconclusive or rate limited. Selecting top-scored video candidate '{downloaded_results[0]['label']}' (Source: {downloaded_results[0].get('source')}) instead of AI slop!")
-            winner = downloaded_results[0]
-            winner_idx = 0
-            _image_to_ken_burns_video(winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
-            winner_credit_file = f"output/broll_{segment_index}_{winner_idx}_credit.json"
-            target_credit_file = f"output/broll_{segment_index}_credit.json"
-            if os.path.exists(winner_credit_file):
-                import shutil
-                shutil.copy(winner_credit_file, target_credit_file)
-            if used_urls is not None:
-                used_urls.add(winner["video_url"])
+            print(f"[B-roll] Segment {segment_index}: Vision match strictly rejected all downloaded video candidates. Proceeding to authentic topic stills / Pollinations Flux synthesis.")
             for r in downloaded_results:
                 for p in [r["temp_v"], r["temp_f"]]:
                     if os.path.exists(p):
@@ -2317,7 +2376,6 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                             os.remove(p)
                         except Exception:
                             pass
-            return out_path
 
     # ── Fallback 2: image sources (all converted with Ken Burns) ─────────────────────
     print(f"[B-roll] Segment {segment_index}: trying image sources…")
@@ -2359,15 +2417,16 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             print(f"[B-roll] Image source failed: {e}. Trying Pollinations…")
 
     # ── Fallback 3: Pollinations AI / Unsplash 4K image ─────────────────────────────
-    if _pollinations_image(query, img_path, w, h):
-        print(f"[B-roll] Segment {segment_index}: Stock image OK. Applying Ken Burns motion…")
+    pollin_query = f"{topic} {query}".strip() if topic else query
+    if _pollinations_image(pollin_query, img_path, w, h):
+        print(f"[B-roll] Segment {segment_index}: Topic-anchored image OK. Applying Ken Burns motion…")
         _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
         return out_path
 
     # ── Fallback 4: Unique Pollinations 4K Photorealistic Motion Clip ─────────────────
     print(f"[B-roll] Segment {segment_index}: Generating unique Pollinations AI motion clip...")
     narration_query = narration or query
-    clean_prompt = f"4k cinematic documentary footage of {narration_query}, photorealistic, 8k, detailed, no text, no watermark"
+    clean_prompt = f"4k cinematic documentary footage of {topic or narration_query}, photorealistic, 8k, detailed, no text, no watermark"
     if _pollinations_image(clean_prompt, img_path, w, h):
         _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
         return out_path

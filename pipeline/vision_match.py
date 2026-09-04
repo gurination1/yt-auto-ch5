@@ -16,12 +16,14 @@ def vision_rank_broll(
     thumbnails: list[bytes],
     narration: str,
     query: str,
+    topic: str = "",
 ) -> tuple[int | None, bool]:
     """
-    Scores candidate B-roll thumbnails against the EXACT narration sentence.
+    Scores candidate B-roll thumbnails against the EXACT narration sentence and video topic.
     Ranks candidates by semantic fit, not first-provider wins.
     Returns (best_index, match_found).
-    Strict zero-score rejection on cosplayers, car showrooms, modern dancers, plush toys, and crypto screens.
+    Strict zero-score rejection on cosplayers, car showrooms, modern dancers, plush toys, crypto screens,
+    and unrelated terrestrial analogies (factories, foundries, sunsets, offices) on space/nature topics.
     """
     if not thumbnails:
         return None, False
@@ -32,14 +34,18 @@ def vision_rank_broll(
         return 0, True
 
     # Build the strict matching prompt with airtight zero-score banlist
+    topic_header = f"VIDEO TOPIC: \"{topic}\"\n" if topic else ""
     prompt_text = (
+        f"{topic_header}"
         f"NARRATION (exact sentence for this video segment):\n"
         f"\"{narration}\"\n\n"
         f"SEARCH QUERY used: \"{query}\"\n\n"
-        f"You are evaluating {len(thumbnails)} candidate B-roll image(s) (indexed 0 to {len(thumbnails) - 1}) for the above narration.\n"
+        f"You are evaluating {len(thumbnails)} candidate B-roll image(s) (indexed 0 to {len(thumbnails) - 1}) for the above narration and topic.\n"
         f"Note: Some candidate images may be a horizontal collage showing 3 sequential frames from the same video.\n\n"
         f"SCORING RULES — read carefully:\n"
         f"1. CRITICAL ZERO-SCORE REJECTION (SCORE = 0 IMMEDIATELY & REJECT):\n"
+        f"   - UNRELATED TERRESTRIAL ANALOGIES: If video topic is SPACE, ASTRONOMY, or PLANETS, ZERO-SCORE REJECT ANY terrestrial Earth scenes, factories, foundries, metal smelting, blast furnaces, industrial machinery, modern city streets, cars, beaches, sunsets, or modern offices. (e.g. showing factory molten metal when discussing planetary cores or diamond rain is an UNACCEPTABLE mismatch).\n"
+        f"   - UNRELATED INDUSTRIAL/OFFICE SCENES: If video topic is NATURE, WILDLIFE, or DEEP SEA, ZERO-SCORE REJECT modern offices, factory floors, city traffic, or commercial electronics.\n"
         f"   - ANY candidate showing cosplayers, LARP, amateur costume roleplay, Comic-Con footage, plastic props/armor, or amateur fantasy reenactments.\n"
         f"   - ANY candidate showing modern car showrooms, indoor car dealerships, vehicle sales floors, or indoor auto expos.\n"
         f"   - ANY candidate showing indoor modern dancers, contemporary choreography, dance studio rehearsals, stage routines, or ballroom dancing.\n"
@@ -125,7 +131,5 @@ def vision_rank_broll(
         return None, False
 
     except Exception as e:
-        print(f"[VisionMatch] API unavailable/rate-limited ({e}). Falling back to top metadata candidate (Index 0).")
-        if thumbnails:
-            return 0, True
+        print(f"[VisionMatch] API unavailable or error: {e}. Strictly rejecting candidate batch so pipeline falls back to topic visual.")
         return None, False

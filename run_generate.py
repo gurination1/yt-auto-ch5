@@ -155,7 +155,8 @@ def main():
                 narration=seg_narration,
                 alt_queries=seg.get("broll_queries"),
                 used_urls=used_urls,
-                channel=channel_niche
+                channel=channel_niche,
+                topic=topic.get("topic", "")
             )
             broll_files.append(bpath)
             
@@ -286,7 +287,9 @@ def main():
                     duration=dur,
                     narration=seg["narration"],
                     alt_queries=repair_queries,
-                    used_urls=used_urls
+                    used_urls=used_urls,
+                    channel=channel_niche,
+                    topic=topic.get("topic", "")
                 )
                 broll_files[idx] = bpath
                 

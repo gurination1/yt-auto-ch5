@@ -93,14 +93,18 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
   * TEXT OVERLAYS THAT REINFORCE, NOT REPEAT: Use text for key terms, surprising numbers, simple diagrams, or summary sentences. Do not transcribe verbatim.
   * CONTINUOUS CURIOSITY LOOP: Every 2-3 segments, give a new reason to stay with a new question (e.g., "But here's where it gets interesting...").
 
-- MANDATORY AUTHENTIC DOCUMENTARY SOURCING (ZERO AI SLOP / ZERO GENERIC STOCK):
-  * FORBIDDEN: Generic stock proxies, abstract glowing backgrounds, floating particles, CGI animations, generic office workers, or decorative filler.
-  * REQUIRED: Target the EXACT real-world documentary subject, scientific apparatus, historical artifact, living species binomial, or institutional archive:
-    - Specific Missions & Facilities: "James Webb NIRCam deep field", "Apollo 11 Saturn V staging", "CERN LHC beam pipe vacuum chamber", "Cold Atom Lab ISS quantum physics", "Gotthard Base Tunnel boring machine cutter"
-    - Exact Biological & Field Entities: "coelacanth Latimeria chalumnae underwater", "sperm whale spermaceti organ dive", "pistol shrimp snapping claw macro", "deep sea anglerfish bioluminescence"
-    - Authentic Historical Artifacts & Patents: "Antikythera mechanism bronze gear", "Byzantine Greek fire siphon dragon", "Archimedes claw syracuse crane", "Dead Sea scroll parchment Hebrew"
-    - Real Laboratory Apparatus & Scans: "scanning electron microscope crystal lattice", "cryogenic dilution refrigerator copper coils", "laser optical table beam splitter", "fluorescent cell mitosis petri dish"
-  * SYNTAX: [Specific Domain / Specimen / Mission] + [Physical Material / Mechanism] + [Authentic Optical State]
+- MANDATORY AUTHENTIC DOCUMENTARY SOURCING (ZERO AI SLOP / ZERO UNRELATED STOCK):
+  * CRITICAL: Every single segment's `broll_query` and every entry in `broll_queries` MUST BE EXPLICITLY ANCHORED to the core subject: "{topic['topic']}"!
+  * ABSOLUTELY FORBIDDEN: NEVER use unrelated terrestrial analogies!
+    - If the topic is about SPACE / PLANETS / ASTRONOMY: Every query MUST be space/planetary! FORBIDDEN: Earth factories, industrial steel foundries, factory workers, beach sunsets, ocean waves, city traffic, or office desks!
+    - If the topic is about NATURE / CREATURES: Every query MUST name the creature/organism! FORBIDDEN: Modern city streets, modern offices, or factories!
+    - If the topic is about HISTORY / WARFARE: Every query MUST name the ancient artifact, battle, or ruins! FORBIDDEN: Modern buildings or modern people!
+    - If the topic is about ENGINEERING / MEGAPROJECTS: Every query MUST name the specific machine or structure!
+  * REQUIRED: Target the EXACT real-world documentary subject, scientific apparatus, historical artifact, living species binomial, or celestial body:
+    - Space: "{topic['topic']} planet space 4k", "{topic['topic']} celestial atmosphere 4k", "{topic['topic']} deep space telescope 4k"
+    - Biology: "{topic['topic']} living specimen macro 4k", "{topic['topic']} natural habitat documentary 4k"
+    - History: "{topic['topic']} ancient artifact museum 4k", "{topic['topic']} historical ruins documentary 4k"
+    - Engineering: "{topic['topic']} colossal machine operation 4k", "{topic['topic']} structure aerial view 4k"
   * ZERO BUZZWORDS IN BROLL QUERIES:
     - ABSOLUTELY FORBIDDEN: Do NOT write marketing adjectives or vague descriptors like 'futuristic', 'next-generation', 'super bright', 'incredible', 'amazing', 'shocking', 'impossible', 'visualization', 'concept', 'animation', 'effect', 'demonstration', 'presenting'.
     - REQUIRED: Name ONLY the concrete physical noun of the object/specimen/machine being discussed.
@@ -122,22 +126,22 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
     {{
       "id": 1,
       "narration": "opening shocking hook complete sentence - 10 words or less, massive information gap",
-      "broll_query": "concrete physical object 4k",
-      "broll_queries": ["concrete physical object 4k", "optical macro close up 4k", "documentary authentic footage 4k"],
+      "broll_query": "{topic['topic']} main visual subject 4k",
+      "broll_queries": ["{topic['topic']} main visual subject 4k", "{topic['topic']} optical macro close up 4k", "{topic['topic']} documentary authentic footage 4k"],
       "duration_target": 6
     }},
     {{
       "id": 2,
       "narration": "Mind-bending real fact that delivers on the hook - 10 words or less",
-      "broll_query": "specific mechanism or apparatus 4k",
-      "broll_queries": ["specific mechanism or apparatus 4k", "laboratory demonstration 4k"],
+      "broll_query": "{topic['topic']} specific mechanism 4k",
+      "broll_queries": ["{topic['topic']} specific mechanism 4k", "{topic['topic']} laboratory observation 4k"],
       "duration_target": 6
     }},
     {{
       "id": {segment_count},
       "narration": "A complete, punchy final takeaway sentence delivering the ultimate mind-blowing payoff, plus a natural call-to-action (e.g. 'More wild secrets at the link in bio.'). MUST be a 100% complete sentence ending with a period. NEVER end with dangling words like 'because' or 'which'!",
-      "broll_query": "concrete physical object documentary footage 4k",
-      "broll_queries": ["concrete physical object 4k", "action close up macro", "field specimen documentary footage 4k"],
+      "broll_query": "{topic['topic']} documentary footage 4k",
+      "broll_queries": ["{topic['topic']} documentary footage 4k", "{topic['topic']} action close up macro 4k"],
       "duration_target": 6
     }}
   ],
