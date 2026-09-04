@@ -2,7 +2,7 @@ import os
 import json
 import datetime
 import random
-from pipeline.config import HOOK_PATTERNS, BEACONS_LINK, GEMINI_PRO
+from pipeline.config import HOOK_PATTERNS, BEACONS_LINK, GEMINI_PRO, GEMINI_FLASH
 from pipeline.gemini import GeminiClient, _robust_json_loads
 
 def get_next_weekday_2pm_ist_utc():
@@ -50,27 +50,36 @@ def generate_script(topic: dict, format_type: str) -> dict:
         prompt = f"""Generate an extremely viral, high-retention 25-35 second YouTube Short educational script on the topic: "{topic['topic']}".
 Use the following hook concept as your core theme: "{hook_formatted}" (short hook: "{topic.get('short_hook', '')}").
 {lang_instruction}
-Narration Style Requirements :
-1. Pacing & Punchiness: 5 to 15 words per segment's narration. CRITICAL: NEVER split a single sentence across multiple segments!
-- ZERO TOPIC REPETITION: Introduce the subject in Segment 1, but NEVER repeat the full topic string in subsequent segments! Use natural conversational references (e.g., "this predator", "the ancient weapon", "the signal", "this massive drill", "the particles"). Each segment MUST contain 1 or 2 complete, self-contained sentences. If you split a sentence, the voiceover will pause awkwardly mid-sentence.
-2. Conversational & Extreme Simplicity: Use ONLY 5th-grade vocabulary. Extremely simple words, no complex grammar, no SAT words. Must be so simple a 10-year-old understands instantly.
-3. Engaging Tone: The voiceover narration must be conversational, highly engaging, and relatable—like a friend telling an exciting story. Write the voiceover to be energetic, warm, and inviting.
-3. Hook/Pattern Interrupt: Segment 1 must immediately shatter attention. Start with a shocking visual or conceptual paradox in under 12 words.
-4. Emotional/Sensory Triggers: Use strong, dramatic verbs and adjectives (e.g., "panicking", "shatters", "banned", "impossible", "melts", "secret", "trapped").
-5. No Fluff: Get straight to the mind-blowing science. Every word must justify its existence.
+Narration Style Requirements (CRITICAL - MAXIMUM VIRALITY & SIMPLICITY):
+1. EXTREME SIMPLICITY & CONVERSATIONAL ENGLISH (8TH GRADE LEVEL):
+   - Write like an excited friend telling an insane secret around a campfire.
+   - ABSOLUTELY FORBIDDEN: Academic jargon, dense terminology, passive textbook lecturing.
+     NEVER USE WORDS LIKE: "improbable", "desensitized", "homeostatic", "equilibrium", "methodology", "reconsider", "predatory instincts", "operational mechanisms", "unprecedented mechanisms", "fundamental reaction", "historical accounts suggest", "prompts to reconsider".
+   - REQUIRED: Plain, sensory, visual language: "melts", "smashes", "tricks", "sneaks in", "explodes", "freezes solid", "eats through", "turns to dust".
+2. RAPID-FIRE PUNCHY BEATS (MAX 8-12 WORDS PER SENTENCE):
+   - Every sentence MUST be short and active. Maximum 12 words per sentence.
+   - ABSOLUTELY FORBIDDEN: Long compound sentences or subordinate clauses (do NOT write sentences starting with "While...", "Although...", "Which means that...", "Making it...").
+   - Break thoughts into punchy active beats: "A mantis shrimp doesn't just punch. Its claw strikes faster than a bullet. The water boils into a shockwave."
+3. MANDATORY STARTLING UNKNOWN FACT (THE REVEAL):
+   - Every single script MUST reveal at least ONE specific, counterintuitive, jaw-dropping secret that 99% of people DO NOT KNOW.
+   - NEVER deflate the hook with a wet blanket or say "actually it didn't happen". Deliver an astonishing, verified truth.
+4. ZERO TOPIC REPETITION:
+   - Introduce the subject in Segment 1. In subsequent segments, refer to it naturally ("this metal", "the ancient weapon", "the creature", "this machine"). NEVER repeat the full topic string.
+5. COMPLETE, SATISFYING CLOSING (ZERO DANGLING WORDS):
+   - The final segment must be a 100% grammatically complete sentence ending with a period.
+   - ABSOLUTELY FORBIDDEN: Ending with dangling conjunctions or prepositions like "because", "which", "how", "and", "so", or ellipses "...".
 
 COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
 - CLARITY & ACCESSIBILITY RULE (SIMPLE & INTRIGUING, ZERO PHD JARGON):
   * Explain the mind-blowing mechanism using simple, vivid, conversational words and tangible physical comparisons.
-  * FORBIDDEN: Academic jargon, dense textbook terminology, or abstract PhD words (e.g., do NOT say 'thermodynamic equilibrium', 'homeostatic regulation', 'hydrostatic barometric differential').
+  * FORBIDDEN: Academic jargon, dense textbook terminology, or abstract PhD words.
   * REQUIRED: Describe what physically HAPPENS in punchy, visual language (e.g., 'lasers shoot light particles to smack hot atoms until they freeze completely still', 'water pressure heavy enough to crush a steel submarine like an aluminum soda can', 'giant drill heads hotter than boiling soup').
-  * A 12-year-old must understand the core revelation instantly while feeling genuinely mind-blown.
+  * An 8th grader must understand the core revelation instantly while feeling genuinely mind-blown.
 
 - MANDATORY STARTLING UNKNOWN FACT (THE "I DIDN'T KNOW THAT!" FACTOR):
   * Every single script MUST reveal at least ONE specific, counterintuitive, little-known mechanism or hidden physical reality that educated adults do NOT know.
   * FORBIDDEN: Superficial textbook summaries (e.g., "whales are big", "pyramids are stone", "tunnels go under mountains", "black holes are dark").
   * REQUIRED: The startling, precise hidden detail (e.g., "a sperm whale's spermaceti oil hardens into solid wax at deep cold depths to act as an automated buoyancy anchor", "the Great Pyramid has eight concave faces only visible from the sky on the exact equinox afternoon", "subsea tunnel boring machines freeze groundwater into a solid ice wall with liquid nitrogen so workers don't drown", "quantum lasers freeze atom kinetic momentum to near absolute zero").
-  * This unknown insight MUST be the central reveal in Segment 2 or 3 that delivers on the opening hook!
 
 - FORMAT RULE (20-30s Shorts): The entire video IS the hook. Hook, content, and payoff happen simultaneously.
   * Grab (0-3s): One powerful statement, visual, or question. No intro. No channel name. No fluff.
@@ -85,7 +94,7 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
   * CONTINUOUS CURIOSITY LOOP: Every 2-3 segments, give a new reason to stay with a new question (e.g., "But here's where it gets interesting...").
 
 - MANDATORY AUTHENTIC DOCUMENTARY SOURCING (ZERO AI SLOP / ZERO GENERIC STOCK):
-  * FORBIDDEN: Generic stock proxies, abstract glowing backgrounds, floating particles, CGI animations, generic office workers, or decorative filler (do NOT write 'abstract science background', 'glowing particles', 'blue fluid dynamics', 'futuristic concept').
+  * FORBIDDEN: Generic stock proxies, abstract glowing backgrounds, floating particles, CGI animations, generic office workers, or decorative filler.
   * REQUIRED: Target the EXACT real-world documentary subject, scientific apparatus, historical artifact, living species binomial, or institutional archive:
     - Specific Missions & Facilities: "James Webb NIRCam deep field", "Apollo 11 Saturn V staging", "CERN LHC beam pipe vacuum chamber", "Cold Atom Lab ISS quantum physics", "Gotthard Base Tunnel boring machine cutter"
     - Exact Biological & Field Entities: "coelacanth Latimeria chalumnae underwater", "sperm whale spermaceti organ dive", "pistol shrimp snapping claw macro", "deep sea anglerfish bioluminescence"
@@ -94,10 +103,7 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
   * SYNTAX: [Specific Domain / Specimen / Mission] + [Physical Material / Mechanism] + [Authentic Optical State]
   * ZERO BUZZWORDS IN BROLL QUERIES:
     - ABSOLUTELY FORBIDDEN: Do NOT write marketing adjectives or vague descriptors like 'futuristic', 'next-generation', 'super bright', 'incredible', 'amazing', 'shocking', 'impossible', 'visualization', 'concept', 'animation', 'effect', 'demonstration', 'presenting'.
-    - REQUIRED: Name ONLY the concrete physical noun of the object/specimen/machine being discussed:
-      * Right: 'Gallium nitride light emitting diode wafer' (NOT 'next-generation LED light emission super bright')
-      * Right: 'Titanium neural implant microelectrode' (NOT 'futuristic transparent medical implant visualization')
-      * Right: 'Scanning electron microscope crystal lattice' (NOT 'high-speed crystal growth macro photography time-lapse')
+    - REQUIRED: Name ONLY the concrete physical noun of the object/specimen/machine being discussed.
 
 For each segment, provide a `broll_queries` array with 3-5 ALTERNATIVE hyper-specific search queries targeting real footage and institutional archives. The first entry must match `broll_query`.
 
@@ -107,7 +113,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
 {{
   "title": "A catchy title under 40 chars, starting with a hook word/number and containing one emoji",
   "voiceover_plan": "A 2-3 sentence internal plan detailing the emotional arc of the voiceover. How should the narrator sound? Think step-by-step to plan the performance before writing.",
-  "vocal_tone": "Select the single best vocal delivery style for this topic. Choose EXACTLY ONE from this list: 'dramatic_whisper' (best for secrets, hidden info, suppressed history), 'suspenseful_mystery' (best for crimes, conspiracies, unsolved puzzles), 'energetic_storytelling' (best for science breakthroughs, viral tech, amazing facts), 'deep_curiosity' (best for space, nature, philosophy, the unknown), 'bold_authority' (best for business, finance, economics, power dynamics), 'warm_storyteller' (best for human interest, culture, social stories), 'dark_revelation' (best for scandals, cover-ups, disturbing truths), 'playful_wit' (best for funny/ironic history, absurd facts, counter-intuitive discoveries). Match the tone to the emotional core of the topic.",
+  "vocal_tone": "Select the single best vocal delivery style for this topic. Choose EXACTLY ONE from this list: 'dramatic_whisper', 'suspenseful_mystery', 'energetic_storytelling', 'deep_curiosity', 'bold_authority', 'warm_storyteller', 'dark_revelation', 'playful_wit'. Match the tone to the emotional core of the topic.",
   "description": "Line1: restate the hook\nLine2: Fast. Accurate. Mind-blowing.\nLine3: 📲 Follow our socials & links -> {BEACONS_LINK}\n\n#science #didyouknow #facts",
   "tags": ["8 to 12 relevant tags under 500 characters total"],
   "category_id": "27",
@@ -115,22 +121,23 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
     // Provide exactly {segment_count} segments here.
     {{
       "id": 1,
-      "narration": "opening shocking hook complete sentence - 12 words or less, massive information gap",
-      "broll_query": "{topic['topic']} black hole accretion disk space",
-      "broll_queries": ["{topic['topic']} black hole accretion disk space", "event horizon visualization", "gravitational lensing effect", "supermassive black hole animation"],
+      "narration": "opening shocking hook complete sentence - 10 words or less, massive information gap",
+      "broll_query": "concrete physical object 4k",
+      "broll_queries": ["concrete physical object 4k", "optical macro close up 4k", "documentary authentic footage 4k"],
       "duration_target": 6
     }},
     {{
       "id": 2,
-      "narration": "Mind-bending scientific fact that expands on the hook - 8 words or less",
-      "broll_query": "Albert Einstein chalkboard equations",
+      "narration": "Mind-bending real fact that delivers on the hook - 10 words or less",
+      "broll_query": "specific mechanism or apparatus 4k",
+      "broll_queries": ["specific mechanism or apparatus 4k", "laboratory demonstration 4k"],
       "duration_target": 6
     }},
     {{
       "id": {segment_count},
-      "narration": "Witty, sarcastic subject-aware Call-to-Action that MUST literally contain the exact phrase 'link in bio' or 'link in the description' AND grammatically flow into Segment 1's first sentence when read back-to-back — creating a seamless loop. Relaxed word count: up to 15 words.",
-      "broll_query": "{topic['topic']} real experiment documentary footage",
-      "broll_queries": ["concrete physical object 4k", "action close up macro", "field specimen documentary footage", "laboratory demonstration"],
+      "narration": "A complete, punchy final takeaway sentence delivering the ultimate mind-blowing payoff, plus a natural call-to-action (e.g. 'More wild secrets at the link in bio.'). MUST be a 100% complete sentence ending with a period. NEVER end with dangling words like 'because' or 'which'!",
+      "broll_query": "concrete physical object documentary footage 4k",
+      "broll_queries": ["concrete physical object 4k", "action close up macro", "field specimen documentary footage 4k"],
       "duration_target": 6
     }}
   ],
@@ -245,7 +252,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
     is_fallback_script = False
     for attempt in range(max_attempts):
         try:
-            script_text = client.generate_text(prompt, use_grounding=False, temperature=0.8, model=GEMINI_PRO)
+            script_text = client.generate_text(prompt, use_grounding=False, temperature=0.8, model=GEMINI_FLASH)
             script = _robust_json_loads(script_text)
             break
         except Exception as e:
@@ -503,7 +510,7 @@ Return ONLY the modified script JSON with an added `"verified": true` or `"verif
 If a claim is unverifiable, speculative, or false, mark `"verified": false`.
 """
         try:
-            verified_text = client.generate_text(verification_prompt, use_grounding=True, temperature=0.2)
+            verified_text = client.generate_text(verification_prompt, use_grounding=False, temperature=0.2)
             verified_script = _robust_json_loads(verified_text)
             script["segments"] = verified_script.get("segments", script["segments"])
         except Exception as e:
@@ -526,7 +533,7 @@ Rewrite the "narration" so that it is 100% scientifically accurate, verifiable, 
 Return ONLY a raw JSON object for this segment with the updated "narration" and `"verified": true`.
 """
             try:
-                regen_text = client.generate_text(regen_prompt, use_grounding=True, temperature=0.3)
+                regen_text = client.generate_text(regen_prompt, use_grounding=False, temperature=0.3)
                 regen_seg = _robust_json_loads(regen_text)
                 seg["narration"] = regen_seg.get("narration", seg["narration"])
                 seg["verified"] = True
@@ -535,7 +542,20 @@ Return ONLY a raw JSON object for this segment with the updated "narration" and 
                 seg["verified"] = True
 
     
-    # ── Ensure CTA Segment Narration Mentions Link ────────────────────────────
+    # ── Clean all segment narrations (Strip dangling words & enforce punctuation) ──
+    dangling_words = {"because", "which", "that", "how", "and", "so", "or", "to", "with", "for", "as"}
+    for seg in script.get("segments", []):
+        narr = seg.get("narration", "").strip()
+        words = narr.split()
+        while words and words[-1].lower().rstrip(".,!?;:-") in dangling_words:
+            words.pop()
+        if words:
+            narr = " ".join(words).rstrip(",;:-")
+            if not narr.endswith((".", "!", "?")):
+                narr += "."
+            seg["narration"] = narr
+
+    # ── Ensure CTA Segment Narration Mentions Link Cleanly ───────────────────
     if format_type == "short":
         cta_idx = len(script.get("segments", [])) - 1
         if cta_idx >= 0:
@@ -543,11 +563,8 @@ Return ONLY a raw JSON object for this segment with the updated "narration" and 
             cta_narration = cta_seg.get("narration", "")
             if "link" not in cta_narration.lower():
                 print(f"[Phase 2] CTA Segment narration '{cta_narration}' lacks link mention. Enforcing...")
-                # Append link in bio in a natural way
-                if cta_narration.endswith("!"):
-                    cta_seg["narration"] = cta_narration[:-1] + " — link in bio!"
-                else:
-                    cta_seg["narration"] = cta_narration.rstrip(".").rstrip(",") + " — link in bio!"
+                cta_clean = cta_narration.rstrip(".!?,")
+                cta_seg["narration"] = f"{cta_clean} — link in bio!"
 
     # ── Ensure Beacons Link in Description ────────────────────────────────────
     if "description" in script:

@@ -24,21 +24,23 @@ def select_topic(format_type: str) -> dict:
 
     # ── 2. Determine subcluster + evergreen vs trending ──────────────────────
     current_subcluster = ENGINEERING_SUBCLUSTERS[subcluster_idx % len(ENGINEERING_SUBCLUSTERS)]
-    is_trending = (call_count % 3 != 0)
+    is_trending = (call_count % 3 != 0)   # 2 out of 3 calls = trending topic
 
     if is_trending:
         topic_instruction = (
-            f"Use Google Search to find current HIGHLY VIRAL news from the last 24-48 hours SPECIFICALLY about {current_subcluster}. "
-            f"Generate 5 TRENDING topics strictly within {current_subcluster} that are currently exploding on social media or making massive news. "
-            f"Frame each as a timely, highly intriguing analysis. Strictly preserve this channel's dedicated niche and do NOT generate generic news."
+            f"Use Google Search to find mind-blowing, highly viral recent discoveries or breakthroughs from the last 24-48 hours specifically about {current_subcluster}. "
+            f"Generate 5 TRENDING topics that reveal a startling reality normal people did NOT know. "
+            f"STRICT RULES: Must be a concrete, verified true discovery with massive visual curiosity. NO dry academic papers. "
+            f"Every topic must make an average person say: 'Wait, is that actually real?!'"
         )
     else:
         topic_instruction = (
-            f"Generate 5 EVERGREEN topics about {current_subcluster}. "
-            f"Each must reveal a bizarre, counterintuitive, or little-known fact "
-            f"that educated adults don't know. Frame as 'What if X happened' or 'How Y actually works'. "
-            f"Every topic MUST name a specific mechanism, animal power, hunting behavior, or biological adaptation — "
-            f"NOT a vague 'scientists are surprised' hook."
+            f"Generate 5 insanely fascinating, real-world EVERGREEN topics about {current_subcluster}. "
+            f"CRITICAL REQUIREMENTS: "
+            f"1. Must reveal a bizarre, shocking, or counter-intuitive secret that 99% of people do NOT know. "
+            f"2. FORBIDDEN: Do NOT write generic textbook concepts (e.g. 'Quantum Computing Superposition Logic', 'How Photosynthesis Works', 'What if giant excavators dig canals'). "
+            f"3. REQUIRED: A specific real-world anomaly, unbelievable physical fact, or mind-bending paradox (e.g. 'The metal that melts in your hand but shatters glass', 'Why hot water freezes faster than cold water', 'The room that is so quiet you can hear your own blood pumping'). "
+            f"4. Easy to understand: An 8th grader must instantly grasp why it is insane. Zero PhD jargon."
         )
 
     # ── 3. Build Gemini prompt ───────────────────────────────────────────────
@@ -53,15 +55,17 @@ SAFETY & COMPLIANCE CONSTRAINTS (MANDATORY):
 - The topics MUST be 100% advertiser-friendly, family-friendly, and compliant with YouTube/Meta community guidelines.
 - Strictly AVOID: medical advice, health/cure claims, Covid-19/vaccine/epidemic speculation, dangerous stunts/activities, illegal substances, or weapons.
 - Avoid political controversies, conspiracy theories, or tragic/graphic events.
-- Focus on educational, curious, and inspiring wildlife and natural science information.
+- Focus on educational, curious, and inspiring megastructures, colossal machinery, and engineering marvels.
 
-AVOID: Theoretical quantum physics, Casimir effect, particle cosmology, black holes, animal biology, ancient history.
-FOCUS: Modern megaprojects, mega-structures, massive tunnel boring machines, deep-sea subsea cables, high-speed rail networks, colossal dams, extreme heavy machinery.
+AUDIENCE & HOOK RULES:
+- The topic MUST be so clear, punchy, and intriguing that someone scrolling TikTok or Shorts immediately stops.
+- Pick concrete gigantic machines, subsea tunnels, colossal bridges, or engineering feats with high visual payoff.
+- FORBIDDEN: Abstract theories, philosophical musings, hypothetical scenarios ('What if X happened...').
 
 Return ONLY a raw JSON array of objects. No markdown, no preamble.
 Each object must have exactly these fields:
-- "topic": specific subject with a named fact, theory, or mechanism (e.g. "Gotthard Base Tunnel boring machines drilled 57 kilometers through solid Alpine granite")
-- "short_hook": opening question or statement, 8 words or less, creates a strong information gap
+- "topic": specific, punchy curiosity subject naming the real anomaly or object (e.g. "The Bagger 293: The 14,000-ton colossal excavator that holds the world record for land vehicles")
+- "short_hook": opening question or bold statement, 8 words or less, creates an irresistible curiosity gap
 - "hook_type": one of "curiosity_gap", "contrarian", "time_pressure", "self_identification", "narrative_pull"
 - "for_format": "short", "long", or "both"
 - "subcluster": the sub-cluster this belongs to (string)
@@ -70,23 +74,22 @@ Each object must have exactly these fields:
     print(f"[Phase1] Requesting topics — subcluster: {current_subcluster} | trending: {is_trending}")
     client = GeminiClient()
     try:
-        response_text = client.generate_text(prompt, use_grounding=is_trending, temperature=0.75)
+        response_text = client.generate_text(prompt, use_grounding=False, temperature=0.85)
         topics_list = _robust_json_loads(response_text)
-        if not isinstance(topics_list, list) or not topics_list:
-            raise ValueError("Response is not a valid non-empty JSON list")
+        if not isinstance(topics_list, list):
+            raise ValueError("Response is not a JSON list")
+        if not topics_list:
+            raise ValueError("Response is an empty list")
     except Exception as e:
         print(f"[Phase1] Error fetching or parsing topics from Gemini: {e}")
         import random, time
         rand_id = int(time.time()) % 1000
-        diverse_eng_topics = [
-            {"topic": f"Gotthard Base Tunnel Alpine Boring Machine", "short_hook": "World longest tunnel drilled 57km through solid granite.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "underground megastructures, subterranean tunnels and mining machines"},
-            {"topic": f"Bagger 293 Giant Mining Excavator Mechanics", "short_hook": "Heaviest terrestrial vehicle weighs 14,000 metric tons.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "extreme heavy machinery and industrial titans"},
-            {"topic": f"Three Gorges Dam Hydrological Structural Resistance", "short_hook": "Mega dam holds 40 billion cubic meters of water.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "extreme mega-bridges, oceanic dams and offshore platforms"},
-            {"topic": f"Channel Tunnel Underwater Subsea Tunneling", "short_hook": "Engineers connected Britain and France 50 meters under sea.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "underground megastructures, subterranean tunnels and mining machines"},
-            {"topic": f"Burj Khalifa Vortex Shedding Structural Engineering", "short_hook": "How world tallest skyscraper confuses supersonic desert wind.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": "modern mega-skyscrapers and aerodynamic architectural feats"}
+        topics_list = [
+            {"topic": "The Bagger 293: The 14,000-ton colossal excavator that holds the world record for land vehicles", "short_hook": "This machine is heavier than 30 Boeing 747s!", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": current_subcluster},
+            {"topic": "The Gotthard Base Tunnel: How engineers bored a 57-kilometer train tunnel beneath the Alps", "short_hook": "How did engineers drill 57 kilometers under mountains?", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": current_subcluster},
+            {"topic": "The Taipei 101 Tuned Mass Damper: The 660-ton golden pendulum that saves the skyscraper from typhoons", "short_hook": "A 660-ton golden ball saves this skyscraper.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": current_subcluster},
+            {"topic": "The Akashi Kaikyo Bridge: The 4-kilometer suspension bridge that survived a 7.2 magnitude earthquake mid-construction", "short_hook": "This bridge survived a massive earthquake mid-construction.", "hook_type": "curiosity_gap", "for_format": "both", "subcluster": current_subcluster}
         ]
-        random.shuffle(diverse_eng_topics)
-        topics_list = diverse_eng_topics
 
     # ── 4. Pick first topic matching format_type and not a duplicate ─────────
     import re
@@ -141,7 +144,9 @@ Each object must have exactly these fields:
         except Exception as e:
             print(f"Error parsing retried topics: {e}")
 
+    # Fallback to first generated if no non-duplicate found
     if not selected_topic:
+        print("[Phase1] Warning: Could not generate a completely non-duplicate topic. Using first available as fallback.")
         for item in topics_list:
             if item.get("for_format", "both") in (format_type, "both"):
                 selected_topic = item
@@ -149,6 +154,7 @@ Each object must have exactly these fields:
         if not selected_topic:
             selected_topic = topics_list[0]
             selected_topic["for_format"] = format_type
+
 
     print(f"[Phase1] Selected: {selected_topic['topic']}")
 
