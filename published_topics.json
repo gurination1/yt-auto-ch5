@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Solar Wind Cosmic Shields Science #1786077568",
     "AI-Designed Viruses: A New Frontier in Biological Engineering as AI Creates Functional Phages",
     "South Korea's Danuri orbiter captures first images of a SpaceX rocket's impact crater on the moon, offering unique insights into lunar surface mechanics and the effects of human-made space debris.",
     "How dark energy expands the observable universe cosmos #453",
@@ -89,8 +88,9 @@
     "Bagger 293 Giant Mining Excavator Mechanics",
     "What if mega-scale continental canal construction relies on giant bucket-wheel excavators moving millions of cubic meters of earth daily via endless conveyor systems?",
     "The Akashi Kaikyo Bridge: The 4-kilometer suspension bridge that survived a 7.2 magnitude earthquake mid-construction",
-    "Self-Repairing Heat Shields: The Ceramic Material That Heals Itself Mid-Flight at Mach 10"
+    "Self-Repairing Heat Shields: The Ceramic Material That Heals Itself Mid-Flight at Mach 10",
+    "The 'Living' Concrete: How Ancient Deep-Sea Structures Self-Heal and Get Stronger Over Centuries by *Growing* New Rock from the Ocean Itself"
   ],
-  "subcluster_idx": 0,
-  "call_count": 182
+  "subcluster_idx": 1,
+  "call_count": 183
 }
