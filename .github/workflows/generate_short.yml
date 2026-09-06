@@ -1,9 +1,12 @@
 name: Generate Short Video
 
-# Dispatched centrally by /root/yt-auto-cron with global concurrency & slot locking
-# Native GHA cron disabled to prevent race conditions & double triggering
+# Native GitHub Actions automated scheduling (100% cloud-hosted on GHA)
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'    # 03:00 UTC / 08:30 IST (Ch5 Short #1)
+    - cron: '30 10 * * *'  # 10:30 UTC / 16:00 IST (Ch5 Short #2)
+    - cron: '0 18 * * *'   # 18:00 UTC / 23:30 IST (Ch5 Short #3)
 
 permissions:
   contents: write
