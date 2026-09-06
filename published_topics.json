@@ -1,6 +1,5 @@
 {
   "topics": [
-    "South Korea's Danuri orbiter captures first images of a SpaceX rocket's impact crater on the moon, offering unique insights into lunar surface mechanics and the effects of human-made space debris.",
     "How dark energy expands the observable universe cosmos #453",
     "How cell-inspired nanoreactors efficiently convert sunlight into hydrogen peroxide, mimicking biological processes for cleaner chemical manufacturing.",
     "How dark energy expands the observable universe cosmos #497",
@@ -89,8 +88,9 @@
     "The Akashi Kaikyo Bridge: The 4-kilometer suspension bridge that survived a 7.2 magnitude earthquake mid-construction",
     "Self-Repairing Heat Shields: The Ceramic Material That Heals Itself Mid-Flight at Mach 10",
     "The 'Living' Concrete: How Ancient Deep-Sea Structures Self-Heal and Get Stronger Over Centuries by *Growing* New Rock from the Ocean Itself",
-    "The 'Floating Skyscraper' ships that stand on the seabed to build offshore wind farms, lifting 3,000-ton turbines."
+    "The 'Floating Skyscraper' ships that stand on the seabed to build offshore wind farms, lifting 3,000-ton turbines.",
+    "The 'Underground Factory' TBMs: How colossal boring machines now incorporate entire concrete prefabrication plants *inside* them, building a full tunnel arch every few hours as they drill, deep beneath cities."
   ],
-  "subcluster_idx": 2,
-  "call_count": 184
+  "subcluster_idx": 3,
+  "call_count": 185
 }
