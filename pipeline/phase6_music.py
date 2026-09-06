@@ -6,6 +6,7 @@ No torch, no transformers, no model download, no OOM risk. Runs in <2s.
 If a FREESOUND_API_KEY is set, tries Freesound CC0 ambient tracks first,
 then falls back to the procedural generator on any failure.
 """
+import json
 import os
 import random
 import shutil
@@ -246,6 +247,50 @@ def _archive_audio(topic: str) -> str | None:
         return None
 
 
+NICHE_TRACK_METADATA = {
+    "science": {
+        "crypto.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Crypto.mp3", ["quantum", "computing", "ai", "paradox", "simulation", "algorithm", "silicon", "time", "ground floor", "black hole", "relativity", "micro-robot", "circuit"]),
+        "the_complex.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/The%20Complex.mp3", ["cyber", "hacking", "digital", "neural", "electric", "futuristic", "particle", "laser", "physics", "spokes"]),
+        "future_gladiator.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Future%20Gladiator.mp3", ["robot", "combat", "kinetic", "energy", "fusion", "breakthrough", "materials", "engine"]),
+        "static_motion.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Static%20Motion.mp3", ["cosmic", "galaxy", "deep space", "nebula", "radiation", "universe", "astronomy", "saturn", "rings"]),
+        "overriding_concern.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Overriding%20Concern.mp3", ["experiment", "nuclear", "chemistry", "mutation", "danger", "hazard", "reaction", "laboratory"]),
+        "echoes_of_time.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Echoes%20of%20Time.mp3", ["spacetime", "ancient stars", "telescope", "gravitational", "light", "dimension", "infinite"]),
+    },
+    "nature": {
+        "dark_fog.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Dark%20Fog.mp3", ["deep sea", "abyss", "bioluminescence", "squid", "shark", "anglerfish", "predator", "ocean", "trench"]),
+        "thunder_dreams.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Thunder%20Dreams.mp3", ["apex", "colossal", "whale", "giant", "mammal", "elephant", "lethal", "water"]),
+        "deep_noise.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Deep%20Noise.mp3", ["subterranean", "cave", "fungi", "strange", "unseen", "creature", "darkness", "blind"]),
+        "long_note_two.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Long%20Note%20Two.mp3", ["immortal", "tardigrade", "regeneration", "frozen", "ancient", "microscopic", "bacteria", "fossil", "coelacanth"]),
+        "spacial_harvest.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Spacial%20Harvest.mp3", ["parasite", "mimicry", "adaptation", "bizarre", "evolution", "strike", "mantis shrimp", "plasma"]),
+        "shamanistic.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Shamanistic.mp3", ["jungle", "forest", "survival", "instinct", "hunt", "primal", "predator", "wild"]),
+    },
+    "history": {
+        "five_armies.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Five%20Armies.mp3", ["battle", "legion", "siege", "empire", "cavalry", "army", "ancient", "rome", "spartan"]),
+        "clash_defiant.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Clash%20Defiant.mp3", ["guerrilla", "traps", "declassified", "military", "deception", "ghost army", "wwii", "inflatable"]),
+        "hitman.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Hitman.mp3", ["assassin", "spy", "ninja", "secret", "treaty", "poison", "shadow", "ambush", "fog"]),
+        "prelude_and_action.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Prelude%20and%20Action.mp3", ["tactics", "maneuver", "artillery", "command", "warrior", "weapon", "rubber", "chemistry"]),
+        "dangerous.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Dangerous.mp3", ["invasion", "blockade", "conquest", "doom", "ruthless", "warlord", "catastrophe"]),
+        "volatile_reaction.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Volatile%20Reaction.mp3", ["gunpowder", "blitzkrieg", "revolution", "rebellion", "castle", "explosive", "charge"]),
+    },
+    "mystery": {
+        "unseen_horrors.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Unseen%20Horrors.mp3", ["cold case", "vanished", "anomaly", "sighting", "creature", "cryptid", "forest", "cave", "patagonia", "baghdad battery"]),
+        "metaphysik.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Metaphysik.mp3", ["ancient ruins", "radio", "signal", "cosmic", "radio burst", "bursts", "void", "space", "sun"]),
+        "awkward_meeting.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Awkward%20Meeting.mp3", ["bunker", "classified", "ufo", "government", "files", "project", "conspiracy"]),
+        "symmetry.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Symmetry.mp3", ["geometric", "richat", "structure", "sahara", "orbit", "megalith", "circle", "formation"]),
+        "anxiety.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Anxiety.mp3", ["enigma", "lost", "bermuda", "chilling", "disturbing", "unsolved", "paradox"]),
+        "evening_fall_-_harp.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Evening%20Fall%20-%20Harp.mp3", ["civilization", "sunken", "crypt", "tomb", "pyramid", "haunting", "legend"]),
+    },
+    "engineering": {
+        "mechanolith.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Mechanolith.mp3", ["tunnel", "bridge", "excavator", "skyscraper", "structure", "akashi", "suspension", "earthquake"]),
+        "industrial_cinematic.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Industrial%20Cinematic.mp3", ["subsea", "oil rig", "space elevator", "mega", "breakthrough", "concrete", "ocean", "rock"]),
+        "heavy_interlude.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Heavy%20Interlude.mp3", ["crane", "cern", "particle", "collider", "reactor", "fusion", "quantum"]),
+        "militaire_electronic.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Militaire%20Electronic.mp3", ["supersonic", "sr-71", "aircraft", "hypersonic", "submarine", "mach"]),
+        "noise_attack.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Noise%20Attack.mp3", ["mach 10", "heat shield", "thruster", "rocket", "hyperloop", "speed", "self-repairing"]),
+        "neolith.wav": ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Neolith.mp3", ["dam", "three gorges", "panama", "colossal", "megastructure", "foundation", "living concrete"]),
+    }
+}
+
+
 def generate_music(topic: str, duration_seconds: int = 35) -> str:
     out_path = "output/music.wav"
     if os.path.exists(out_path) and os.path.getsize(out_path) > 1000:
@@ -254,41 +299,96 @@ def generate_music(topic: str, duration_seconds: int = 35) -> str:
 
     # ── Priority 1: High-Quality Studio Fleet Music Library in cache_music/ ──
     cache_dir = "cache_music"
-    if os.path.exists(cache_dir):
-        niche = os.environ.get("CHANNEL_NICHE", "").lower()
-        if not niche:
-            # Detect from subclusters or topic
-            if "space" in topic.lower() or "science" in topic.lower() or "quantum" in topic.lower() or "crystal" in topic.lower() or "chemistry" in topic.lower():
-                niche = "science"
-            elif "mystery" in topic.lower() or "unsolved" in topic.lower() or "secret" in topic.lower() or "cryptid" in topic.lower():
-                niche = "mystery"
-            elif "history" in topic.lower() or "war" in topic.lower() or "ancient" in topic.lower() or "battle" in topic.lower():
-                niche = "history"
-            elif "animal" in topic.lower() or "ocean" in topic.lower() or "nature" in topic.lower() or "species" in topic.lower():
-                niche = "nature"
-            elif "mega" in topic.lower() or "engine" in topic.lower() or "build" in topic.lower():
-                niche = "engineering"
-            else:
-                niche = "science"
+    os.makedirs(cache_dir, exist_ok=True)
+    niche = os.environ.get("CHANNEL_NICHE", "").lower()
+    if not niche:
+        # Detect from topic
+        top_lower = topic.lower()
+        if any(w in top_lower for w in ["space", "science", "quantum", "crystal", "chemistry", "relativity", "ai", "physics", "telescope"]):
+            niche = "science"
+        elif any(w in top_lower for w in ["mystery", "unsolved", "secret", "cryptid", "anomaly", "enigma", "disappeared", "vanish"]):
+            niche = "mystery"
+        elif any(w in top_lower for w in ["history", "war", "ancient", "battle", "siege", "empire", "soldier", "army"]):
+            niche = "history"
+        elif any(w in top_lower for w in ["animal", "ocean", "nature", "species", "abyss", "squid", "shark", "predator", "biology"]):
+            niche = "nature"
+        elif any(w in top_lower for w in ["mega", "engine", "build", "bridge", "tunnel", "dam", "machinery", "aircraft", "structure"]):
+            niche = "engineering"
+        else:
+            niche = "science"
 
-        niche_tracks = {
-            "science": ["freesound_620197.wav", "freesound_432835.wav", "freesound_672905.wav"],
-            "mystery": ["freesound_579263.wav", "freesound_592783.wav", "freesound_785704.wav"],
-            "nature": ["freesound_649777.wav", "freesound_726346.wav"],
-            "history": ["freesound_442180.wav", "freesound_785704.wav"],
-            "engineering": ["freesound_672905.wav", "freesound_434737.wav"]
-        }
-        preferred = niche_tracks.get(niche, [])
-        valid_candidates = [os.path.join(cache_dir, f) for f in preferred if os.path.exists(os.path.join(cache_dir, f))]
-        if not valid_candidates:
-            valid_candidates = [os.path.join(cache_dir, f) for f in os.listdir(cache_dir) if f.endswith(".wav") and os.path.getsize(os.path.join(cache_dir, f)) > 10000]
+    niche_tracks = NICHE_TRACK_METADATA.get(niche, NICHE_TRACK_METADATA["science"])
+    
+    # Load recent history to prevent playing the exact same track twice in a row
+    history_file = "music_history.json"
+    recent_history = []
+    if os.path.exists(history_file):
+        try:
+            with open(history_file, "r") as hf:
+                recent_history = json.load(hf)
+        except Exception:
+            recent_history = []
 
-        if valid_candidates:
-            chosen = random.choice(valid_candidates)
-            print(f"[Music] Selected authentic studio production track from fleet cache ({niche}): {chosen}")
-            os.makedirs("output", exist_ok=True)
-            shutil.copy(chosen, out_path)
-            return out_path
+    # Score each track against topic keywords
+    top_lower = topic.lower()
+    scores = {}
+    for track_file, (dl_url, kws) in niche_tracks.items():
+        score = 0
+        for kw in kws:
+            if kw in top_lower:
+                score += 3
+        # Penalize recently used track
+        if track_file in recent_history[-2:]:
+            score -= 5
+        scores[track_file] = score
+
+    sorted_tracks = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    best_track_name = sorted_tracks[0][0]
+    best_url = niche_tracks[best_track_name][0]
+    local_track_path = os.path.join(cache_dir, best_track_name)
+
+    print(f"[Music] Topic match for '{niche}': selected '{best_track_name}' (Score: {sorted_tracks[0][1]})")
+
+    # If track doesn't exist locally, auto-download from high-speed CDN and convert to WAV
+    if not (os.path.exists(local_track_path) and os.path.getsize(local_track_path) > 100000):
+        print(f"[Music] Track '{best_track_name}' not cached. Downloading from CDN: {best_url} ...")
+        try:
+            import urllib.request
+            tmp_mp3 = f"/tmp/{best_track_name}.mp3"
+            req = urllib.request.Request(best_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=30) as resp, open(tmp_mp3, "wb") as f:
+                f.write(resp.read())
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", tmp_mp3, "-ar", "44100", "-ac", "1", local_track_path],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True
+            )
+            if os.path.exists(tmp_mp3): os.remove(tmp_mp3)
+            print(f"[Music] Successfully downloaded and cached '{best_track_name}' ({os.path.getsize(local_track_path) // 1024} KB)")
+        except Exception as dl_err:
+            print(f"[Music] CDN download failed for '{best_track_name}': {dl_err}. Trying any existing local wav...")
+
+    # If selected track exists, use it
+    if os.path.exists(local_track_path) and os.path.getsize(local_track_path) > 100000:
+        os.makedirs("output", exist_ok=True)
+        shutil.copy(local_track_path, out_path)
+        # Update history
+        recent_history.append(best_track_name)
+        try:
+            with open(history_file, "w") as hf:
+                json.dump(recent_history[-10:], hf)
+        except Exception:
+            pass
+        print(f"[Music] Selected authentic studio production track ({niche}): {best_track_name} -> {out_path}")
+        return out_path
+
+    # Secondary fallback: any valid WAV in cache_dir
+    local_wavs = [os.path.join(cache_dir, f) for f in os.listdir(cache_dir) if f.endswith(".wav") and os.path.getsize(os.path.join(cache_dir, f)) > 100000]
+    if local_wavs:
+        chosen = random.choice(local_wavs)
+        print(f"[Music] Using local library fallback: {chosen}")
+        os.makedirs("output", exist_ok=True)
+        shutil.copy(chosen, out_path)
+        return out_path
 
     # ── Priority 2: Freesound CC0 ambient track search ────────────────────────
     try:

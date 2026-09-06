@@ -25,7 +25,7 @@ def _get_judge_key() -> str | None:
     wait_time = min(15.0, wait_time)
     print(f"[JudgeAI] All Gemini keys on cooldown. Waiting {wait_time:.1f}s for key slot {earliest_idx + 1}...")
     time.sleep(wait_time)
-    return None
+    return _shared_pool.get_available_key()
 
 def upload_file_to_gemini(filepath: str, api_key: str) -> dict:
     mime_type, _ = mimetypes.guess_type(filepath)

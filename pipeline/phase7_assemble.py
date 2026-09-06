@@ -361,12 +361,12 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
     final_output_path = f"output/final_{format_type}.mp4"
 
     filter_complex = (
-        "[1:a]highpass=f=80,volume=2.2,asplit=2[tts1][tts2];"
-        # Background music sits gently at -22dB baseline so it never competes with speech
-        "[2:a]volume=0.08,aloop=loop=-1:size=2147483647[music_loop];"
-        "[3:a]volume=0.18[sfx];"
-        # Deep sidechain ducking: voice instantly drops music by additional -10dB (threshold=0.03, ratio=8)
-        "[music_loop][tts1]sidechaincompress=threshold=0.03:ratio=8:attack=20:release=350[music_ducked];"
+        "[1:a]highpass=f=80,volume=2.0,asplit=2[tts1][tts2];"
+        # Background music sits audibly at punchy baseline (~ -12dB)
+        "[2:a]volume=0.25,aloop=loop=-1:size=2147483647[music_loop];"
+        "[3:a]volume=0.26[sfx];"
+        # Smooth sidechain ducking: voice dips music gently by ~5dB (ratio=3.5, threshold=0.08)
+        "[music_loop][tts1]sidechaincompress=threshold=0.08:ratio=3.5:attack=25:release=250[music_ducked];"
         "[tts2][music_ducked]amix=inputs=2:duration=first:normalize=0[mixed];"
         "[mixed][sfx]amix=inputs=2:duration=first:normalize=0[premix];"
         "[premix]loudnorm=I=-14:TP=-1.5:LRA=11[audio_final]"

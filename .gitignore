@@ -16,3 +16,4 @@ local_env.sh
 output/
 state/key_pool.json
 upload_*.py
+music_history.json
