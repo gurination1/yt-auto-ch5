@@ -213,9 +213,18 @@ class MultiPlatformVideoHarvester:
     def search_nasa(self, query: str, limit: int = 4) -> List[HarvesterCandidate]:
         candidates = []
         try:
-            search_url = f"https://images-api.nasa.gov/search?q={urllib.parse.quote(query)}&media_type=video"
+            clean_q = re.sub(r"[^\w\s-]", " ", query or "")
+            words = [w for w in clean_q.split() if w.lower() not in {"the", "a", "an", "and", "or", "to", "in", "of", "for", "with", "on", "at", "by", "from", "4k", "hd", "real", "footage", "clip"}]
+            target_q = " ".join(words[:4]).strip() or "space exploration"
+            search_url = f"https://images-api.nasa.gov/search?q={urllib.parse.quote(target_q)}&media_type=video"
             data = self._http_get_json(search_url)
-            for item in data.get("collection", {}).get("items", [])[:limit]:
+            items = data.get("collection", {}).get("items", [])
+            if not items and len(words) >= 2:
+                target_q_fb = " ".join(words[-2:])
+                search_url_fb = f"https://images-api.nasa.gov/search?q={urllib.parse.quote(target_q_fb)}&media_type=video"
+                data = self._http_get_json(search_url_fb)
+                items = data.get("collection", {}).get("items", [])
+            for item in items[:limit]:
                 dblock = item.get("data", [{}])[0]
                 nasa_id = dblock.get("nasa_id")
                 if not nasa_id:

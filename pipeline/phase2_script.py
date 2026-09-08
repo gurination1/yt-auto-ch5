@@ -47,6 +47,20 @@ def generate_script(topic: dict, format_type: str) -> dict:
                 "Keep 'broll_query', 'broll_queries', and 'title' in English so video search engines find 4K footage.\n"
             )
             
+        raw_topic_str = topic.get("topic", "science")
+        import re
+        quoted = re.findall(r"['\"]([^'\"]{3,30})['\"]", raw_topic_str)
+        if quoted:
+            core_subj = quoted[0].strip()
+        elif ":" in raw_topic_str:
+            core_subj = raw_topic_str.split(":")[0].strip()
+        elif "-" in raw_topic_str:
+            core_subj = raw_topic_str.split("-")[0].strip()
+        else:
+            core_subj = raw_topic_str
+        clean_words = re.sub(r"[^\w\s-]", "", core_subj).split()
+        core_subj = " ".join(clean_words[:4]).strip() or raw_topic_str[:30]
+
         prompt = f"""Generate an extremely viral, high-retention 25-35 second YouTube Short educational script on the topic: "{topic['topic']}".
 Use the following hook concept as your core theme: "{hook_formatted}" (short hook: "{topic.get('short_hook', '')}").
 {lang_instruction}
@@ -94,17 +108,17 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
   * CONTINUOUS CURIOSITY LOOP: Every 2-3 segments, give a new reason to stay with a new question (e.g., "But here's where it gets interesting...").
 
 - MANDATORY AUTHENTIC DOCUMENTARY SOURCING (ZERO AI SLOP / ZERO UNRELATED STOCK):
-  * CRITICAL: Every single segment's `broll_query` and every entry in `broll_queries` MUST BE EXPLICITLY ANCHORED to the core subject: "{topic['topic']}"!
+  * CRITICAL: Every single segment's `broll_query` and every entry in `broll_queries` MUST BE EXPLICITLY ANCHORED to the core subject: "{core_subj}"!
   * ABSOLUTELY FORBIDDEN: NEVER use unrelated terrestrial analogies!
     - If the topic is about SPACE / PLANETS / ASTRONOMY: Every query MUST be space/planetary! FORBIDDEN: Earth factories, industrial steel foundries, factory workers, beach sunsets, ocean waves, city traffic, or office desks!
     - If the topic is about NATURE / CREATURES: Every query MUST name the creature/organism! FORBIDDEN: Modern city streets, modern offices, or factories!
     - If the topic is about HISTORY / WARFARE: Every query MUST name the ancient artifact, battle, or ruins! FORBIDDEN: Modern buildings or modern people!
     - If the topic is about ENGINEERING / MEGAPROJECTS: Every query MUST name the specific machine or structure!
   * REQUIRED: Target the EXACT real-world documentary subject, scientific apparatus, historical artifact, living species binomial, or celestial body:
-    - Space: "{topic['topic']} planet space 4k", "{topic['topic']} celestial atmosphere 4k", "{topic['topic']} deep space telescope 4k"
-    - Biology: "{topic['topic']} living specimen macro 4k", "{topic['topic']} natural habitat documentary 4k"
-    - History: "{topic['topic']} ancient artifact museum 4k", "{topic['topic']} historical ruins documentary 4k"
-    - Engineering: "{topic['topic']} colossal machine operation 4k", "{topic['topic']} structure aerial view 4k"
+    - Space: "{core_subj} planet space 4k", "{core_subj} celestial atmosphere 4k", "{core_subj} deep space telescope 4k"
+    - Biology: "{core_subj} living specimen macro 4k", "{core_subj} natural habitat documentary 4k"
+    - History: "{core_subj} ancient artifact museum 4k", "{core_subj} historical ruins documentary 4k"
+    - Engineering: "{core_subj} colossal machine operation 4k", "{core_subj} structure aerial view 4k"
   * ZERO BUZZWORDS IN BROLL QUERIES:
     - ABSOLUTELY FORBIDDEN: Do NOT write marketing adjectives or vague descriptors like 'futuristic', 'next-generation', 'super bright', 'incredible', 'amazing', 'shocking', 'impossible', 'visualization', 'concept', 'animation', 'effect', 'demonstration', 'presenting'.
     - REQUIRED: Name ONLY the concrete physical noun of the object/specimen/machine being discussed.
@@ -126,22 +140,22 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
     {{
       "id": 1,
       "narration": "opening shocking hook complete sentence - 10 words or less, massive information gap",
-      "broll_query": "{topic['topic']} main visual subject 4k",
-      "broll_queries": ["{topic['topic']} main visual subject 4k", "{topic['topic']} optical macro close up 4k", "{topic['topic']} documentary authentic footage 4k"],
+      "broll_query": "{core_subj} main visual subject 4k",
+      "broll_queries": ["{core_subj} main visual subject 4k", "{core_subj} optical macro close up 4k", "{core_subj} documentary authentic footage 4k"],
       "duration_target": 6
     }},
     {{
       "id": 2,
       "narration": "Mind-bending real fact that delivers on the hook - 10 words or less",
-      "broll_query": "{topic['topic']} specific mechanism 4k",
-      "broll_queries": ["{topic['topic']} specific mechanism 4k", "{topic['topic']} laboratory observation 4k"],
+      "broll_query": "{core_subj} specific mechanism 4k",
+      "broll_queries": ["{core_subj} specific mechanism 4k", "{core_subj} laboratory observation 4k"],
       "duration_target": 6
     }},
     {{
       "id": {segment_count},
       "narration": "A complete, punchy final takeaway sentence delivering the ultimate mind-blowing payoff, plus a natural call-to-action (e.g. 'More wild secrets at the link in bio.'). MUST be a 100% complete sentence ending with a period. NEVER end with dangling words like 'because' or 'which'!",
-      "broll_query": "{topic['topic']} documentary footage 4k",
-      "broll_queries": ["{topic['topic']} documentary footage 4k", "{topic['topic']} action close up macro 4k"],
+      "broll_query": "{core_subj} documentary footage 4k",
+      "broll_queries": ["{core_subj} documentary footage 4k", "{core_subj} action close up macro 4k"],
       "duration_target": 6
     }}
   ],

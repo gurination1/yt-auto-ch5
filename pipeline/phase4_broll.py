@@ -93,12 +93,13 @@ from pipeline.config import PEXELS_API_KEY, PIXABAY_API_KEY, COVERR_API_KEY, NAS
 
 
 def _nasa_params(query: str, media_type: str, page_size: int) -> dict:
+    clean_q = re.sub(r"[^\w\s-]", " ", query or "")
+    words = [w for w in clean_q.split() if w.lower() not in {"the", "a", "an", "and", "or", "to", "in", "of", "for", "with", "on", "at", "by", "from", "4k", "hd", "real", "footage", "clip"}]
+    clean_q = " ".join(words[:4]).strip()
     return {
-        "q": query,
+        "q": clean_q or "space exploration",
         "media_type": media_type,
         "page_size": page_size,
-        "keywords": query,
-        "year_start": "2010"
     }
 
 
@@ -384,6 +385,18 @@ def _nasa_candidates(query: str, n: int = 3) -> list[dict]:
         r.raise_for_status()
         items = r.json().get("collection", {}).get("items", [])
         if not items:
+            clean_words = re.sub(r"[^\w\s-]", " ", query or "").split()
+            fallback_words = [w for w in clean_words if w.lower() not in {"the", "a", "an", "and", "or", "to", "in", "of", "for", "with", "on", "4k", "hd", "footage", "clip"}]
+            if len(fallback_words) >= 2:
+                r_fb = requests.get(
+                    "https://images-api.nasa.gov/search",
+                    params={"q": " ".join(fallback_words[-2:]), "media_type": "video", "page_size": n * 2},
+                    headers={"User-Agent": "yt-auto/1.0"},
+                    timeout=15,
+                )
+                if r_fb.status_code == 200:
+                    items = r_fb.json().get("collection", {}).get("items", [])
+        if not items:
             return []
 
         candidates = []
@@ -518,6 +531,18 @@ def _nasa_image(query: str) -> str | None:
         )
         r.raise_for_status()
         items = r.json().get("collection", {}).get("items", [])
+        if not items:
+            clean_words = re.sub(r"[^\w\s-]", " ", query or "").split()
+            fallback_words = [w for w in clean_words if w.lower() not in {"the", "a", "an", "and", "or", "to", "in", "of", "for", "with", "on", "4k", "hd", "footage", "clip"}]
+            if len(fallback_words) >= 2:
+                r_fb = requests.get(
+                    "https://images-api.nasa.gov/search",
+                    params={"q": " ".join(fallback_words[-2:]), "media_type": "image", "page_size": 5},
+                    headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"},
+                    timeout=15,
+                )
+                if r_fb.status_code == 200:
+                    items = r_fb.json().get("collection", {}).get("items", [])
         if not items:
             return None
         item = random.choice(items[:3])
@@ -850,6 +875,18 @@ def _nasa_video(query: str) -> str | None:
         )
         r.raise_for_status()
         items = r.json().get("collection", {}).get("items", [])
+        if not items:
+            clean_words = re.sub(r"[^\w\s-]", " ", query or "").split()
+            fallback_words = [w for w in clean_words if w.lower() not in {"the", "a", "an", "and", "or", "to", "in", "of", "for", "with", "on", "4k", "hd", "footage", "clip"}]
+            if len(fallback_words) >= 2:
+                r_fb = requests.get(
+                    "https://images-api.nasa.gov/search",
+                    params={"q": " ".join(fallback_words[-2:]), "media_type": "video", "page_size": 5},
+                    headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"},
+                    timeout=15,
+                )
+                if r_fb.status_code == 200:
+                    items = r_fb.json().get("collection", {}).get("items", [])
         if not items:
             return None
 
