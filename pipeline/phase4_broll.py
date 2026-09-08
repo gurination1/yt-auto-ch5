@@ -1,35 +1,70 @@
 
 def _wikipedia_hd_image(query: str, img_path: str) -> bool:
-    """Fetches the official high-resolution authentic photograph of the entity from Wikipedia/Wikimedia."""
+    """Fetches official high-resolution authentic photograph/micrograph of entity from Wikipedia/Wikimedia."""
     try:
-        # Extract core entity nouns
         words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in [
             "footage", "real", "authentic", "documentary", "megaproject", "construction", "colossal", "machinery",
-            "what", "inside", "secret", "incredible", "shocking"
+            "what", "inside", "secret", "incredible", "shocking", "4k", "1080p", "hd", "video", "broll", "clip"
         ]]
         entity = " ".join(words[:4]) if words else query
-        url = "https://en.wikipedia.org/w/api.php"
-        params = {
-            "action": "query",
-            "titles": entity,
-            "prop": "pageimages",
-            "format": "json",
-            "pithumbsize": 1920
-        }
-        r = requests.get(url, params=params, headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"}, timeout=10)
+        headers = {"User-Agent": "yt-auto-fleet/2.0 (educational-video-pipeline; mailto:contact@gurination.com)"}
+        
+        # 1. Direct Wikipedia title match
+        url_wiki = "https://en.wikipedia.org/w/api.php"
+        r = requests.get(url_wiki, params={
+            "action": "query", "titles": entity, "prop": "pageimages", "format": "json", "pithumbsize": 1920
+        }, headers=headers, timeout=8)
         if r.status_code == 200:
             pages = r.json().get("query", {}).get("pages", {})
             for pid, pdata in pages.items():
+                if pid != "-1":
+                    thumb = pdata.get("thumbnail", {}).get("source")
+                    if thumb:
+                        r_img = requests.get(thumb, headers=headers, timeout=12)
+                        if r_img.status_code == 200 and len(r_img.content) > 10_000:
+                            with open(img_path, "wb") as f:
+                                f.write(r_img.content)
+                            print(f"[B-roll] Fetched official Wikipedia HD photo for '{entity}'.")
+                            return True
+
+        # 2. Fuzzy Wikipedia generator search
+        r_gen = requests.get(url_wiki, params={
+            "action": "query", "generator": "search", "gsrsearch": entity, "gsrlimit": "2",
+            "prop": "pageimages", "pithumbsize": 1920, "format": "json"
+        }, headers=headers, timeout=8)
+        if r_gen.status_code == 200:
+            pages = r_gen.json().get("query", {}).get("pages", {})
+            for pid, pdata in pages.items():
                 thumb = pdata.get("thumbnail", {}).get("source")
                 if thumb:
-                    r_img = requests.get(thumb, headers={"User-Agent": "yt-auto/1.0 (educational-pipeline)"}, timeout=15)
+                    r_img = requests.get(thumb, headers=headers, timeout=12)
                     if r_img.status_code == 200 and len(r_img.content) > 10_000:
                         with open(img_path, "wb") as f:
                             f.write(r_img.content)
-                        print(f"[B-roll] Fetched official Wikipedia HD authentic photo for '{entity}'.")
+                        print(f"[B-roll] Fetched search-matched Wikipedia HD photo for '{entity}'.")
+                        return True
+
+        # 3. Wikimedia Commons photo archive
+        url_comm = "https://commons.wikimedia.org/w/api.php"
+        r_comm = requests.get(url_comm, params={
+            "action": "query", "generator": "search", "gsrsearch": f"{entity} filetype:bitmap",
+            "gsrnamespace": "6", "gsrlimit": "3", "prop": "imageinfo", "iiprop": "url",
+            "iiurlwidth": "1920", "format": "json"
+        }, headers=headers, timeout=8)
+        if r_comm.status_code == 200:
+            pages = r_comm.json().get("query", {}).get("pages", {})
+            for pid, pdata in pages.items():
+                ii = pdata.get("imageinfo", [{}])[0]
+                thumb = ii.get("thumburl") or ii.get("url")
+                if thumb:
+                    r_img = requests.get(thumb, headers=headers, timeout=12)
+                    if r_img.status_code == 200 and len(r_img.content) > 10_000:
+                        with open(img_path, "wb") as f:
+                            f.write(r_img.content)
+                        print(f"[B-roll] Fetched authentic Commons archive photo for '{entity}'.")
                         return True
     except Exception as e:
-        print(f"[B-roll] Wikipedia HD image fetch note: {e}")
+        print(f"[B-roll] Authentic HD photo fetch note: {e}")
     return False
 
 def _get_ytdlp_bin() -> list[str]:
@@ -406,85 +441,58 @@ def _nasa_video_candidate(query: str) -> dict | None:
 WIKIMEDIA_USER_AGENT = "yt-auto-bot/2.0 (https://github.com/mahesajeth-wq/yt-auto; contact@mahesajeth.com)"
 
 
-def _wikimedia_candidates(query: str, n: int = 3) -> list[dict]:
+def _wikimedia_candidates(query: str, n: int = 5) -> list[dict]:
     clean_q = _sanitize_broll_query(query)[:80]
     if not clean_q:
         return []
-    try:
-        r = requests.get(
-            "https://commons.wikimedia.org/w/api.php",
-            params={
-                "action": "query",
-                "list": "search",
-                "srnamespace": "6",  # File namespace
-                "srsearch": f"{clean_q} filetype:video",
-                "format": "json",
-                "srlimit": str(n * 2),
-            },
-            headers={"User-Agent": WIKIMEDIA_USER_AGENT},
-            timeout=15,
-        )
-        r.raise_for_status()
-        results = r.json().get("query", {}).get("search", [])
-        if not results:
-            words = clean_q.split()
-            if len(words) > 2:
-                short_q = " ".join(words[:2])
-                r_short = requests.get(
-                    "https://commons.wikimedia.org/w/api.php",
-                    params={
-                        "action": "query",
-                        "list": "search",
-                        "srnamespace": "6",
-                        "srsearch": f"{short_q} filetype:video",
-                        "format": "json",
-                        "srlimit": str(n * 2),
-                    },
-                    headers={"User-Agent": WIKIMEDIA_USER_AGENT},
-                    timeout=15,
-                )
-                if r_short.status_code == 200:
-                    results = r_short.json().get("query", {}).get("search", [])
-        if not results:
-            return []
+    words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', clean_q).split() if len(w) > 2][:3]
+    search_terms = []
+    if len(words) >= 2:
+        search_terms.append(f'"{words[0]} {words[1]}"')
+    if words:
+        search_terms.append(" ".join(words))
 
-        candidates = []
-        for res in results:
-            if len(candidates) >= n:
-                break
-            title = res.get("title", "")
-            r_info = requests.get(
-                "https://commons.wikimedia.org/w/api.php",
-                params={
-                    "action": "query",
-                    "titles": title,
-                    "prop": "imageinfo",
-                    "iiprop": "url|mime|size",
-                    "iiurlwidth": "640",
-                    "format": "json",
-                },
-                headers={"User-Agent": WIKIMEDIA_USER_AGENT},
-                timeout=10,
-            )
-            if r_info.status_code != 200:
-                continue
-            pages = r_info.json().get("query", {}).get("pages", {})
-            for page_id, page_data in pages.items():
-                imageinfo = page_data.get("imageinfo", [])
-                if imageinfo:
-                    video_url = imageinfo[0].get("url")
-                    thumb_url = imageinfo[0].get("thumburl") or imageinfo[0].get("url")
-                    if video_url and thumb_url:
+    candidates = []
+    seen = set()
+    url = "https://commons.wikimedia.org/w/api.php"
+    headers = {"User-Agent": WIKIMEDIA_USER_AGENT or "yt-auto-fleet/2.0 (educational-video-harvester)"}
+
+    for st in search_terms:
+        if len(candidates) >= n:
+            break
+        try:
+            params = {
+                "action": "query",
+                "generator": "search",
+                "gsrsearch": f"{st} filetype:video",
+                "gsrnamespace": "6",
+                "gsrlimit": str(n * 2),
+                "prop": "imageinfo",
+                "iiprop": "url|mime|size",
+                "iiurlwidth": "640",
+                "format": "json",
+            }
+            r = requests.get(url, params=params, headers=headers, timeout=12)
+            if r.status_code == 200:
+                pages = r.json().get("query", {}).get("pages", {})
+                for pid, pdata in pages.items():
+                    title = pdata.get("title", "").replace("File:", "")
+                    ii = pdata.get("imageinfo", [{}])[0]
+                    v_url = ii.get("url")
+                    t_url = ii.get("thumburl") or v_url
+                    if v_url and v_url not in seen:
+                        seen.add(v_url)
                         candidates.append({
-                            "video_url": video_url,
-                            "thumb_url": thumb_url,
+                            "video_url": v_url,
+                            "thumb_url": t_url,
                             "source": "Wikimedia",
-                            "title": title.replace("File:", ""),
+                            "title": title,
                         })
-        return candidates
-    except Exception as e:
-        print(f"[B-roll] Wikimedia video candidates failed for '{clean_q}': {e}")
-        return []
+                        if len(candidates) >= n:
+                            break
+        except Exception as e:
+            print(f"[B-roll] Wikimedia candidate search failed for '{st}': {e}")
+    return candidates
 
 
 def _wikimedia_video_candidate(query: str) -> dict | None:
@@ -608,71 +616,8 @@ def _wikimedia_image(query: str) -> str | None:
 
 def _wikimedia_video(query: str) -> str | None:
     """Search Wikimedia Commons for CC-licensed educational videos and fetch actual URL. No API key needed."""
-    clean_q = _sanitize_broll_query(query)[:80]
-    if not clean_q:
-        return None
-    try:
-        r = requests.get(
-            "https://commons.wikimedia.org/w/api.php",
-            params={
-                "action": "query",
-                "list": "search",
-                "srnamespace": "6",  # File namespace
-                "srsearch": f"{clean_q} filetype:video OR filetype:webm OR filetype:ogv",
-                "format": "json",
-                "srlimit": "5",
-            },
-            headers={"User-Agent": WIKIMEDIA_USER_AGENT},
-            timeout=20,
-        )
-        r.raise_for_status()
-        results = r.json().get("query", {}).get("search", [])
-        if not results:
-            words = clean_q.split()
-            if len(words) > 2:
-                short_q = " ".join(words[:2])
-                r_short = requests.get(
-                    "https://commons.wikimedia.org/w/api.php",
-                    params={
-                        "action": "query",
-                        "list": "search",
-                        "srnamespace": "6",
-                        "srsearch": f"{short_q} filetype:video OR filetype:webm OR filetype:ogv",
-                        "format": "json",
-                        "srlimit": "5",
-                    },
-                    headers={"User-Agent": WIKIMEDIA_USER_AGENT},
-                    timeout=20,
-                )
-                if r_short.status_code == 200:
-                    results = r_short.json().get("query", {}).get("search", [])
-        if not results:
-            return None
-
-        # Pick the top result and use Wikipedia API to get the correct URL
-        title = results[0]["title"]
-        r_info = requests.get(
-            "https://commons.wikimedia.org/w/api.php",
-            params={
-                "action": "query",
-                "titles": title,
-                "prop": "imageinfo",
-                "iiprop": "url|mime|size",
-                "format": "json",
-            },
-            headers={"User-Agent": WIKIMEDIA_USER_AGENT},
-            timeout=15,
-        )
-        r_info.raise_for_status()
-        pages = r_info.json().get("query", {}).get("pages", {})
-        for page_id, page_data in pages.items():
-            imageinfo = page_data.get("imageinfo", [])
-            if imageinfo:
-                return imageinfo[0].get("url")
-        return None
-    except Exception as e:
-        print(f"[B-roll] Wikimedia Commons failed for '{clean_q}': {e}")
-        return None
+    cands = _wikimedia_candidates(query, n=1)
+    return cands[0]["video_url"] if cands else None
 
 
 def resolve_dvids_mp4(page_url: str) -> str | None:
@@ -2035,16 +1980,18 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     clean_fallback = _make_clean_fallback(query)
     general_fallback = sanitized_q or query
     
-    queries_to_try = [sanitized_q, query, clean_fallback]
+    # Only keep compact, high-intent queries (strip long conversational sentences)
+    queries_to_try = [sanitized_q, clean_fallback]
+    if len(query.split()) <= 4 and query.lower() not in [x.lower() for x in queries_to_try if x]:
+        queries_to_try.append(query)
+
     if alt_queries:
         for q in alt_queries:
             sq = _sanitize_broll_query(q)
-            if sq not in queries_to_try:
+            if sq and sq not in queries_to_try:
                 queries_to_try.append(sq)
-            if q not in queries_to_try:
-                queries_to_try.append(q)
         
-    # Generate ultra-targeted 2-3 noun keyword queries for stock APIs (Pexels / Pixabay)
+    # Generate ultra-targeted 2-3 noun keyword queries for search APIs
     stop_stock = {"4k", "1080p", "hd", "footage", "real", "authentic", "video", "discovery", "breakthrough", "logic", "superposition", "unprecedented", "fundamental", "revolution"}
     core_nouns = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in stop_stock]
     if len(core_nouns) >= 2:
@@ -2058,7 +2005,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         if q_tri not in queries_to_try: queries_to_try.insert(0, q_tri)
 
     if not budget_exceeded():
-        expanded = _expand_query(query, channel=channel, n=5)
+        expanded = _expand_query(sanitized_q or query, channel=channel, n=4)
         queries_to_try.extend(expanded)
 
     candidates = []
@@ -2091,20 +2038,21 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     seen_q = set()
     queries_to_try_dedup = []
     for q in queries_to_try:
-        if q.lower() not in seen_q:
+        if q and q.lower() not in seen_q:
             seen_q.add(q.lower())
             queries_to_try_dedup.append(q)
     queries_to_try = queries_to_try_dedup
 
+    # Prioritize authentic institutional archives first across all channels (100% unblocked on cloud runners)
     CHANNEL_SOURCE_PRIORITY = {
-        "mystery":     ["pexels", "pixabay", "youtube", "archive", "wikimedia"],
-        "nature":      ["pexels", "pixabay", "youtube", "wikimedia", "archive"],
-        "science":     ["pexels", "pixabay", "youtube", "archive", "wikimedia", "nasa"],
-        "space":       ["nasa", "youtube", "pexels", "pixabay", "archive"],
-        "engineering": ["pexels", "pixabay", "youtube", "wikimedia", "archive", "dvids"],
-        "business":    ["pexels", "pixabay", "youtube", "archive"],
-        "military":    ["dvids", "youtube", "archive", "pexels"],
-        "general":     ["pexels", "pixabay", "youtube", "archive", "wikimedia"],
+        "mystery":     ["wikimedia", "archive", "youtube", "pexels", "pixabay"],
+        "nature":      ["wikimedia", "archive", "youtube", "pexels", "pixabay"],
+        "science":     ["wikimedia", "nasa", "archive", "youtube", "pexels", "pixabay"],
+        "space":       ["nasa", "wikimedia", "archive", "youtube", "pexels", "pixabay"],
+        "engineering": ["wikimedia", "nasa", "archive", "dvids", "youtube", "pexels", "pixabay"],
+        "business":    ["archive", "wikimedia", "youtube", "pexels", "pixabay"],
+        "military":    ["dvids", "archive", "wikimedia", "youtube", "pexels"],
+        "general":     ["wikimedia", "archive", "youtube", "pexels", "pixabay"],
     }
 
     def run_source_query(source: str, q: str) -> list[dict]:
@@ -2301,41 +2249,41 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     # ── Fallback 1: Single Frame fallback search on other videos waterfall ─────────────────
     print(f"[B-roll] Segment {segment_index}: falling back to parallel waterfall search...")
     
-    # We prioritize YouTube CC and archive databases at the top of the waterfall
+    # 1. Authentic unblocked institutional video archives (Priority 1)
     other_videos = [
-        ("YouTube CC (main)", lambda: _youtube_candidates(query, n=1)[0]["video_url"] if _youtube_candidates(query, n=1) else None),
-        ("YouTube CC (fallback)", lambda: _youtube_candidates(clean_fallback, n=1)[0]["video_url"] if _youtube_candidates(clean_fallback, n=1) else None),
-        ("YouTube CC (general)", lambda: _youtube_candidates(general_fallback, n=1)[0]["video_url"] if _youtube_candidates(general_fallback, n=1) else None),
-    ]
-    # Authentic institutional archives prioritized
-    other_videos.extend([
-        ("Wikimedia video (main)", lambda: _wikimedia_video(query)),
+        ("Wikimedia video (main)", lambda: _wikimedia_video(sanitized_q or clean_fallback)),
         ("Wikimedia video (fallback)", lambda: _wikimedia_video(clean_fallback)),
-        ("Archive video (main)", lambda: _archive_video(query)),
+        ("Archive video (main)", lambda: _archive_video(sanitized_q or clean_fallback)),
         ("Archive video (fallback)", lambda: _archive_video(clean_fallback)),
-    ])
+    ]
     
-    # NASA only for space/astronomy topics
-    is_space_topic = channel in ["space", "astrophysics", "astronomy"] or any(w in query.lower() for w in ["space", "nasa", "planet", "galaxy", "telescope", "orbit", "astronomy", "cosmos", "rocket", "apollo", "webb", "hubble", "mars", "moon"])
-    if is_space_topic and NASA_BROLL_ENABLED:
+    # NASA for space, physics, engineering, astronomy
+    is_space_or_sci = channel in ["space", "astrophysics", "astronomy", "science", "engineering"] or any(w in query.lower() for w in ["space", "nasa", "planet", "galaxy", "telescope", "orbit", "astronomy", "cosmos", "rocket", "physics", "engine", "cern", "accelerator"])
+    if is_space_or_sci and NASA_BROLL_ENABLED:
         other_videos.extend([
-            ("NASA video (main)", lambda: _nasa_video(query)),
+            ("NASA video (main)", lambda: _nasa_video(sanitized_q or clean_fallback)),
             ("NASA video (fallback)", lambda: _nasa_video(clean_fallback)),
         ])
 
-    # DVIDS only for military/defense topics
+    # DVIDS for military/defense topics
     is_military_topic = channel in ["military", "defense", "aviation", "geopolitics"] or any(w in query.lower() for w in ["military", "warfare", "army", "navy", "warship", "fighter jet", "weapon"])
     if is_military_topic:
         other_videos.extend([
-            ("DVIDS video (main)", lambda: _dvids_video(query)),
+            ("DVIDS video (main)", lambda: _dvids_video(sanitized_q or clean_fallback)),
             ("DVIDS video (fallback)", lambda: _dvids_video(clean_fallback)),
         ])
-    
-    # Stock sites are low-priority fallbacks
+
+    # 2. YouTube CC (secondary)
     other_videos.extend([
-        ("Pixabay (main)", lambda: _pixabay_video(query)),
+        ("YouTube CC (main)", lambda: _youtube_candidates(sanitized_q or clean_fallback, n=1)[0]["video_url"] if _youtube_candidates(sanitized_q or clean_fallback, n=1) else None),
+        ("YouTube CC (fallback)", lambda: _youtube_candidates(clean_fallback, n=1)[0]["video_url"] if _youtube_candidates(clean_fallback, n=1) else None),
+    ])
+
+    # 3. Stock sites as low-priority fallbacks
+    other_videos.extend([
+        ("Pixabay (main)", lambda: _pixabay_video(sanitized_q or clean_fallback)),
         ("Pixabay (fallback)", lambda: _pixabay_video(clean_fallback)),
-        ("Coverr (main)", lambda: _coverr_video(query)),
+        ("Coverr (main)", lambda: _coverr_video(sanitized_q or clean_fallback)),
         ("Coverr (fallback)", lambda: _coverr_video(clean_fallback)),
     ])
 
@@ -2464,6 +2412,12 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
     # ── Fallback 2: image sources (all converted with Ken Burns) ─────────────────────
     print(f"[B-roll] Segment {segment_index}: trying authentic archival image sources…")
+
+    # Direct official Wikipedia / Wikimedia Commons HD photograph or micrograph
+    if _wikipedia_hd_image(sanitized_q or topic or query, img_path):
+        print(f"[B-roll] Segment {segment_index}: official Wikipedia/Wikimedia HD archival photo secured. Applying Ken Burns 2.5D…")
+        _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="ARCHIVAL SPECIMEN: WIKIMEDIA COMMONS")
+        return out_path
 
     img_sources = []
     queries_for_images = [sanitized_q, clean_fallback, query]

@@ -77,43 +77,66 @@ class MultiPlatformVideoHarvester:
         except Exception:
             return {}
 
-    # 1. DuckDuckGo v.js Keyless Video Search
-    def search_duckduckgo_videos(self, query: str, limit: int = 6) -> List[HarvesterCandidate]:
+    # 1. Wikimedia Commons Keyless Video Harvester (Direct 1080p/4K Master Streams)
+    def search_wikimedia_videos(self, query: str, limit: int = 6) -> List[HarvesterCandidate]:
         candidates = []
         try:
-            init_url = f"https://duckduckgo.com/?q={urllib.parse.quote(query)}"
-            req = urllib.request.Request(init_url, headers={"User-Agent": self.DEFAULT_USER_AGENT})
-            with urllib.request.urlopen(req, timeout=6) as resp:
-                html = resp.read().decode("utf-8", errors="ignore")
+            clean_q = re.sub(r'[^a-zA-Z0-9\s]', '', query).strip()
+            words = [w for w in clean_q.split() if len(w) > 2][:3]
+            search_terms = []
+            if len(words) >= 2:
+                search_terms.append(f'"{words[0]} {words[1]}"')
+            if words:
+                search_terms.append(" ".join(words))
 
-            vqd_match = re.search(r'vqd=([0-9-]+)', html) or re.search(r'vqd="([0-9-]+)"', html) or re.search(r'vqd=([a-zA-Z0-9_-]+)', html)
-            if not vqd_match:
-                return []
+            url = "https://commons.wikimedia.org/w/api.php"
+            headers = {"User-Agent": "yt-auto-fleet/2.0 (educational-video-harvester; mailto:contact@gurination.com)"}
+            seen = set()
 
-            vqd = vqd_match.group(1)
-            vjs_params = {"l": "wt-wt", "o": "json", "q": query, "vqd": vqd, "f": ",,,", "p": "-1"}
-            vjs_url = f"https://duckduckgo.com/v.js?{urllib.parse.urlencode(vjs_params)}"
-            headers = {"User-Agent": self.DEFAULT_USER_AGENT, "Referer": "https://duckduckgo.com/", "Accept": "application/json"}
-            data = self._http_get_json(vjs_url, headers=headers)
+            for st in search_terms:
+                if len(candidates) >= limit:
+                    break
+                params = {
+                    "action": "query",
+                    "generator": "search",
+                    "gsrsearch": f"{st} filetype:video",
+                    "gsrnamespace": "6",
+                    "gsrlimit": str(limit * 2),
+                    "prop": "imageinfo",
+                    "iiprop": "url|mime|size",
+                    "iiurlwidth": "640",
+                    "format": "json"
+                }
+                req = urllib.request.Request(f"{url}?{urllib.parse.urlencode(params)}", headers=headers)
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    data = json.loads(resp.read().decode("utf-8", errors="ignore"))
 
-            for item in data.get("results", [])[:limit]:
-                content_url = item.get("content", "")
-                if not content_url:
-                    continue
-                images = item.get("images", {})
-                thumb = images.get("large") or images.get("medium") or images.get("small")
-                candidates.append(
-                    HarvesterCandidate(
-                        id=re.sub(r'[^a-zA-Z0-9]', '', content_url)[-12:],
-                        title=item.get("title", "Untitled"),
-                        description=item.get("description", ""),
-                        channel_name=item.get("uploader") or item.get("publisher", "Web"),
-                        url=content_url,
-                        stream_url=content_url,
-                        platform=item.get("publisher") or "web",
-                        thumbnail_url=thumb or "",
-                    )
-                )
+                pages = data.get("query", {}).get("pages", {})
+                for pid, pdata in pages.items():
+                    title = pdata.get("title", "").replace("File:", "")
+                    iinfo = pdata.get("imageinfo", [{}])[0]
+                    v_url = iinfo.get("url")
+                    t_url = iinfo.get("thumburl") or v_url
+                    if v_url and v_url not in seen:
+                        seen.add(v_url)
+                        candidates.append(
+                            HarvesterCandidate(
+                                id=f"wiki_{pid}",
+                                title=title,
+                                description=f"Authentic Wikimedia Commons documentary video: {title}",
+                                channel_name="Wikimedia Commons",
+                                url=v_url,
+                                stream_url=v_url,
+                                platform="wikimedia",
+                                duration=15.0,
+                                thumbnail_url=t_url or "",
+                                tags=[st.replace('"', '')],
+                                score=55.0,
+                                authority_tier=1
+                            )
+                        )
+                        if len(candidates) >= limit:
+                            break
         except Exception:
             pass
         return candidates
@@ -306,15 +329,17 @@ class MultiPlatformVideoHarvester:
         q_reddit = profile.targeted_queries.get("reddit_archive", profile.anchor_entity)
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            tasks.append(executor.submit(self.search_youtube, q_authority, 6))
-            tasks.append(executor.submit(self.search_youtube, q_primary, 4))
-            tasks.append(executor.submit(self.search_reddit, q_reddit, 5))
-            tasks.append(executor.submit(self.search_duckduckgo_videos, f"{profile.anchor_entity} footage", 5))
-
-            if profile.entity_category in ["space", "astronomy", "physics_science"]:
+            # 1. Unblocked high-authority open archives (Priority 1)
+            tasks.append(executor.submit(self.search_wikimedia_videos, profile.anchor_entity, 6))
+            if profile.entity_category in ["space", "astronomy", "physics_science", "engineering"]:
                 tasks.append(executor.submit(self.search_nasa, profile.anchor_entity, 4))
-            if profile.entity_category in ["archival_history", "historical_anomaly", "military_tech"]:
+            if profile.entity_category in ["archival_history", "historical_anomaly", "military_tech", "engineering", "physics_science"]:
                 tasks.append(executor.submit(self.search_archive, profile.anchor_entity, 4))
+
+            # 2. Web video platforms (Secondary)
+            tasks.append(executor.submit(self.search_youtube, q_authority, 5))
+            tasks.append(executor.submit(self.search_youtube, q_primary, 4))
+            tasks.append(executor.submit(self.search_reddit, q_reddit, 4))
             if profile.entity_category in ["viral_eyewitness", "cryptid_anomaly"]:
                 tasks.append(executor.submit(self.search_tiktok, profile.anchor_entity, 3))
 
