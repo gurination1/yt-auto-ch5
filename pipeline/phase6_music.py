@@ -108,29 +108,19 @@ def _fetch_freesound_music(topic: str, duration_seconds: int) -> str | None:
 
     search_url = "https://freesound.org/apiv2/search/text/"
     
-    is_history, is_engineering, is_natural = False, False, False
-    channel_env = os.environ.get("CHANNEL_NICHE", "").lower()
-    if channel_env == "nature":
-        is_natural = True
-    elif channel_env == "history":
-        is_history = True
-    elif channel_env == "engineering":
-        is_engineering = True
-    try:
-        from pipeline.config import HISTORY_SUBCLUSTERS
-        is_history = True
-    except ImportError:
-        pass
-    try:
-        from pipeline.config import ENGINEERING_SUBCLUSTERS
-        is_engineering = True
-    except ImportError:
-        pass
-    try:
-        from pipeline.config import NATURAL_WORLD_SUBCLUSTERS
-        is_natural = True
-    except ImportError:
-        pass
+    channel_env = (os.environ.get("CHANNEL_NICHE") or "").lower()
+    if not channel_env:
+        try:
+            from pipeline.config import CHANNEL_NICHE as _cn
+            channel_env = _cn.lower()
+        except Exception:
+            channel_env = "science"
+
+    is_natural = (channel_env == "nature")
+    is_history = (channel_env == "history")
+    is_engineering = (channel_env == "engineering")
+    is_mystery = (channel_env == "mystery")
+    is_science = (channel_env in ("science", "general", ""))
 
     clean_topic = _clean_music_query(topic)
 

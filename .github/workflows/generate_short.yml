@@ -42,7 +42,11 @@ jobs:
       - name: Install Bebas Neue Font
         run: |
           sudo mkdir -p /usr/local/share/fonts
-          sudo wget -O /usr/local/share/fonts/BebasNeue-Regular.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/bebasneue/BebasNeue-Regular.ttf
+          sudo wget -q -O /usr/local/share/fonts/BebasNeue-Regular.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/bebasneue/BebasNeue-Regular.ttf || true
+          sudo wget -q -O /usr/local/share/fonts/Rajdhani-Bold.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/rajdhani/Rajdhani-Bold.ttf || true
+          sudo wget -q -O /usr/local/share/fonts/BarlowCondensed-Bold.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/barlowcondensed/BarlowCondensed-Bold.ttf || true
+          sudo wget -q -O /usr/local/share/fonts/Cinzel-Variable.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/Cinzel%5Bwght%5D.ttf" || true
+          sudo wget -q -O /usr/local/share/fonts/Montserrat-Variable.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/Montserrat%5Bwght%5D.ttf" || true
           sudo fc-cache -fv
 
       - name: Cache faster-whisper models

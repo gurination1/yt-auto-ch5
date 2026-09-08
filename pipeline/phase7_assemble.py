@@ -415,6 +415,16 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
         "[premix]loudnorm=I=-14:TP=-1.5:LRA=11[audio_final]"
     )
 
+    niche_clean = (script.get("channel") or os.environ.get("CHANNEL_NICHE") or "science").lower()
+    fingerprints = {
+        "science": {"artist": "Nova Frontier Labs", "genre": "Science & Technology", "comment": "Quantum & Astrophysics Series", "audio_bitrate": "192k"},
+        "nature": {"artist": "Terra BioSphere", "genre": "Natural History", "comment": "Abyssal Fauna & Extreme Biology", "audio_bitrate": "224k"},
+        "history": {"artist": "Chronos Imperial Archives", "genre": "Military History", "comment": "Warfare Strategy & Battle Tactics", "audio_bitrate": "192k"},
+        "mystery": {"artist": "Enigma Syndicate", "genre": "Unexplained Phenomena", "comment": "Archaeological & Geological Anomalies", "audio_bitrate": "256k"},
+        "engineering": {"artist": "Titan Megastructures", "genre": "Colossal Engineering", "comment": "Heavy Civil Infrastructure Marvels", "audio_bitrate": "192k"},
+    }
+    meta = fingerprints.get(niche_clean, fingerprints["science"])
+
     cmd = [
         "ffmpeg", "-y",
         "-i", assembled_flashed_path,
@@ -425,7 +435,11 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
         "-map", "0:v",
         "-map", "[audio_final]",
         "-c:v", "copy",
-        "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
+        "-c:a", "aac", "-b:a", meta["audio_bitrate"], "-ar", "48000",
+        "-metadata", f"title={script.get('title', 'Documentary')}",
+        "-metadata", f"artist={meta['artist']}",
+        "-metadata", f"genre={meta['genre']}",
+        "-metadata", f"comment={meta['comment']}",
         "-shortest", "-movflags", "+faststart",
         final_output_path,
     ]

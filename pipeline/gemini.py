@@ -230,24 +230,28 @@ def _is_daily_quota_exhausted(resp: requests.Response) -> bool:
         data = resp.json()
         error_data = data.get("error", {})
         details = error_data.get("details", [])
-        # If retryDelay is provided (e.g. "20s", "30s"), it is a transient rate limit, NOT permanent daily lockout!
-        if "retrydelay" in details_str or "please retry in" in error_data.get("message", "").lower():
-            return False
-
-        # Explicit per-minute/per-second → definitely NOT daily
-        if "perminute" in details_str or "persecond" in details_str:
-            return False
-
-        # Check structured quotaId for daily limit
+        details_str = _json.dumps(details).lower()
+        # 1. Check structured quotaId / metadata / details for daily limit first
         for detail in details:
             for violation in detail.get("violations", []):
                 quota_id = violation.get("quotaId", "").lower()
                 if "perday" in quota_id:
                     return True
+            quota_limit = detail.get("metadata", {}).get("quota_limit", "").lower()
+            if "perday" in quota_limit:
+                return True
 
-        # Legacy: free_tier_requests metric or perday in raw details
+        # Legacy / text-level check for daily requests
         if "free_tier_requests" in details_str or "perday" in details_str:
             return True
+
+        # 2. Explicit per-minute/per-second → definitely NOT daily
+        if "perminute" in details_str or "persecond" in details_str:
+            return False
+
+        # 3. If retryDelay is provided without perday, it is a transient rate limit
+        if "retrydelay" in details_str or "please retry in" in error_data.get("message", "").lower():
+            return False
 
     except Exception:
         pass

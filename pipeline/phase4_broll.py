@@ -2024,6 +2024,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         return True
 
     os.makedirs("output", exist_ok=True)
+    is_space_or_sci = channel in ["space", "astrophysics", "astronomy", "science", "engineering"] or any(w in (query or "").lower() for w in ["space", "nasa", "planet", "galaxy", "telescope", "orbit", "astronomy", "cosmos", "rocket", "physics", "engine", "cern", "accelerator"])
+    is_space_topic = is_space_or_sci
 
     # Return cached clip if already valid
     if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:

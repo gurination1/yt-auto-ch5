@@ -393,7 +393,260 @@ def validate_config():
 # ── Social / Beacons Link ───────────────────────────────────────────────────
 BEACONS_LINK = os.environ.get("BEACONS_LINK", "https://beacons.ai/edu_fun")
 
-DEFAULT_GEMINI_VOICE = "Fenrir"
-DEFAULT_KOKORO_VOICE = "am_adam"
+# ── Fleet Niche Profiles & Digital Fingerprints ──────────────────────────────
+FLEET_NICHE_PROFILES = {
+    "science": {
+        "channel_id": "ch1",
+        "name": "Science & Frontier Tech",
+        "gemini_voice": "Fenrir",
+        "kokoro_voice": "am_adam",
+        "edge_voice": "en-US-GuyNeural",
+        "cadence_speed": 1.02,
+        "vocal_tone": "bold_authority",
+        "persona_desc": "precise, analytical, 1.02x",
+        "subtitle_fonts": ["Rajdhani", "Montserrat", "Bebas Neue"],
+        "c_base": "&H00FFFFFF&",          # Base: Pure White (#FFFFFF)
+        "c_active": "&H00FFE500&",        # Active: Electric Cyan (#00E5FF)
+        "c_power": "&H00FF8800&",         # Power Accent: Neon Blue/Orange
+        "outline_color": "&H00100505&",   # Outline: 9px #050510 (obsidian navy)
+        "shadow_color": "&H80000000&",    # Shadow: 3px
+        "outline_w": 9,
+        "shadow_d": 3,
+        "blur": 1,
+        "margin_v": 440,
+        "procedural_chords": [
+            [("D", "min"), ("G", "maj"), ("C", "maj"), ("A", "min")],
+            [("E", "min"), ("A", "min"), ("D", "maj"), ("B", "min")],
+            [("C", "maj"), ("A", "min"), ("F", "maj"), ("G", "maj")],
+        ],
+        "music_bpm": 120,
+        "foley_type": "digital_tech",
+        "ducking": {
+            "attack": 15,
+            "release": 180,
+            "ratio": 4.0,
+            "threshold": 0.07,
+            "music_vol": 0.22,
+            "sfx_vol": 0.28,
+        },
+        "container_metadata": {
+            "artist": "Axiom Lab Studios / Science & Frontier Tech",
+            "genre": "Science & Technology / Quantum Astrophysics",
+            "comment": "Autonomous analytical documentary series on frontier science, quantum physics, and advanced technology.",
+        },
+        "color_curves": "eq=contrast=1.08:saturation=1.14:gamma=0.95,colorbalance=bs=0.06:ms=0.02:rs=-0.02",
+        "badge_text": "⚛ QUANTUM LAB",
+        "badge_border": "#00E5FF",
+        "badge_bg": "#050B14",
+        "thumb_font": "Rajdhani",
+        "thumb_color1": "#FFFFFF",
+        "thumb_color2": "#00E5FF",
+        "thumb_border": "#050510",
+    },
+    "nature": {
+        "channel_id": "ch2",
+        "name": "Nature & Extreme Biology",
+        "gemini_voice": "Kore",
+        "kokoro_voice": "af_heart",
+        "edge_voice": "en-US-AvaNeural",
+        "cadence_speed": 0.98,
+        "vocal_tone": "deep_curiosity",
+        "persona_desc": "wonder, rhythmic cadence, 0.98x",
+        "subtitle_fonts": ["Komika Axis", "Gilroy", "Montserrat", "Bebas Neue"],
+        "c_base": "&H00F0FFF0&",          # Base: Honeydew Soft Organic White (#F0FFF0)
+        "c_active": "&H0066FF00&",        # Active: Bioluminescent Lime (#00FF66)
+        "c_power": "&H0000E6FF&",         # Power Accent: Sun Gold
+        "outline_color": "&H00102005&",   # Outline: 8px #052010 (abyssal black-green)
+        "shadow_color": "&H80081002&",    # Shadow: 3px
+        "outline_w": 8,
+        "shadow_d": 3,
+        "blur": 0,
+        "margin_v": 440,
+        "procedural_chords": [
+            [("E", "min"), ("G", "maj"), ("D", "maj"), ("C", "maj")],
+            [("A", "min"), ("C", "maj"), ("G", "maj"), ("F", "maj")],
+            [("D", "min"), ("A#", "maj"), ("F", "maj"), ("C", "maj")],
+        ],
+        "music_bpm": 92,
+        "foley_type": "organic_nature",
+        "ducking": {
+            "attack": 40,
+            "release": 350,
+            "ratio": 2.8,
+            "threshold": 0.09,
+            "music_vol": 0.26,
+            "sfx_vol": 0.25,
+        },
+        "container_metadata": {
+            "artist": "BioSphere Explorations / Wild Earth Media",
+            "genre": "Nature & Wildlife / Extreme Biology",
+            "comment": "Documentary expedition exploring abyssal fauna, evolutionary adaptations, and planetary ecosystems.",
+        },
+        "color_curves": "eq=contrast=1.05:saturation=1.18:gamma=0.98,colorbalance=gs=0.05:gh=0.03:rh=0.02:bh=-0.03",
+        "badge_text": "🌿 EXTREME NATURE",
+        "badge_border": "#00FF66",
+        "badge_bg": "#041408",
+        "thumb_font": "Komika Axis",
+        "thumb_color1": "#F0FFF0",
+        "thumb_color2": "#00FF66",
+        "thumb_border": "#052010",
+    },
+    "history": {
+        "channel_id": "ch3",
+        "name": "History & Warfare Tactics",
+        "gemini_voice": "Charon",
+        "kokoro_voice": "am_michael",
+        "edge_voice": "en-US-ChristopherNeural",
+        "cadence_speed": 0.96,
+        "vocal_tone": "dark_revelation",
+        "persona_desc": "grave, baritone historical storyteller, 0.96x",
+        "subtitle_fonts": ["Cinzel", "TheBoldFont", "Bebas Neue"],
+        "c_base": "&H00C7E8F5&",          # Base: Antique Parchment (#F5E8C7)
+        "c_active": "&H0000D7FF&",        # Active: Imperial Gold (#FFD700)
+        "c_power": "&H003333CC&",         # Power Accent: Imperial Crimson
+        "outline_color": "&H00000A1A&",   # Outline: 9px #1A0A00 (bronze mahogany)
+        "shadow_color": "&H8000050D&",    # Shadow: 4px
+        "outline_w": 9,
+        "shadow_d": 4,
+        "blur": 2,
+        "margin_v": 440,
+        "procedural_chords": [
+            [("A", "min"), ("D", "min"), ("E", "maj"), ("A", "min")],
+            [("D", "min"), ("G", "min"), ("A", "maj"), ("D", "min")],
+            [("E", "min"), ("B", "min"), ("C", "maj"), ("B", "maj")],
+        ],
+        "music_bpm": 80,
+        "foley_type": "historical_warfare",
+        "ducking": {
+            "attack": 20,
+            "release": 300,
+            "ratio": 3.8,
+            "threshold": 0.08,
+            "music_vol": 0.24,
+            "sfx_vol": 0.29,
+        },
+        "container_metadata": {
+            "artist": "Chronos Archive / Historical Warfare Documentaries",
+            "genre": "History & Military Strategy / Tactical Chronicles",
+            "comment": "Declassified tactical warfare chronicles, ancient siege mechanics, and empire collapse records.",
+        },
+        "color_curves": "eq=contrast=1.10:saturation=0.95:gamma=0.93,colorbalance=rs=0.05:rh=0.06:gh=0.02:bs=-0.04:bh=-0.06",
+        "badge_text": "⚔ DECLASSIFIED ARCHIVE",
+        "badge_border": "#FFD700",
+        "badge_bg": "#1A0800",
+        "thumb_font": "Cinzel",
+        "thumb_color1": "#F5E8C7",
+        "thumb_color2": "#FFD700",
+        "thumb_border": "#1A0A00",
+    },
+    "mystery": {
+        "channel_id": "ch4",
+        "name": "Mysteries & Unexplained",
+        "gemini_voice": "Puck",
+        "kokoro_voice": "am_fenrir",
+        "edge_voice": "en-US-EricNeural",
+        "cadence_speed": 1.00,
+        "vocal_tone": "suspenseful_mystery",
+        "persona_desc": "inquisitive, suspenseful, 1.00x",
+        "subtitle_fonts": ["Montserrat Black", "Montserrat", "Archivo Black", "Bebas Neue"],
+        "c_base": "&H00E0E0E0&",          # Base: Spectral Silver (#E0E0E0)
+        "c_active": "&H0000FFDF&",        # Active: Acid Yellow (#DFFF00)
+        "c_power": "&H00FF00B8&",         # Power Accent: Neon Violet
+        "outline_color": "&H0014000B&",   # Outline: 10px #0B0014 (obsidian violet)
+        "shadow_color": "&H6054003B&",    # Shadow: 4px Violet Drop Shadow (#3B0054)
+        "outline_w": 10,
+        "shadow_d": 4,
+        "blur": 1,
+        "margin_v": 440,
+        "procedural_chords": [
+            [("B", "min"), ("F", "min"), ("G", "maj"), ("C#", "min")],
+            [("C", "min"), ("F#", "dim"), ("G#", "maj"), ("D", "min")],
+            [("E", "min"), ("A#", "dim"), ("B", "min"), ("F", "maj")],
+        ],
+        "music_bpm": 104,
+        "foley_type": "mystery_eerie",
+        "ducking": {
+            "attack": 30,
+            "release": 400,
+            "ratio": 3.0,
+            "threshold": 0.10,
+            "music_vol": 0.28,
+            "sfx_vol": 0.26,
+        },
+        "container_metadata": {
+            "artist": "Enigma Files / Anomalies & Unexplained",
+            "genre": "Mystery & Investigation / Archaeological Paradoxes",
+            "comment": "Declassified investigations into archaeological enigmas, geological anomalies, and unexplained paradoxes.",
+        },
+        "color_curves": "eq=contrast=1.12:saturation=0.92:gamma=0.90,colorbalance=bs=0.07:ms=-0.03:rs=-0.04:rh=0.03:bh=0.04,vignette=angle=0.48",
+        "badge_text": "👁 UNEXPLAINED FILE",
+        "badge_border": "#DFFF00",
+        "badge_bg": "#0B0014",
+        "thumb_font": "Montserrat Black",
+        "thumb_color1": "#E0E0E0",
+        "thumb_color2": "#DFFF00",
+        "thumb_border": "#0B0014",
+    },
+    "engineering": {
+        "channel_id": "ch5",
+        "name": "Megaprojects & Engineering",
+        "gemini_voice": "Orus",
+        "kokoro_voice": "am_puck",
+        "edge_voice": "en-US-BrianNeural",
+        "cadence_speed": 1.04,
+        "vocal_tone": "bold_authority",
+        "persona_desc": "resonant, punchy industrial, 1.04x",
+        "subtitle_fonts": ["Barlow Condensed", "Bebas Neue", "Anton"],
+        "c_base": "&H00FFFFFF&",          # Base: Blueprint Titanium White (#FFFFFF)
+        "c_active": "&H000055FF&",        # Active: Safety Orange (#FF5500)
+        "c_power": "&H0000CCFF&",         # Power Accent: Hazard Yellow
+        "outline_color": "&H00241E1A&",   # Outline: 9px #1A1E24 (machined dark slate)
+        "shadow_color": "&H80120F0D&",    # Shadow: 3px Machine Slate Shadow
+        "outline_w": 9,
+        "shadow_d": 3,
+        "blur": 0,
+        "margin_v": 440,
+        "procedural_chords": [
+            [("C", "min"), ("D#", "maj"), ("F", "maj"), ("G", "min")],
+            [("D", "min"), ("F", "maj"), ("G", "maj"), ("A", "min")],
+            [("G", "min"), ("A#", "maj"), ("C", "maj"), ("D", "min")],
+        ],
+        "music_bpm": 130,
+        "foley_type": "industrial_machinery",
+        "ducking": {
+            "attack": 12,
+            "release": 150,
+            "ratio": 4.5,
+            "threshold": 0.06,
+            "music_vol": 0.23,
+            "sfx_vol": 0.32,
+        },
+        "container_metadata": {
+            "artist": "Apex Megaprojects / Heavy Industrial Engineering",
+            "genre": "Civil Engineering & Heavy Machinery / Megastructures",
+            "comment": "Documenting extreme infrastructure, tunnel boring breakthroughs, and colossal machines.",
+        },
+        "color_curves": "eq=contrast=1.12:saturation=1.16:gamma=0.94,colorbalance=rs=0.02:rh=0.05:gh=0.02:bs=0.04:bh=-0.03",
+        "badge_text": "⚡ MEGA PROJECT",
+        "badge_border": "#FF5500",
+        "badge_bg": "#101418",
+        "thumb_font": "Barlow Condensed",
+        "thumb_color1": "#FFFFFF",
+        "thumb_color2": "#FF5500",
+        "thumb_border": "#1A1E24",
+    },
+}
+
+def get_channel_profile(niche: str = None) -> dict:
+    if not niche:
+        niche = os.environ.get("CHANNEL_NICHE", CHANNEL_NICHE).lower()
+    return FLEET_NICHE_PROFILES.get(niche, FLEET_NICHE_PROFILES.get("science", {}))
+
+# Niche-adaptive active voice settings
+_curr_profile = get_channel_profile()
+DEFAULT_GEMINI_VOICE = _curr_profile.get("gemini_voice", "Fenrir")
+DEFAULT_EDGE_VOICE = _curr_profile.get("edge_voice", "en-US-AndrewNeural")
+DEFAULT_KOKORO_VOICE = _curr_profile.get("kokoro_voice", "am_adam")
 VOICE_PITCH = 0.0
-VOICE_RATE = 1.02
+VOICE_RATE = _curr_profile.get("cadence_speed", 1.02)
+

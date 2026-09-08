@@ -67,9 +67,10 @@
     "The 'Living' Concrete: How Ancient Deep-Sea Structures Self-Heal and Get Stronger Over Centuries by *Growing* New Rock from the Ocean Itself",
     "The 'Floating Skyscraper' ships that stand on the seabed to build offshore wind farms, lifting 3,000-ton turbines.",
     "The 'Underground Factory' TBMs: How colossal boring machines now incorporate entire concrete prefabrication plants *inside* them, building a full tunnel arch every few hours as they drill, deep beneath cities.",
-    "The 'Floating' Skyscraper Foundation: How colossal towers are built on soft ground by removing as much soil as the building weighs."
+    "The 'Floating' Skyscraper Foundation: How colossal towers are built on soft ground by removing as much soil as the building weighs.",
+    "Dynamic Skyscraper Facades: Buildings That Move"
   ],
-  "subcluster_idx": 4,
-  "call_count": 186,
-  "fallback_idx": 0
+  "subcluster_idx": 0,
+  "fallback_idx": 1,
+  "call_count": 187
 }

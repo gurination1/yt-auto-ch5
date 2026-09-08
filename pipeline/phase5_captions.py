@@ -7,7 +7,7 @@ from typing import List, Dict, Any
 # 2026 Niche-Adaptive Typography Profiles
 NICHE_PRESETS = {
     "science": {
-        "font_name": "Bebas Neue",
+        "font_name": "Rajdhani",
         "font_size_short": 96,
         "c_base": "&H00FFFFFF&",
         "c_active": "&H00FFE500&",     # Electric Cyan (BGR: 00 E5 FF)
@@ -18,44 +18,44 @@ NICHE_PRESETS = {
         "margin_v": 440
     },
     "nature": {
-        "font_name": "Bebas Neue",
-        "font_size_short": 96,
-        "c_base": "&H00FFFFFF&",
-        "c_active": "&H0000E6FF&",     # Golden Sun (BGR: FF E6 00)
-        "c_power": "&H0066FF00&",      # Toxic Lime (BGR: 00 FF 66)
-        "outline_w": 10,
+        "font_name": "Montserrat",
+        "font_size_short": 94,
+        "c_base": "&H00F0FFF0&",       # Pale Honeydew
+        "c_active": "&H0066FF00&",     # Bioluminescent Lime (BGR: 00 FF 66)
+        "c_power": "&H0000E6FF&",      # Golden Sun (BGR: FF E6 00)
+        "outline_w": 9,
         "shadow_d": 3,
         "blur": 0,
         "margin_v": 440
     },
     "history": {
-        "font_name": "Bebas Neue",
-        "font_size_short": 94,
-        "c_base": "&H00F4E8C1&",     # Antique Parchment
-        "c_active": "&H0087C6E6&",   # Burnished Gold (BGR: E6 C6 87)
-        "c_power": "&H000000CC&",    # Imperial Crimson
-        "outline_w": 8,
+        "font_name": "Cinzel",
+        "font_size_short": 92,
+        "c_base": "&H00C7E8F5&",       # Antique Parchment (BGR: F5 E8 C7)
+        "c_active": "&H0000D7FF&",     # Imperial Gold (BGR: FF D7 00)
+        "c_power": "&H000000CC&",      # Imperial Crimson
+        "outline_w": 9,
         "shadow_d": 4,
         "blur": 2,
         "margin_v": 440
     },
     "mystery": {
-        "font_name": "Bebas Neue",
+        "font_name": "Montserrat",
         "font_size_short": 96,
-        "c_base": "&H00E0E0E0&",
-        "c_active": "&H0000FFDF&",   # Acid Neon Yellow (BGR: DF FF 00)
-        "c_power": "&H00FF009D&",    # Ultraviolet Purple (BGR: 9D 00 FF)
+        "c_base": "&H00E0E0E0&",       # Ghost White
+        "c_active": "&H0000FFDF&",     # Acid Neon Yellow (BGR: DF FF 00)
+        "c_power": "&H00FF009D&",      # Ultraviolet Purple (BGR: 9D 00 FF)
         "outline_w": 10,
         "shadow_d": 4,
         "blur": 1,
         "margin_v": 440
     },
     "engineering": {
-        "font_name": "Bebas Neue",
-        "font_size_short": 96,
+        "font_name": "Barlow Condensed",
+        "font_size_short": 98,
         "c_base": "&H00FFFFFF&",
-        "c_active": "&H000088FF&",   # Safety Neon Orange (BGR: FF 88 00)
-        "c_power": "&H00FFE500&",    # Blueprint Cyan (BGR: 00 E5 FF)
+        "c_active": "&H000055FF&",     # Safety Neon Orange (BGR: FF 55 00)
+        "c_power": "&H00FFE500&",      # Blueprint Cyan (BGR: 00 E5 FF)
         "outline_w": 9,
         "shadow_d": 3,
         "blur": 0,

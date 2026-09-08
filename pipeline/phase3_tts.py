@@ -5,6 +5,11 @@ import wave
 import subprocess
 
 from pipeline.config import GEMINI_VOICES, KOKORO_VOICES
+try:
+    from pipeline.config import DEFAULT_GEMINI_VOICE, DEFAULT_EDGE_VOICE
+except ImportError:
+    DEFAULT_GEMINI_VOICE = None
+    DEFAULT_EDGE_VOICE = None
 from pipeline.gemini import GeminiClient
 
 STATE_PATH = "voice_state.json"
@@ -185,7 +190,7 @@ def generate_audio(script: dict) -> list[str]:
     gemini_client = GeminiClient()
     os.makedirs("output", exist_ok=True)
 
-    gemini_voice = pick_voice(GEMINI_VOICES, "gemini")
+    gemini_voice = DEFAULT_GEMINI_VOICE or pick_voice(GEMINI_VOICES, "gemini")
     segments = script["segments"]
 
     print(f"[TTS] Generating per-segment audio using voice '{gemini_voice}' for {len(segments)} segments...")
@@ -238,7 +243,7 @@ def generate_audio(script: dict) -> list[str]:
             print(f"[TTS] Segment {seg_id} generated via Gemini TTS ({gemini_voice}).")
     else:
         # Pass 2: High-Quality Edge-TTS Neural Voice for ENTIRE video
-        edge_voice = "en-US-AndrewNeural" if gemini_voice in ["Fenrir", "Charon"] else "en-US-ChristopherNeural"
+        edge_voice = DEFAULT_EDGE_VOICE or ("en-US-AndrewNeural" if gemini_voice in ["Fenrir", "Charon"] else "en-US-ChristopherNeural")
         print(f"[TTS] Synthesizing ALL {len(segments)} segments with Edge-TTS ({edge_voice}) for 100% uniform voice consistency...")
         edge_success = True
         try:
