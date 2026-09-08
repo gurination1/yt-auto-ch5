@@ -82,14 +82,36 @@ def _generate_ai_background(topic: str, niche: str = "general") -> str | None:
         print(f"[Thumbnail] AI background generator error: {e}")
     return None
 
+from pipeline.config import get_channel_profile
+
+def resolve_installed_font(candidates: list[str], default_font: str = "DejaVu Sans Bold") -> str:
+    """Finds the best available font from candidates on this system."""
+    try:
+        out = subprocess.check_output(["fc-list", ":", "family"], text=True, stderr=subprocess.DEVNULL)
+        installed = {f.strip().lower() for line in out.splitlines() for f in line.split(",")}
+        for c in candidates:
+            if c.strip().lower() in installed:
+                return c.strip()
+    except Exception:
+        pass
+    return candidates[0] if candidates else default_font
+
 def generate_thumbnail(final_video_path: str, thumbnail_text: str, topic_prompt: str = "", channel: str = "general") -> str:
-    print(f"[Thumbnail] Generating viral thumbnail for topic='{topic_prompt}' | title='{thumbnail_text}'...")
+    print(f"[Thumbnail] Generating viral thumbnail for topic='{topic_prompt}' | title='{thumbnail_text}' | channel='{channel}'...")
     os.makedirs("output", exist_ok=True)
     thumbnail_path = "output/thumbnail.jpg"
 
+    profile = get_channel_profile(channel)
+    thumb_font = resolve_installed_font([profile.get("thumb_font", "Bebas Neue"), "Montserrat", "DejaVu Sans Bold"])
+    color1 = profile.get("thumb_color1", "#FFFFFF")
+    color2 = profile.get("thumb_color2", "#FFE500")
+    badge_text = profile.get("badge_text", "FACTS")
+    badge_border = profile.get("badge_border", "#FFE500")
+    badge_bg = profile.get("badge_bg", "#0d1117")
+
     # 1. Generate punchy 2-4 word hook (Line 1 + Line 2)
     line1, line2 = _extract_punchy_hook(topic_prompt, thumbnail_text)
-    print(f"[Thumbnail] Punchy Hook: Line 1: '{line1}' | Line 2: '{line2}'")
+    print(f"[Thumbnail] Punchy Hook: Line 1: '{line1}' | Line 2: '{line2}' | Badge: '{badge_text}'")
 
     # 2. Generate 16:9 background
     bg_file = _generate_ai_background(topic_prompt or thumbnail_text, niche=channel)
@@ -110,29 +132,26 @@ def generate_thumbnail(final_video_path: str, thumbnail_text: str, topic_prompt:
     max_len = max(len(line1), len(line2))
     fontsize = 135 if max_len <= 8 else 115 if max_len <= 12 else 95
 
-    # 4. Color Palette
-    color1 = "#FFFFFF" # Crisp white
-    color2 = "#FFE500" # Electric yellow
-
     filter_parts = [
         "scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720",
-        "drawbox=x=0:y=0:w=iw:h=ih:color=black@0.20:t=fill"
+        "drawbox=x=0:y=0:w=iw:h=ih:color=black@0.22:t=fill",
+        f"drawtext=text='{badge_text}':font='{thumb_font}':fontsize=32:fontcolor='{badge_border}':box=1:boxcolor='{badge_bg}@0.90':boxborderw=12:borderw=2:bordercolor='{badge_border}':x=60:y=50"
     ]
 
     if line2:
         y1 = f"(h/2)-{int(fontsize*0.95)}"
         y2 = f"(h/2)+{int(fontsize*0.15)}"
         filter_parts.append(
-            f"drawtext=text='{line1}':font='Bebas Neue':fontsize={fontsize}:"
+            f"drawtext=text='{line1}':font='{thumb_font}':fontsize={fontsize}:"
             f"fontcolor='{color1}':borderw=10:bordercolor=black:shadowcolor=black@0.95:shadowx=8:shadowy=8:x=(w-text_w)/2:y={y1}"
         )
         filter_parts.append(
-            f"drawtext=text='{line2}':font='Bebas Neue':fontsize={fontsize}:"
+            f"drawtext=text='{line2}':font='{thumb_font}':fontsize={fontsize}:"
             f"fontcolor='{color2}':borderw=10:bordercolor=black:shadowcolor=black@0.95:shadowx=8:shadowy=8:x=(w-text_w)/2:y={y2}"
         )
     else:
         filter_parts.append(
-            f"drawtext=text='{line1}':font='Bebas Neue':fontsize={fontsize+20}:"
+            f"drawtext=text='{line1}':font='{thumb_font}':fontsize={fontsize+20}:"
             f"fontcolor='{color2}':borderw=10:bordercolor=black:shadowcolor=black@0.95:shadowx=8:shadowy=8:x=(w-text_w)/2:y=(h-text_h)/2"
         )
 
@@ -141,8 +160,8 @@ def generate_thumbnail(final_video_path: str, thumbnail_text: str, topic_prompt:
     try:
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
-        print("[Thumbnail] Bebas Neue font fallback to DejaVu Sans Bold...")
-        vf_fb = vf.replace("font='Bebas Neue'", "font='DejaVu Sans Bold'")
+        print(f"[Thumbnail] {thumb_font} font fallback to DejaVu Sans Bold...")
+        vf_fb = vf.replace(f"font='{thumb_font}'", "font='DejaVu Sans Bold'")
         cmd_fb = ["ffmpeg", "-y", "-i", bg_file, "-vf", vf_fb, "-q:v", "2", thumbnail_path]
         subprocess.run(cmd_fb, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 

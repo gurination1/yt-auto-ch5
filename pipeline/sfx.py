@@ -63,24 +63,96 @@ def _synth_snap(sample_rate: int = 44100) -> np.ndarray:
 
 
 def _synth_impact(sample_rate: int = 44100, duration: float = 1.0) -> np.ndarray:
-    """
-    Synthetic cinematic impact/boom: high-energy start, rapid frequency sweep (150Hz → 30Hz),
-    combined with a short burst of noise, with an exponential decay.
-    """
+    """Standard synthetic boom fallback."""
+    return _synth_niche_impact("general", sample_rate=sample_rate, duration=duration)
+
+
+def _synth_nature_whoosh(sample_rate: int = 44100, duration: float = 0.42) -> np.ndarray:
+    """Organic wind rush / rustle whoosh."""
     t = np.linspace(0, duration, int(sample_rate * duration))
-    # Sub-bass pitch drop: 150Hz down to 30Hz
-    freq = 30 + 120 * np.exp(-t * 12)
-    phase = np.cumsum(2 * np.pi * freq / sample_rate)
-    sub = np.sin(phase)
-    # Add noise transient at the very start (first 80ms)
     noise = np.random.randn(len(t))
-    noise_env = np.exp(-t * 45) # fast decay
-    noise_layer = noise * noise_env
-    # Combine sub-bass + noise transient
-    signal = sub * 0.75 + noise_layer * 0.25
-    # Exponential decay
-    env = np.exp(-t * 3.5)
-    sfx = signal * env
+    env = np.sin(np.pi * (t / duration)) ** 2.2
+    kernel = np.ones(15) / 15
+    smooth_noise = np.convolve(noise, kernel, mode='same')
+    sfx = smooth_noise * env
+    sfx /= np.max(np.abs(sfx)) + 1e-9
+    return (sfx * 32767 * 0.60).astype(np.int16)
+
+
+def _synth_blade_whoosh(sample_rate: int = 44100, duration: float = 0.35) -> np.ndarray:
+    """Historical warfare sword slice / arrow whoosh."""
+    t = np.linspace(0, duration, int(sample_rate * duration))
+    freq = np.exp(np.linspace(np.log(2800), np.log(140), len(t)))
+    sweep = np.sin(np.cumsum(2 * np.pi * freq / sample_rate))
+    noise = np.random.randn(len(t)) * 0.25
+    env = (1 - np.exp(-t * 180)) * np.exp(-t * 11)
+    sfx = (sweep * 0.7 + noise * 0.3) * env
+    sfx /= np.max(np.abs(sfx)) + 1e-9
+    return (sfx * 32767 * 0.65).astype(np.int16)
+
+
+def _synth_reverse_whoosh(sample_rate: int = 44100, duration: float = 0.48) -> np.ndarray:
+    """Mystery eerie reverse-swell whoosh."""
+    t = np.linspace(0, duration, int(sample_rate * duration))
+    freq = 150 + 1200 * (t / duration) ** 2
+    sweep = np.sin(np.cumsum(2 * np.pi * freq / sample_rate))
+    env = (t / duration) ** 2.5 * np.exp(-(1 - t / duration) * 4)
+    sfx = (sweep + np.random.randn(len(t)) * 0.2) * env
+    sfx /= np.max(np.abs(sfx)) + 1e-9
+    return (sfx * 32767 * 0.58).astype(np.int16)
+
+
+def _synth_hydraulic_whoosh(sample_rate: int = 44100, duration: float = 0.40) -> np.ndarray:
+    """Engineering hydraulic piston hiss / pneumatic release whoosh."""
+    t = np.linspace(0, duration, int(sample_rate * duration))
+    noise = np.random.randn(len(t))
+    env = np.exp(-t * 7.5) * (1 - np.exp(-t * 300))
+    sub = np.sin(2 * np.pi * 90 * t) * np.exp(-t * 15) * 0.4
+    sfx = (noise * 0.7 + sub) * env
+    sfx /= np.max(np.abs(sfx)) + 1e-9
+    return (sfx * 32767 * 0.65).astype(np.int16)
+
+
+def _synth_niche_impact(foley_type: str, sample_rate: int = 44100, duration: float = 1.0) -> np.ndarray:
+    """Synthetic cinematic impact tailored to the channel's niche and soundscape."""
+    t = np.linspace(0, duration, int(sample_rate * duration))
+    if foley_type == "digital_tech":
+        # Quantum singularity drop: 240Hz down to 28Hz with data transient
+        freq = 28 + 210 * np.exp(-t * 14)
+        sig = np.sin(np.cumsum(2 * np.pi * freq / sample_rate)) * 0.8
+        sig += np.random.randn(len(t)) * np.exp(-t * 50) * 0.2
+        env = np.exp(-t * 3.2)
+    elif foley_type == "organic_nature":
+        # Deep seismic earth tremor: 60Hz down to 22Hz, soft organic attack
+        freq = 22 + 40 * np.exp(-t * 6)
+        sig = np.sin(np.cumsum(2 * np.pi * freq / sample_rate))
+        env = (1 - np.exp(-t * 60)) * np.exp(-t * 2.8)
+    elif foley_type == "historical_warfare":
+        # Anvil / warhammer heavy bronze impact
+        freq = 35 + 140 * np.exp(-t * 16)
+        sub = np.sin(np.cumsum(2 * np.pi * freq / sample_rate))
+        ring = np.sin(2 * np.pi * 540 * t) * np.exp(-t * 9) * 0.4
+        sig = sub * 0.7 + ring + np.random.randn(len(t)) * np.exp(-t * 60) * 0.3
+        env = np.exp(-t * 3.0)
+    elif foley_type == "mystery_eerie":
+        # Low eerie sub-thud with detuned interval
+        f1 = 30 + 90 * np.exp(-t * 8)
+        f2 = 45 + 135 * np.exp(-t * 8)
+        sig = (np.sin(np.cumsum(2 * np.pi * f1 / sample_rate)) + 0.6 * np.sin(np.cumsum(2 * np.pi * f2 / sample_rate))) * 0.7
+        sig += np.random.randn(len(t)) * np.exp(-t * 30) * 0.2
+        env = np.exp(-t * 2.5)
+    elif foley_type == "industrial_machinery":
+        # Heavy pile driver mechanical crash
+        freq = 32 + 180 * np.exp(-t * 18)
+        sig = np.sin(np.cumsum(2 * np.pi * freq / sample_rate)) * 0.75
+        metal_click = np.sin(2 * np.pi * 1200 * t) * np.exp(-t * 80) * 0.5
+        sig += (np.random.randn(len(t)) * 0.4 + metal_click) * np.exp(-t * 40)
+        env = np.exp(-t * 3.8)
+    else:
+        freq = 30 + 120 * np.exp(-t * 12)
+        sig = np.sin(np.cumsum(2 * np.pi * freq / sample_rate)) * 0.75 + np.random.randn(len(t)) * np.exp(-t * 45) * 0.25
+        env = np.exp(-t * 3.5)
+    sfx = sig * env
     sfx /= np.max(np.abs(sfx)) + 1e-9
     return (sfx * 32767 * 0.85).astype(np.int16)
 
@@ -226,6 +298,11 @@ def create_sfx_track(
     total_samples = int(total_duration * sample_rate)
     track         = np.zeros(total_samples, dtype=np.float64)
 
+    from pipeline.config import get_channel_profile
+    channel_niche = os.environ.get("CHANNEL_NICHE", "science").lower()
+    profile = get_channel_profile(channel_niche)
+    foley_type = profile.get("foley_type", "digital_tech")
+
     # 1. Load sound effects
     boom_sig = None
     boom_path = _fetch_cached_sfx("dramatic_boom")
@@ -235,7 +312,7 @@ def create_sfx_track(
         except Exception:
             pass
     if boom_sig is None:
-        boom_sig = _synth_impact(sample_rate)
+        boom_sig = _synth_niche_impact(foley_type, sample_rate)
 
     pop_sig = None
     pop_path = _fetch_cached_sfx("pop_ding")
@@ -275,6 +352,19 @@ def create_sfx_track(
     # Calculate segment start/end times
     segment_times = [0.0] + clip_boundary_times + [total_duration]
 
+    def _niche_whoosh():
+        if foley_type == "digital_tech":
+            return _synth_digital_whoosh(sample_rate)
+        elif foley_type == "organic_nature":
+            return _synth_nature_whoosh(sample_rate)
+        elif foley_type == "historical_warfare":
+            return _synth_blade_whoosh(sample_rate)
+        elif foley_type == "mystery_eerie":
+            return _synth_reverse_whoosh(sample_rate)
+        elif foley_type == "industrial_machinery":
+            return _synth_hydraulic_whoosh(sample_rate)
+        return _synth_whoosh(sample_rate)
+
     # Whooshes at clip boundaries
     whoosh_pool = []
     cache_dir = "cache_sfx"
@@ -303,7 +393,7 @@ def create_sfx_track(
         if whoosh_pool:
             w_sig = random.choice(whoosh_pool)
         else:
-            w_sig = random.choice([_synth_whoosh(sample_rate), _synth_digital_whoosh(sample_rate)])
+            w_sig = _niche_whoosh()
 
         start = max(0, int((t_sec - 0.12) * sample_rate))
         end   = min(total_samples, start + len(w_sig))

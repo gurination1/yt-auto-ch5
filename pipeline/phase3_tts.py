@@ -4,12 +4,14 @@ import json
 import wave
 import subprocess
 
-from pipeline.config import GEMINI_VOICES, KOKORO_VOICES
+from pipeline.config import GEMINI_VOICES, KOKORO_VOICES, get_channel_profile
 try:
-    from pipeline.config import DEFAULT_GEMINI_VOICE, DEFAULT_EDGE_VOICE
+    from pipeline.config import DEFAULT_GEMINI_VOICE, DEFAULT_EDGE_VOICE, DEFAULT_KOKORO_VOICE, VOICE_RATE
 except ImportError:
     DEFAULT_GEMINI_VOICE = None
     DEFAULT_EDGE_VOICE = None
+    DEFAULT_KOKORO_VOICE = None
+    VOICE_RATE = 1.0
 from pipeline.gemini import GeminiClient
 
 STATE_PATH = "voice_state.json"
@@ -190,10 +192,29 @@ def generate_audio(script: dict) -> list[str]:
     gemini_client = GeminiClient()
     os.makedirs("output", exist_ok=True)
 
-    gemini_voice = DEFAULT_GEMINI_VOICE or pick_voice(GEMINI_VOICES, "gemini")
+    channel_niche = script.get("channel") or os.environ.get("CHANNEL_NICHE", "science")
+    profile = get_channel_profile(channel_niche)
+
+    # ── Diverse Voice Selection (Randomly rotates across all voices per video to prevent static pattern) ──
+    explicit_voice = os.environ.get("GEMINI_VOICE_OVERRIDE") or script.get("voice")
+    gemini_voice = explicit_voice if explicit_voice else pick_voice(GEMINI_VOICES, "gemini")
+
+    try:
+        from pipeline.config import EDGE_VOICES
+        edge_pool = EDGE_VOICES
+    except ImportError:
+        edge_pool = ["en-US-GuyNeural", "en-US-AndrewNeural", "en-US-ChristopherNeural", "en-US-EricNeural", "en-US-BrianNeural", "en-US-AvaNeural", "en-US-EmmaNeural", "en-US-SteffanNeural"]
+    edge_voice = pick_voice(edge_pool, "edge")
+
+    kokoro_voice = pick_voice(KOKORO_VOICES, "kokoro")
+
+    # Micro-cadence jitter (0.98x - 1.03x) to break static timing signatures
+    cadence_speed = round(random.choice([0.98, 1.00, 1.02, 1.03]), 2)
+    vocal_tone = script.get("vocal_tone") or random.choice(["energetic_storytelling", "suspenseful_mystery", "dark_revelation", "bold_authority"])
+
     segments = script["segments"]
 
-    print(f"[TTS] Generating per-segment audio using voice '{gemini_voice}' for {len(segments)} segments...")
+    print(f"[TTS] Channel [{channel_niche.upper()}] | Voice: '{gemini_voice}' (Kokoro: '{kokoro_voice}') | Cadence: {cadence_speed:.2f}x | Tone: '{vocal_tone}'")
     audio_files = []
 
     # Detect language for gTTS fallback
@@ -213,7 +234,7 @@ def generate_audio(script: dict) -> list[str]:
             audio_bytes, mime_type = gemini_client.generate_tts(
                 text,
                 voice=gemini_voice,
-                vocal_tone=script.get("vocal_tone", "energetic_storytelling"),
+                vocal_tone=vocal_tone,
                 voiceover_plan=script.get("voiceover_plan"),
                 prev_text=prev_text,
                 next_text=next_text,
@@ -243,8 +264,9 @@ def generate_audio(script: dict) -> list[str]:
             print(f"[TTS] Segment {seg_id} generated via Gemini TTS ({gemini_voice}).")
     else:
         # Pass 2: High-Quality Edge-TTS Neural Voice for ENTIRE video
-        edge_voice = DEFAULT_EDGE_VOICE or ("en-US-AndrewNeural" if gemini_voice in ["Fenrir", "Charon"] else "en-US-ChristopherNeural")
-        print(f"[TTS] Synthesizing ALL {len(segments)} segments with Edge-TTS ({edge_voice}) for 100% uniform voice consistency...")
+        rate_pct = int(round((cadence_speed - 1.0) * 100))
+        rate_str = f"+{rate_pct}%" if rate_pct >= 0 else f"{rate_pct}%"
+        print(f"[TTS] Synthesizing ALL {len(segments)} segments with Edge-TTS ({edge_voice} @ {rate_str}) for 100% uniform voice consistency...")
         edge_success = True
         try:
             import asyncio
@@ -256,8 +278,8 @@ def generate_audio(script: dict) -> list[str]:
                 temp_mp3 = f"output/temp_tts_{seg_id}.mp3"
                 text = seg["narration"]
 
-                async def _run_edge(t=text, p=temp_mp3):
-                    comm = edge_tts.Communicate(t, voice=edge_voice, rate="+6%", pitch="+1Hz")
+                async def _run_edge(t=text, p=temp_mp3, ev=edge_voice, rs=rate_str):
+                    comm = edge_tts.Communicate(t, voice=ev, rate=rs, pitch="+0Hz")
                     await comm.save(p)
 
                 asyncio.run(_run_edge())
@@ -293,11 +315,13 @@ def generate_audio(script: dict) -> list[str]:
             except Exception as g_err:
                 print(f"[TTS] gTTS full fallback failed: {g_err}")
 
+    # Pass 4: Apply precise Cadence Speed scaling (atempo) and padding
+    import shutil
     for idx_seg, seg in enumerate(segments):
         seg_id = seg["id"]
         out_path = f"output/tts_segment_{seg_id}.wav"
 
-        # Pass 4: Final emergency guarantee: Ensure out_path always exists
+        # Emergency guarantee: Ensure out_path always exists
         if not os.path.exists(out_path) or os.path.getsize(out_path) < 1000:
             print(f"[TTS] CRITICAL: All TTS methods failed for segment {seg_id}. Generating safety WAV.")
             target_dur = float(seg.get("duration_target", 5.0))
@@ -305,6 +329,19 @@ def generate_audio(script: dict) -> list[str]:
                 ["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=r=24000:cl=mono", "-t", str(target_dur), out_path],
                 capture_output=True, check=True
             )
+
+        # Apply exact cadence speed profile if not 1.0x (e.g. 1.02x science, 0.98x nature, 0.96x history, 1.04x engineering)
+        if abs(cadence_speed - 1.0) > 0.005 and os.path.exists(out_path):
+            try:
+                speed_path = f"output/temp_speed_{seg_id}.wav"
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", out_path, "-filter:a", f"atempo={cadence_speed:.3f}", speed_path],
+                    capture_output=True, check=True
+                )
+                if os.path.exists(speed_path) and os.path.getsize(speed_path) > 1000:
+                    shutil.move(speed_path, out_path)
+            except Exception as spd_err:
+                print(f"[TTS] Warning: Cadence scaling failed for segment {seg_id}: {spd_err}")
 
         # Add slight trailing silence (0.10s) to prevent hard cuts at segment end
         if os.path.exists(out_path):

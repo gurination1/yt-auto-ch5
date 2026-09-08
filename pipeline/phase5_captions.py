@@ -4,64 +4,20 @@ import soundfile as sf
 import subprocess
 from typing import List, Dict, Any
 
-# 2026 Niche-Adaptive Typography Profiles
-NICHE_PRESETS = {
-    "science": {
-        "font_name": "Rajdhani",
-        "font_size_short": 96,
-        "c_base": "&H00FFFFFF&",
-        "c_active": "&H00FFE500&",     # Electric Cyan (BGR: 00 E5 FF)
-        "c_power": "&H000088FF&",      # Neon Orange (BGR: FF 88 00)
-        "outline_w": 9,
-        "shadow_d": 3,
-        "blur": 1,
-        "margin_v": 440
-    },
-    "nature": {
-        "font_name": "Montserrat",
-        "font_size_short": 94,
-        "c_base": "&H00F0FFF0&",       # Pale Honeydew
-        "c_active": "&H0066FF00&",     # Bioluminescent Lime (BGR: 00 FF 66)
-        "c_power": "&H0000E6FF&",      # Golden Sun (BGR: FF E6 00)
-        "outline_w": 9,
-        "shadow_d": 3,
-        "blur": 0,
-        "margin_v": 440
-    },
-    "history": {
-        "font_name": "Cinzel",
-        "font_size_short": 92,
-        "c_base": "&H00C7E8F5&",       # Antique Parchment (BGR: F5 E8 C7)
-        "c_active": "&H0000D7FF&",     # Imperial Gold (BGR: FF D7 00)
-        "c_power": "&H000000CC&",      # Imperial Crimson
-        "outline_w": 9,
-        "shadow_d": 4,
-        "blur": 2,
-        "margin_v": 440
-    },
-    "mystery": {
-        "font_name": "Montserrat",
-        "font_size_short": 96,
-        "c_base": "&H00E0E0E0&",       # Ghost White
-        "c_active": "&H0000FFDF&",     # Acid Neon Yellow (BGR: DF FF 00)
-        "c_power": "&H00FF009D&",      # Ultraviolet Purple (BGR: 9D 00 FF)
-        "outline_w": 10,
-        "shadow_d": 4,
-        "blur": 1,
-        "margin_v": 440
-    },
-    "engineering": {
-        "font_name": "Barlow Condensed",
-        "font_size_short": 98,
-        "c_base": "&H00FFFFFF&",
-        "c_active": "&H000055FF&",     # Safety Neon Orange (BGR: FF 55 00)
-        "c_power": "&H00FFE500&",      # Blueprint Cyan (BGR: 00 E5 FF)
-        "outline_w": 9,
-        "shadow_d": 3,
-        "blur": 0,
-        "margin_v": 440
-    }
-}
+from pipeline.config import get_channel_profile, FLEET_NICHE_PROFILES
+
+def resolve_installed_font(candidates: List[str], default_font: str = "DejaVu Sans") -> str:
+    """Finds the best available font from candidates on this system."""
+    try:
+        out = subprocess.check_output(["fc-list", ":", "family"], text=True, stderr=subprocess.DEVNULL)
+        installed = {f.strip().lower() for line in out.splitlines() for f in line.split(",")}
+        for c in candidates:
+            if c.strip().lower() in installed:
+                return c.strip()
+    except Exception:
+        pass
+    return candidates[0] if candidates else default_font
+
 
 POWER_WORDS = {
     "TRUTH", "SECRET", "SHOCKING", "DANGEROUS", "CRITICAL", "BRUTAL", "SURPRISING",
@@ -113,14 +69,21 @@ def align_words(script_words: List[str], whisper_words: List[Dict[str, Any]]) ->
     return aligned
 
 def generate_captions(audio_files: List[str], script: Dict[str, Any], format_type: str = "short") -> str:
-    niche = os.environ.get("CHANNEL_NICHE", "science").lower()
-    preset = NICHE_PRESETS.get(niche, NICHE_PRESETS["science"])
+    niche = (script.get("channel") or os.environ.get("CHANNEL_NICHE", "science")).lower()
+    preset = get_channel_profile(niche)
     
+    font_name = resolve_installed_font(preset.get("subtitle_fonts", ["Bebas Neue"]))
+    font_size_short = 96
+    if "cinzel" in font_name.lower():
+        font_size_short = 92
+    elif "barlow" in font_name.lower():
+        font_size_short = 98
+
     if format_type == "short":
         play_res_x = 1080
         play_res_y = 1920
-        font_size  = preset["font_size_short"]
-        margin_v   = preset["margin_v"]
+        font_size  = font_size_short
+        margin_v   = preset.get("margin_v", 440)
         max_chunk_words = 3
     else:
         play_res_x = 1920
@@ -256,6 +219,11 @@ def generate_captions(audio_files: List[str], script: Dict[str, Any], format_typ
         time_offset += duration
         print(f"Segment {seg.get('id', i)} duration: {duration:.2f}s, Cumulative offset: {time_offset:.2f}s")
 
+    outline_color = preset.get("outline_color", "&H00100505&")
+    shadow_color = preset.get("shadow_color", "&H80000000&")
+    outline_w = preset.get("outline_w", 9)
+    shadow_d = preset.get("shadow_d", 3)
+
     ass_header = f"""[Script Info]
 Title: 2026 Kinetic Shorts Typography ({niche.capitalize()})
 ScriptType: v4.00+
@@ -265,7 +233,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{preset['font_name']},{font_size},{preset['c_base']},&H000000FF,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,1,{preset['outline_w']},{preset['shadow_d']},5,30,30,0,1
+Style: Default,{font_name},{font_size},{preset['c_base']},&H000000FF,{outline_color},{shadow_color},-1,0,0,0,100,100,0,0,1,{outline_w},{shadow_d},5,30,30,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

@@ -67,7 +67,8 @@ GEMINI_PRO          = "gemini-2.5-flash"
 GEMINI_TTS_MODEL    = "gemini-2.5-flash-preview-tts"
 GEMINI_API_BASE     = "https://generativelanguage.googleapis.com/v1beta"
 
-GEMINI_VOICES    = ["Fenrir", "Puck", "Charon", "Orus", "Kore"]
+GEMINI_VOICES    = ["Fenrir", "Puck", "Charon", "Orus", "Kore", "Aoede"]
+EDGE_VOICES      = ["en-US-GuyNeural", "en-US-AndrewNeural", "en-US-ChristopherNeural", "en-US-EricNeural", "en-US-BrianNeural", "en-US-AvaNeural", "en-US-EmmaNeural", "en-US-SteffanNeural"]
 KOKORO_VOICES    = ["af_heart","af_bella","af_nicole","af_sarah","af_sky","af_aoede","am_adam","am_michael","am_fenrir","am_puck"]
 
 # ── Video Specs ──────────────────────────────────────────────────────────────

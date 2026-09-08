@@ -247,6 +247,12 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
 
         # Select randomized cinematic camera motion (Ken Burns / Pan / Zoom)
         import random as _rnd
+        from pipeline.config import get_channel_profile
+        chan_niche = (script.get("channel") or os.environ.get("CHANNEL_NICHE", "science")).lower()
+        chan_profile = get_channel_profile(chan_niche)
+        color_curves = chan_profile.get("color_curves", "eq=contrast=1.06:saturation=1.12:gamma=0.96")
+        vignette_angle = 0.48 if chan_niche == "mystery" else 0.40
+
         motion_idx = _rnd.randint(0, 4)
         
         # Base scale-crop to cover full bleed with unsharp masking for enhanced clarity
@@ -255,35 +261,35 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
             vf_chain = (
                 f"scale=trunc({w}*1.15/2)*2:trunc({h}*1.15/2)*2:force_original_aspect_ratio=increase,"
                 f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 + (t-{duration}/2)*12))':'max(0, min(in_h-out_h, (in_h-out_h)/2 + (t-{duration}/2)*12))',"
-                f"eq=contrast=1.06:saturation=1.12:gamma=0.96,unsharp=5:5:0.8:5:5:0.4,vignette=angle=0.4,setsar=1" + drawtext_chain
+                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         elif motion_idx == 1:
             # 2. Slow Panning Upward
             vf_chain = (
                 f"scale=trunc({w}*1.15/2)*2:trunc({h}*1.15/2)*2:force_original_aspect_ratio=increase,"
                 f"crop={w}:{h}:'(in_w-out_w)/2':'max(0, min(in_h-out_h, (in_h-out_h)/2 + (t-{duration}/2)*15))',"
-                f"eq=contrast=1.06:saturation=1.12:gamma=0.96,unsharp=5:5:0.8:5:5:0.4,vignette=angle=0.4,setsar=1" + drawtext_chain
+                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         elif motion_idx == 2:
             # 3. Slow Panning Downward
             vf_chain = (
                 f"scale=trunc({w}*1.15/2)*2:trunc({h}*1.15/2)*2:force_original_aspect_ratio=increase,"
                 f"crop={w}:{h}:'(in_w-out_w)/2':'max(0, min(in_h-out_h, (in_h-out_h)/2 - (t-{duration}/2)*15))',"
-                f"eq=contrast=1.06:saturation=1.12:gamma=0.96,unsharp=5:5:0.8:5:5:0.4,vignette=angle=0.4,setsar=1" + drawtext_chain
+                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         elif motion_idx == 3:
             # 4. Slow Panning Right
             vf_chain = (
                 f"scale=trunc({w}*1.15/2)*2:trunc({h}*1.15/2)*2:force_original_aspect_ratio=increase,"
                 f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 + (t-{duration}/2)*15))':'(in_h-out_h)/2',"
-                f"eq=contrast=1.06:saturation=1.12:gamma=0.96,unsharp=5:5:0.8:5:5:0.4,vignette=angle=0.4,setsar=1" + drawtext_chain
+                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         else:
             # 5. Slow Panning Left
             vf_chain = (
                 f"scale=trunc({w}*1.15/2)*2:trunc({h}*1.15/2)*2:force_original_aspect_ratio=increase,"
                 f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 - (t-{duration}/2)*15))':'(in_h-out_h)/2',"
-                f"eq=contrast=1.06:saturation=1.12:gamma=0.96,unsharp=5:5:0.8:5:5:0.4,vignette=angle=0.4,setsar=1" + drawtext_chain
+                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
             
         cmd = [
@@ -403,27 +409,27 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
     print("Step 6: Final audio mix with SFX…")
     final_output_path = f"output/final_{format_type}.mp4"
 
-    filter_complex = (
-        "[1:a]highpass=f=80,volume=2.0,asplit=2[tts1][tts2];"
-        # Background music sits audibly at punchy baseline (~ -12dB)
-        "[2:a]volume=0.25,aloop=loop=-1:size=2147483647[music_loop];"
-        "[3:a]volume=0.26[sfx];"
-        # Smooth sidechain ducking: voice dips music gently by ~5dB (ratio=3.5, threshold=0.08)
-        "[music_loop][tts1]sidechaincompress=threshold=0.08:ratio=3.5:attack=25:release=250[music_ducked];"
-        "[tts2][music_ducked]amix=inputs=2:duration=first:normalize=0[mixed];"
-        "[mixed][sfx]amix=inputs=2:duration=first:normalize=0[premix];"
-        "[premix]loudnorm=I=-14:TP=-1.5:LRA=11[audio_final]"
-    )
-
     niche_clean = (script.get("channel") or os.environ.get("CHANNEL_NICHE") or "science").lower()
-    fingerprints = {
-        "science": {"artist": "Nova Frontier Labs", "genre": "Science & Technology", "comment": "Quantum & Astrophysics Series", "audio_bitrate": "192k"},
-        "nature": {"artist": "Terra BioSphere", "genre": "Natural History", "comment": "Abyssal Fauna & Extreme Biology", "audio_bitrate": "224k"},
-        "history": {"artist": "Chronos Imperial Archives", "genre": "Military History", "comment": "Warfare Strategy & Battle Tactics", "audio_bitrate": "192k"},
-        "mystery": {"artist": "Enigma Syndicate", "genre": "Unexplained Phenomena", "comment": "Archaeological & Geological Anomalies", "audio_bitrate": "256k"},
-        "engineering": {"artist": "Titan Megastructures", "genre": "Colossal Engineering", "comment": "Heavy Civil Infrastructure Marvels", "audio_bitrate": "192k"},
-    }
-    meta = fingerprints.get(niche_clean, fingerprints["science"])
+    from pipeline.config import get_channel_profile
+    chan_profile = get_channel_profile(niche_clean)
+    duck = chan_profile.get("ducking", {
+        "attack": 25, "release": 250, "ratio": 3.5, "threshold": 0.08, "music_vol": 0.25, "sfx_vol": 0.26
+    })
+    meta = chan_profile.get("container_metadata", {})
+    artist = meta.get("artist", "Axiom Lab Studios / Science & Frontier Tech")
+    genre = meta.get("genre", "Science & Technology")
+    comment = meta.get("comment", "Autonomous Shorts Fleet")
+    vid_title = script.get("title", script.get("topic", "Autonomous Short"))
+
+    filter_complex = (
+        f"[1:a]highpass=f=80,volume=2.0,asplit=2[tts1][tts2];"
+        f"[2:a]volume={duck['music_vol']},aloop=loop=-1:size=2147483647[music_loop];"
+        f"[3:a]volume={duck['sfx_vol']}[sfx];"
+        f"[music_loop][tts1]sidechaincompress=threshold={duck['threshold']}:ratio={duck['ratio']}:attack={duck['attack']}:release={duck['release']}[music_ducked];"
+        f"[tts2][music_ducked]amix=inputs=2:duration=first:normalize=0[mixed];"
+        f"[mixed][sfx]amix=inputs=2:duration=first:normalize=0[premix];"
+        f"[premix]loudnorm=I=-14:TP=-1.5:LRA=11[audio_final]"
+    )
 
     cmd = [
         "ffmpeg", "-y",
@@ -435,11 +441,14 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
         "-map", "0:v",
         "-map", "[audio_final]",
         "-c:v", "copy",
-        "-c:a", "aac", "-b:a", meta["audio_bitrate"], "-ar", "48000",
-        "-metadata", f"title={script.get('title', 'Documentary')}",
-        "-metadata", f"artist={meta['artist']}",
-        "-metadata", f"genre={meta['genre']}",
-        "-metadata", f"comment={meta['comment']}",
+        "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
+        "-metadata", f"title={vid_title}",
+        "-metadata", f"artist={artist}",
+        "-metadata", f"album_artist={artist}",
+        "-metadata", f"genre={genre}",
+        "-metadata", f"comment={comment}",
+        "-metadata", f"copyright=© 2026 {artist}. All Rights Reserved.",
+        "-metadata", f"encoded_by={artist} Autonomous Media Pipeline v2.6",
         "-shortest", "-movflags", "+faststart",
         final_output_path,
     ]
