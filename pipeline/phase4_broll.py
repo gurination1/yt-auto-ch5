@@ -1,4 +1,34 @@
 
+import os
+import re
+import random
+import requests
+
+def _validate_and_normalize_image(img_path: str) -> bool:
+    """Validates image with PIL, converts to standard 8-bit RGB JPEG, caps dimensions to 2560px, returns True if valid."""
+    try:
+        from PIL import Image
+        if not os.path.exists(img_path) or os.path.getsize(img_path) < 1000:
+            return False
+        with Image.open(img_path) as im:
+            im.verify()
+        with Image.open(img_path) as im:
+            im = im.convert("RGB")
+            w, h = im.size
+            if max(w, h) > 2560:
+                scale = 2560 / max(w, h)
+                im = im.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
+            im.save(img_path, "JPEG", quality=95)
+        return True
+    except Exception as e:
+        print(f"[B-roll] Image validation/normalization failed for {img_path}: {e}")
+        if os.path.exists(img_path):
+            try:
+                os.remove(img_path)
+            except Exception:
+                pass
+        return False
+
 def _wikipedia_hd_image(query: str, img_path: str) -> bool:
     """Fetches official high-resolution authentic photograph/micrograph of entity from Wikipedia/Wikimedia."""
     try:
@@ -24,8 +54,9 @@ def _wikipedia_hd_image(query: str, img_path: str) -> bool:
                         if r_img.status_code == 200 and len(r_img.content) > 10_000:
                             with open(img_path, "wb") as f:
                                 f.write(r_img.content)
-                            print(f"[B-roll] Fetched official Wikipedia HD photo for '{entity}'.")
-                            return True
+                            if _validate_and_normalize_image(img_path):
+                                print(f"[B-roll] Fetched official Wikipedia HD photo for '{entity}'.")
+                                return True
 
         # 2. Fuzzy Wikipedia generator search
         r_gen = requests.get(url_wiki, params={
@@ -41,8 +72,9 @@ def _wikipedia_hd_image(query: str, img_path: str) -> bool:
                     if r_img.status_code == 200 and len(r_img.content) > 10_000:
                         with open(img_path, "wb") as f:
                             f.write(r_img.content)
-                        print(f"[B-roll] Fetched search-matched Wikipedia HD photo for '{entity}'.")
-                        return True
+                        if _validate_and_normalize_image(img_path):
+                            print(f"[B-roll] Fetched search-matched Wikipedia HD photo for '{entity}'.")
+                            return True
 
         # 3. Wikimedia Commons photo archive
         url_comm = "https://commons.wikimedia.org/w/api.php"
@@ -61,8 +93,9 @@ def _wikipedia_hd_image(query: str, img_path: str) -> bool:
                     if r_img.status_code == 200 and len(r_img.content) > 10_000:
                         with open(img_path, "wb") as f:
                             f.write(r_img.content)
-                        print(f"[B-roll] Fetched authentic Commons archive photo for '{entity}'.")
-                        return True
+                        if _validate_and_normalize_image(img_path):
+                            print(f"[B-roll] Fetched authentic Commons archive photo for '{entity}'.")
+                            return True
     except Exception as e:
         print(f"[B-roll] Authentic HD photo fetch note: {e}")
     return False
@@ -1442,14 +1475,19 @@ def _image_to_ken_burns_video(img_path: str, out_path: str, w: int, h: int, dura
     # Force DISABLE_HYPERFRAMES to prevent tech HUD borders/grid overlays over B-roll clips
     os.environ["DISABLE_HYPERFRAMES"] = "1"
 
+    if not is_video:
+        if not _validate_and_normalize_image(img_path):
+            print(f"[B-roll] Image invalid for Ken Burns, synthesizing with PIL: {img_path}")
+            _pil_placeholder(caption or "DOCUMENTARY ARCHIVE", w, h, img_path)
+
     fps    = 30
-    frames = int(duration * fps)
+    frames = max(1, int(duration * fps))
 
     styles = [
         f"zoompan=z='min(zoom+0.0012,1.25)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={w}x{h}:fps={fps},scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}",
         f"zoompan=z='min(zoom+0.0012,1.25)':d={frames}:x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)*(on/{frames})':s={w}x{h}:fps={fps},scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}",
         f"zoompan=z='min(zoom+0.0012,1.25)':d={frames}:x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)*(1-on/{frames})':s={w}x{h}:fps={fps},scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}",
-        f"zoompan=z='min(zoom+0.0010,1.20)':d={frames}:x='iw-iw/zoom':y='ih/2-(ih/zoom/2)':s={w}x{h}:fps={fps},scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}",
+        f"zoompan=z='min(zoom+0.0010,1.20)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={w}x{h}:fps={fps},scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}",
     ]
     vf = random.choice(styles)
 
@@ -1460,7 +1498,28 @@ def _image_to_ken_burns_video(img_path: str, out_path: str, w: int, h: int, dura
         "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p",
         "-an", out_path,
     ]
-    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        subprocess.run(cmd, check=True, capture_output=True)
+        if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
+            return
+    except subprocess.CalledProcessError as e:
+        err_msg = e.stderr.decode("utf-8", errors="ignore") if e.stderr else str(e)
+        print(f"[B-roll] Ken Burns zoompan failed ({e.returncode}): {err_msg[:200]}. Falling back to safe scale...")
+
+    # Robust fallback: simple scale and crop without zoompan
+    fallback_cmd = [
+        "ffmpeg", "-y", "-loop", "1", "-i", img_path,
+        "-vf", f"scale=trunc({w}/2)*2:trunc({h}/2)*2:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1",
+        "-t", str(duration), "-r", str(fps),
+        "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-an", out_path,
+    ]
+    try:
+        subprocess.run(fallback_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e2:
+        print(f"[B-roll] Safe scale also failed ({e2}). Synthesizing fallback video...")
+        _pil_placeholder(caption or "DOCUMENTARY ARCHIVE", w, h, img_path)
+        subprocess.run(fallback_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 
@@ -1487,8 +1546,9 @@ def _pollinations_image(query: str, img_path: str, w: int = 1080, h: int = 1920)
             if r.status_code == 200 and len(r.content) > 10_000:
                 with open(img_path, "wb") as f:
                     f.write(r.content)
-                print(f"[B-roll] 4K Pollinations {model} image download OK.")
-                return True
+                if _validate_and_normalize_image(img_path):
+                    print(f"[B-roll] 4K Pollinations {model} image download OK.")
+                    return True
         except Exception as e:
             print(f"[B-roll] Pollinations {model} failed: {e}")
     return False
@@ -2505,6 +2565,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             r.raise_for_status()
             with open(img_path, "wb") as f:
                 f.write(r.content)
+            if not _validate_and_normalize_image(img_path):
+                raise ValueError("Downloaded image validation failed")
             print(f"[B-roll] Segment {segment_index}: authentic image downloaded ({img_url[:60]}...). Applying Ken Burns…")
             _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
             return out_path
