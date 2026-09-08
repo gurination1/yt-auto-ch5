@@ -152,6 +152,16 @@ def main():
         print("✅ Pre-upload verification & video generation complete. Video artifact saved successfully!")
         sys.exit(0)
     
+    published_results = {
+        "title": metadata.get("title"),
+        "youtube": None,
+        "dailymotion": None,
+        "rumble": None,
+        "facebook": None,
+        "instagram": None,
+        "threads": None
+    }
+    
     # 1. YouTube Upload
     yt_success = False
     try:
@@ -159,6 +169,13 @@ def main():
         video_id = phase9.upload_to_youtube(video_path, thumbnail_path, metadata)
         print(f"✅ Successfully published to YouTube! Video ID: {video_id}")
         print(f"Direct Link: https://www.youtube.com/watch?v={video_id}")
+        print(f"Short Link: https://www.youtube.com/shorts/{video_id}")
+        print(f"Unmasked YouTube ID chars: {list(video_id)}")
+        published_results["youtube"] = {
+            "video_id": video_id,
+            "url": f"https://www.youtube.com/watch?v={video_id}",
+            "short_url": f"https://www.youtube.com/shorts/{video_id}"
+        }
         yt_success = True
     except google.auth.exceptions.RefreshError as ref_err:
         print("\n⚠️ YouTube Authentication Error: Refresh token may have expired or is invalid.")
@@ -178,6 +195,10 @@ def main():
         dm_id = phase10.upload_to_dailymotion(video_path, metadata)
         if dm_id:
             print(f"✅ Successfully published to Dailymotion! Video ID: {dm_id}")
+            published_results["dailymotion"] = {
+                "video_id": dm_id,
+                "url": f"https://www.dailymotion.com/video/{dm_id}"
+            }
     except Exception as dm_err:
         print(f"⚠️ Warning: Dailymotion upload encountered an error: {dm_err}")
 
@@ -189,6 +210,9 @@ def main():
         rumble_url = phase11.upload_to_rumble(video_path, metadata)
         if rumble_url:
             print(f"✅ Successfully published to Rumble! URL: {rumble_url}")
+            published_results["rumble"] = {
+                "url": rumble_url
+            }
     except Exception as rb_err:
         print(f"⚠️ Warning: Rumble upload encountered an error: {rb_err}")
 
@@ -200,8 +224,10 @@ def main():
         meta_result = phase12.upload_to_meta(video_path, metadata)
         if meta_result.get("fb_video_id"):
             print(f"✅ Facebook Reel published! ID: {meta_result['fb_video_id']}")
+            published_results["facebook"] = meta_result["fb_video_id"]
         if meta_result.get("ig_media_id"):
             print(f"✅ Instagram Reel published! ID: {meta_result['ig_media_id']}")
+            published_results["instagram"] = meta_result["ig_media_id"]
     except Exception as meta_err:
         print(f"⚠️ Warning: Meta upload encountered an error: {meta_err}")
 
@@ -245,10 +271,42 @@ def main():
             threads_post_id = phase13.upload_to_threads(video_path, threads_caption, threads_user_id, threads_token)
             if threads_post_id:
                 print(f"✅ Threads post published! ID: {threads_post_id}")
+                published_results["threads"] = threads_post_id
         else:
             print("[Threads] Skipped — THREADS_USER_ID or THREADS_ACCESS_TOKEN not set.")
     except Exception as threads_err:
         print(f"⚠️ Warning: Threads upload encountered an error: {threads_err}")
+
+    # Write published results to disk
+    os.makedirs("output", exist_ok=True)
+    with open("output/published_urls.json", "w") as pf:
+        json.dump(published_results, pf, indent=2)
+    print("\n📄 Publication results saved to output/published_urls.json")
+
+    # Render GitHub Step Summary if running in Actions
+    step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if step_summary:
+        try:
+            with open(step_summary, "a") as sf:
+                sf.write(f"\n## 🚀 Published Social Media Links\n\n")
+                if published_results.get("youtube"):
+                    yt_data = published_results["youtube"]
+                    sf.write(f"- 📺 **YouTube Short**: [{metadata.get('title')}]({yt_data['short_url']})\n")
+                    sf.write(f"- 🔗 **Direct URL**: {yt_data['url']}\n")
+                if published_results.get("dailymotion"):
+                    dm_data = published_results["dailymotion"]
+                    sf.write(f"- 🎬 **Dailymotion**: [{dm_data['video_id']}]({dm_data['url']})\n")
+                if published_results.get("rumble"):
+                    rb_data = published_results["rumble"]
+                    sf.write(f"- ⚡ **Rumble**: [{rb_data['url']}]({rb_data['url']})\n")
+                if published_results.get("facebook"):
+                    sf.write(f"- 📘 **Facebook Reel ID**: `{published_results['facebook']}`\n")
+                if published_results.get("instagram"):
+                    sf.write(f"- 📸 **Instagram Reel ID**: `{published_results['instagram']}`\n")
+                if published_results.get("threads"):
+                    sf.write(f"- 🧵 **Threads Post ID**: `{published_results['threads']}`\n")
+        except Exception as se:
+            print(f"Warning: Could not write GITHUB_STEP_SUMMARY: {se}")
 
 if __name__ == "__main__":
     main()
