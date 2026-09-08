@@ -4,6 +4,10 @@ import json
 from PIL import Image
 from pipeline.gemini import _post_with_rotation
 from pipeline.config import GEMINI_FLASH, GEMINI_API_BASE
+try:
+    from pipeline.config import GEMINI_FLASH_BACKUP
+except ImportError:
+    GEMINI_FLASH_BACKUP = "gemini-2.5-flash-lite"
 
 def _shrink(img_bytes: bytes, max_dim: int = 768) -> bytes:
     img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
