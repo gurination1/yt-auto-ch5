@@ -69,9 +69,10 @@
     "The 'Underground Factory' TBMs: How colossal boring machines now incorporate entire concrete prefabrication plants *inside* them, building a full tunnel arch every few hours as they drill, deep beneath cities.",
     "The 'Floating' Skyscraper Foundation: How colossal towers are built on soft ground by removing as much soil as the building weighs.",
     "Dynamic Skyscraper Facades: Buildings That Move",
-    "TBMs That Hover: Moving Giants on Air"
+    "TBMs That Hover: Moving Giants on Air",
+    "The Ocean's Self-Sealing Tunnels: How Water Pressure Makes Them Stronger"
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 2,
-  "call_count": 188
+  "subcluster_idx": 2,
+  "fallback_idx": 3,
+  "call_count": 189
 }
