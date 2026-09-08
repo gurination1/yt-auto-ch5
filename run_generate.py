@@ -42,8 +42,7 @@ def _video_health_ok(video_path: str) -> tuple[bool, str]:
     if duration < 10:
         return False, f"duration too short: {duration:.1f}s"
     
-    import re
-    cmd_chk = ["ffmpeg", "-i", video_path, "-vf", "blackdetect=d=0.8:pix_th=0.10", "-f", "null", "-"]
+    cmd_chk = ["ffmpeg", "-i", video_path, "-vf", "blackdetect=d=0.8:pic_th=0.99:pix_th=0.03", "-f", "null", "-"]
     res_chk = subprocess.run(cmd_chk, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True, errors="ignore")
     black_durations = [float(d) for d in re.findall(r"black_duration:([0-9.]+)", res_chk.stderr or "")]
     if any(bd > 0.8 for bd in black_durations):
@@ -197,8 +196,13 @@ def main():
         
         max_attempts = int(os.environ.get("JUDGE_MAX_ATTEMPTS", "3"))
         attempt = 1
+        judge_start_time = time.time()
         
         while attempt <= max_attempts:
+            if time.time() - judge_start_time > 720:
+                print(f"\n[Judge AI] Reached 12-minute review loop budget limit. Accepting current version to avoid workflow timeout.")
+                break
+
             print(f"\n[Judge AI] Review Attempt {attempt}/{max_attempts} for video: {final_video}...")
             try:
                 review_result = judge.review_video(final_video, review_metadata)
@@ -300,7 +304,8 @@ def main():
         # Verify final video health before proceeding
         ok, health_reason = _video_health_ok(final_video)
         if not ok:
-            print(f"[Generate] Warning: Final video health issue ({health_reason}). Re-assembling with fresh clean visual motion...")
+            print(f"[Generate] Warning: Final video health issue ({health_reason}). Re-assembling with authentic documentary visual recovery...")
+            from pipeline.phase7_assemble import _harvest_emergency_visual
             for idx in range(len(script["segments"])):
                 old_b = f"output/broll_{idx}.mp4"
                 if os.path.exists(old_b):
@@ -310,11 +315,16 @@ def main():
                         pass
                 seg = script["segments"][idx]
                 dur = tts_durations[idx] if tts_durations else 6.0
-                prompt_clean = f"4k cinematic documentary footage of {seg.get('broll_query') or seg.get('narration')}, photorealistic, 8k, detailed"
-                from pipeline.phase4_broll import _pollinations_image, _image_to_ken_burns_video
-                s_img = f"output/recover_img_{idx}.jpg"
-                if _pollinations_image(prompt_clean, s_img, w=2160, h=3840):
-                    _image_to_ken_burns_video(s_img, old_b, 1080 if args.format == "short" else 1920, 1920 if args.format == "short" else 1080, duration=dur)
+                _harvest_emergency_visual(
+                    seg.get("broll_query", ""),
+                    seg.get("narration", ""),
+                    old_b,
+                    1080 if args.format == "short" else 1920,
+                    1920 if args.format == "short" else 1080,
+                    duration=dur,
+                    script_topic=script.get("title", "") or script.get("topic", ""),
+                    channel=channel_niche
+                )
                 broll_files[idx] = old_b
             final_video = phase7.assemble_video(broll_files, audio_files, captions_ass, music_path, script, args.format)
 

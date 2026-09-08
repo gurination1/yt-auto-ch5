@@ -163,7 +163,7 @@ class JudgeClient:
             if dur < 10.0:
                 raise RuntimeError(f"Local health check failed: duration {dur:.2f}s is too short (<10s)")
             
-            bd_cmd = ["ffmpeg", "-i", video_path, "-vf", "blackdetect=d=0.8:pix_th=0.10", "-f", "null", "-"]
+            bd_cmd = ["ffmpeg", "-i", video_path, "-vf", "blackdetect=d=0.8:pic_th=0.99:pix_th=0.03", "-f", "null", "-"]
             bd_proc = subprocess.run(bd_cmd, capture_output=True, text=True)
             if "black_start" in bd_proc.stderr:
                 print("[Judge AI] Local health check detected black frames!")

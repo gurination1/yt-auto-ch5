@@ -196,9 +196,22 @@ def _pexels_candidates(query: str, orientation: str, n: int = 8) -> list[dict]:
             video_files = [f for f in video.get("video_files", []) if f.get("link")]
             if image_url and video_files:
                 video_files.sort(key=lambda f: f.get("width", 0), reverse=True)
+                v_page_url = video.get("url", "")
+                slug = v_page_url.rstrip("/").split("/")[-1]
+                slug_clean = re.sub(r'-\d+$', '', slug).replace("-", " ")
+                
+                tags_list = []
+                for t in video.get("tags", []):
+                    if isinstance(t, dict):
+                        tags_list.append(t.get("name", ""))
+                    elif isinstance(t, str):
+                        tags_list.append(t)
+
                 candidates.append({
                     "video_url": video_files[0]["link"],
                     "thumb_url": image_url,
+                    "title": slug_clean,
+                    "tags": tags_list,
                     "source": "Pexels"
                 })
         return candidates
@@ -363,9 +376,14 @@ def _pixabay_candidates(query: str, n: int = 4) -> list[dict]:
                 thumb = item.get("userImageURL") or "https://pixabay.com/favicon.ico"
                 
             if video_url:
+                tags_str = item.get("tags", "")
+                page_url = item.get("pageURL", "")
+                slug = page_url.rstrip("/").split("/")[-1].replace("-", " ")
                 candidates.append({
                     "video_url": video_url,
                     "thumb_url": thumb,
+                    "title": slug or tags_str or clean_q,
+                    "tags": [t.strip() for t in tags_str.split(",") if t.strip()],
                     "source": "Pixabay"
                 })
         return candidates
@@ -1458,14 +1476,14 @@ def _pollinations_image(query: str, img_path: str, w: int = 1080, h: int = 1920)
     
     req_w, req_h = (w, h) if (w and h) else (1080, 1920)
     encoded_prompt = urllib.parse.quote(f"4k cinematic documentary photo of {clean_q}, national geographic photography, hyperrealistic, 8k, highly detailed, photorealistic, no text, no watermark")
-    for model in ["flux", "turbo"]:
+    for model, t_out in [("flux", 25), ("turbo", 15)]:
         try:
             seed = random.randint(1, 100000)
             url = (
                 f"https://image.pollinations.ai/prompt/{encoded_prompt}"
                 f"?width={req_w}&height={req_h}&model={model}&nologo=true&seed={seed}"
             )
-            r = requests.get(url, timeout=12)
+            r = requests.get(url, timeout=t_out)
             if r.status_code == 200 and len(r.content) > 10_000:
                 with open(img_path, "wb") as f:
                     f.write(r.content)
@@ -2506,10 +2524,9 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
         return out_path
 
-    cmd_procedural = [
-        "ffmpeg", "-y", "-f", "lavfi",
-        "-i", f"mandelbrot=size={w}x{h}:rate=30,trim=duration={duration}",
-        "-c:v", "libx264", "-pix_fmt", "yuv420p", out_path
-    ]
-    subprocess.run(cmd_procedural, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # ── Fallback 5: Authentic Topic Schematic Slide with Ken Burns (Never blank abstract mandelbrot) ───
+    placeholder_text = topic or narration_query or query or "ARCHIVAL DOCUMENTARY"
+    print(f"[B-roll] Segment {segment_index}: Generating topic schematic slide for '{placeholder_text[:50]}'...")
+    _pil_placeholder(placeholder_text.upper(), w, h, img_path)
+    _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="DOCUMENTARY ARCHIVE")
     return out_path

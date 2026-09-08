@@ -58,8 +58,26 @@ def generate_script(topic: dict, format_type: str) -> dict:
             core_subj = raw_topic_str.split("-")[0].strip()
         else:
             core_subj = raw_topic_str
-        clean_words = re.sub(r"[^\w\s-]", "", core_subj).split()
-        core_subj = " ".join(clean_words[:4]).strip() or raw_topic_str[:30]
+
+        # Filter conversational verbs, prepositions, filler words from topic to extract core entity nouns
+        topic_noise_words = {
+            "transformed", "transforming", "turns", "turning", "into", "created", "creating",
+            "discovered", "discovering", "reveals", "revealing", "secret", "secrets", "mystery",
+            "mysteries", "unsolved", "experiment", "experiments", "laboratory", "lab", "scientists",
+            "science", "researchers", "study", "proves", "proving", "shows", "showing", "found",
+            "how", "why", "what", "when", "where", "inside", "hidden", "truth", "about",
+            "could", "would", "might", "will", "can", "using", "with", "from", "at", "by",
+            "for", "on", "in", "a", "an", "the", "that", "this", "these", "those", "over",
+            "under", "between", "through", "across", "against", "without", "real", "actual",
+            "shocking", "incredible", "unbelievable", "insane", "bizarre", "strange", "epic"
+        }
+        all_words = re.sub(r"[^\w\s-]", " ", core_subj).split()
+        entity_words = [w for w in all_words if w.lower() not in topic_noise_words and len(w) > 2]
+        if entity_words:
+            core_subj = " ".join(entity_words[:4]).strip()
+        else:
+            clean_words = re.sub(r"[^\w\s-]", "", core_subj).split()
+            core_subj = " ".join(clean_words[:3]).strip() or raw_topic_str[:30]
 
         prompt = f"""Generate an extremely viral, high-retention 25-35 second YouTube Short educational script on the topic: "{topic['topic']}".
 Use the following hook concept as your core theme: "{hook_formatted}" (short hook: "{topic.get('short_hook', '')}").
