@@ -298,7 +298,18 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
             "-vf", vf_chain,
             "-r", "30", "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p", "-an", norm_path
         ]
-        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            subprocess.run(cmd, check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            err_msg = e.stderr.decode("utf-8", errors="ignore") if e.stderr else str(e)
+            print(f"[Assemble] Warning: Advanced motion filter failed on segment {i} ({err_msg[:200]}). Falling back to safe scale...")
+            safe_cmd = [
+                "ffmpeg", "-y", "-stream_loop", "-1", "-i", broll_path,
+                "-ss", f"{ss_offset:.3f}", "-t", f"{duration:.3f}",
+                "-vf", f"scale=trunc({w}/2)*2:trunc({h}/2)*2:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1",
+                "-r", "30", "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p", "-an", norm_path
+            ]
+            subprocess.run(safe_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         # Verify segment clip has zero true black screen before accepting into assembly
         cmd_chk = ["ffmpeg", "-i", norm_path, "-vf", "blackdetect=d=0.8:pic_th=0.99:pix_th=0.03", "-f", "null", "-"]

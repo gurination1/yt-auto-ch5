@@ -85,6 +85,11 @@ def vision_rank_broll(
             }
         })
 
+    payload = {
+        "contents": [{"parts": parts}],
+        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 400},
+    }
+
     models_to_try = [
         GEMINI_FLASH,
         GEMINI_FLASH_BACKUP,
