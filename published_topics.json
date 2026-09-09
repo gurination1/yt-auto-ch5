@@ -73,9 +73,10 @@
     "The Ocean's Self-Sealing Tunnels: How Water Pressure Makes Them Stronger",
     "Ecuador's Chinese-Built Mega-Dam Plagued by 17,000 Cracks",
     "How 'plug-and-play' self-erecting mega-cranes are now deploying in hours, not weeks, for mega-projects, with advanced AI-driven precision on challenging sites.",
-    "The skyscraper that *bends* with the sun: How supertalls visibly lean and grow meters daily."
+    "The skyscraper that *bends* with the sun: How supertalls visibly lean and grow meters daily.",
+    "China's Undersea High-Speed Rail: Robots Battling Extreme Geology"
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 6,
-  "call_count": 192
+  "subcluster_idx": 1,
+  "fallback_idx": 7,
+  "call_count": 193
 }
