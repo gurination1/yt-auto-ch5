@@ -57,6 +57,9 @@ def vision_rank_broll(
         f"   - ANY candidate showing crypto trading charts, candlestick charts, stock tickers, or day-trading screens when narration is about nature, wildlife, geography, biology, space, or history.\n"
         f"   - ANY candidate showing generic VJ party particle loops, EDM tunnel visualizers, neon DJ background loops, disco/rave graphics, or abstract motion graphics lacking physical real-world relevance.\n"
         f"   - ANY candidate showing full-screen text, title cards, subtitles, lower-third graphics, channel logos, or text-only slides from the source video.\n"
+        f"   - ANY candidate showing PowerPoint slides, bullet points, lecture blackboards, or software tutorials.\n"
+        f"   - ANY candidate showing talking heads, podcast hosts, bedroom vloggers, or YouTubers talking directly to camera.\n"
+        f"   - ANY candidate showing animated channel intro stingers, opening bumper logos, or 'like & subscribe' graphics.\n"
         f"   - ANY candidate showing generic corporate stock models, smiling office workers, generic handshakes, modern boardroom meetings, or staged actors when discussing science, history, nature, or engineering.\n"
         f"   - ANY candidate showing generic glowing particle soups, abstract blue light tunnels, or decorative stock graphics with zero concrete physical relevance.\n"
         f"2. High-quality authentic documentary footage, NASA/ESA telemetry, real-world science apparatus, historical archival media, living nature specimens, and detailed schematics MUST be prioritized (scores 85-98).\n"
@@ -111,8 +114,8 @@ def vision_rank_broll(
             continue
 
     if resp is None or resp.status_code != 200:
-        print(f"[VisionMatch] Vision API unavailable or exhausted ({last_err}). Gracefully accepting candidate 0 (top algorithmic score) to preserve authentic footage.")
-        return 0, True
+        print(f"[VisionMatch] Vision API unavailable or exhausted ({last_err}). Rejecting batch to prevent unverified filler.")
+        return None, False
 
     try:
         raw  = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
@@ -154,5 +157,100 @@ def vision_rank_broll(
         return None, False
 
     except Exception as e:
-        print(f"[VisionMatch] Vision JSON parse note: {e}. Accepting candidate 0 as algorithmic fallback.")
-        return 0, True
+        print(f"[VisionMatch] Vision JSON parse note: {e}. Rejecting batch.")
+        return None, False
+
+
+def verify_video_frames(
+    frames: list[bytes],
+    narration: str,
+    query: str,
+    topic: str = "",
+) -> tuple[bool, str]:
+    """
+    Performs deep multi-frame visual verification on downloaded candidate video frames.
+    Strictly rejects:
+    1. Talking heads, podcast hosts, bedroom vloggers, faces talking directly to camera.
+    2. Slide decks, PowerPoint bullets, presentation text, blackboards, software tutorials.
+    3. Logo bumpers, channel intros, 'like and subscribe' graphics, watermarks.
+    4. Completely unrelated visual content to the narration / topic.
+    Returns (is_valid, reason).
+    """
+    if not frames:
+        return True, "No frames to inspect"
+
+    import os
+    if os.environ.get("BYPASS_VISION_MATCH") == "1":
+        return True, "Vision match bypassed"
+
+    prompt_text = (
+        f"VIDEO TOPIC: \"{topic}\"\n"
+        f"SEGMENT NARRATION: \"{narration}\"\n"
+        f"SEARCH QUERY: \"{query}\"\n\n"
+        f"You are inspecting {len(frames)} actual video frame(s) extracted from a candidate B-roll clip.\n"
+        f"Evaluate whether these frames are high-quality, authentic documentary B-roll, or if they must be REJECTED.\n\n"
+        f"CRITICAL REJECTION RULES (Return is_valid=false):\n"
+        f"1. TALKING HEADS: Reject if the video shows a person speaking to the camera, YouTuber, vlogger, podcast presenter, or interview facecam.\n"
+        f"2. SLIDES & TEXT: Reject if the frame is a PowerPoint slide, presentation bullet points, lecture blackboard, title card, text document, or tutorial screen.\n"
+        f"3. INTROS & BUMPERS: Reject channel intro screens, animated logos, creator stingers, watermark graphics, or 'subscribe' animations.\n"
+        f"4. UNRELATED SCENES: Reject footage that has no conceptual or physical connection to the topic/narration (e.g. car showroom, modern office, factory floor when topic is deep ocean or astronomy).\n\n"
+        f"ACCEPTABLE (Return is_valid=true):\n"
+        f"Authentic documentary footage, archival footage, natural landscapes, machinery, scientific apparatus, specimens, space imagery, or relevant historical footage.\n\n"
+        f"Return ONLY valid JSON (no markdown):\n"
+        f'{{"is_valid": <bool>, "confidence": <0-100 int>, "reject_reason": "<brief explanation if rejected, else empty string>"}}'
+    )
+
+    parts = [{"text": prompt_text}]
+    for f_bytes in frames:
+        parts.append({
+            "inlineData": {
+                "mimeType": "image/jpeg",
+                "data": base64.b64encode(_shrink(f_bytes)).decode(),
+            }
+        })
+
+    payload = {
+        "contents": [{"parts": parts}],
+        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 250},
+    }
+
+    models_to_try = [
+        GEMINI_FLASH,
+        GEMINI_FLASH_BACKUP,
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-1.5-flash",
+    ]
+
+    resp = None
+    for model_name in models_to_try:
+        url = f"{GEMINI_API_BASE}/models/{model_name}:generateContent?key={{key}}"
+        try:
+            resp = _post_with_rotation(url, payload, timeout=30)
+            if resp and resp.status_code == 200:
+                break
+        except Exception:
+            continue
+
+    if resp is None or resp.status_code != 200:
+        return True, "Vision API unavailable; local heuristic checks passed"
+
+    try:
+        raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        import re
+        raw_clean = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.MULTILINE)
+        data = json.loads(raw_clean)
+        is_valid = bool(data.get("is_valid", False))
+        conf = int(data.get("confidence", 0))
+        reason = data.get("reject_reason", "")
+        if not is_valid:
+            print(f"[VisionMatch] Frame verification REJECTED: {reason}")
+            return False, reason or "Rejected by vision gate"
+        if conf < 50:
+            print(f"[VisionMatch] Frame verification rejected due to low confidence: {conf}%")
+            return False, f"Low visual confidence ({conf}%)"
+        print(f"[VisionMatch] Frame verification PASSED: confidence={conf}%")
+        return True, "Vision verified"
+    except Exception as e:
+        return True, f"JSON parse note: {e}; local checks passed"
+

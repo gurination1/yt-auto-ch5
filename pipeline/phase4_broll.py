@@ -1213,21 +1213,16 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
         os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
         duration_secs = 0.0
         if candidate_info and candidate_info.get("duration"):
-            duration_secs = float(candidate_info.get("duration", 0.0))
+            try:
+                duration_secs = float(candidate_info.get("duration", 0.0))
+            except Exception:
+                duration_secs = 0.0
         
-        start_time = 5.0
-        if duration_secs >= 60.0:
-            start_time = min(duration_secs * 0.25, max(5.0, duration_secs - 15.0))
-        elif duration_secs > 25.0:
-            start_time = 8.0
-        elif duration_secs > 0.0:
-            start_time = 0.0
         slice_dur = 10.0
-
         is_reddit = "v.redd.it" in url or "reddit.com" in url or (candidate_info and candidate_info.get("source") == "Reddit")
         is_youtube = "youtube.com" in url or "youtu.be" in url or (candidate_info and candidate_info.get("source") == "YouTube")
 
-        # 1. Reddit HLS / DASH stream download via FFmpeg copy
+        # 1. Reddit HLS / DASH stream download via FFmpeg with intro skip
         if is_reddit:
             print(f"[B-roll] Downloading authentic Reddit video slice for segment {segment_index}: {url}...")
             hls_url = url
@@ -1236,13 +1231,16 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 vid_id = m_vid.group(1)
                 hls_url = f"https://v.redd.it/{vid_id}/HLSPlaylist.m3u8"
             
+            # Skip opening 3s if duration > 8s
+            r_start = 3.5 if duration_secs > 8.0 or duration_secs == 0.0 else 0.0
             cmd_red = [
                 "ffmpeg", "-y",
                 "-headers", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\r\n",
+                "-ss", f"{r_start:.3f}",
                 "-i", hls_url,
                 "-t", str(slice_dur),
-                "-c:v", "copy", "-c:a", "aac",
-                "-movflags", "+faststart",
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20", "-c:a", "aac",
+                "-avoid_negative_ts", "make_zero",
                 out_path
             ]
             try:
@@ -1270,7 +1268,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 print(f"[B-roll] Reddit download exception: {e_red}")
             return False
 
-        # 2. YouTube video download via native yt-dlp chunk download + local FFmpeg slice (0% 403 blocks)
+        # 2. YouTube video download with smart intro skip based on actual probed duration
         if is_youtube:
             print(f"[B-roll] Downloading YouTube authentic video slice for segment {segment_index}: {url}...")
             ytdlp_bin_cmd = _get_ytdlp_bin()
@@ -1310,20 +1308,33 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 try:
                     res_dl = subprocess.run(cmd_dl, capture_output=True, text=True, timeout=40)
                     if os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000:
+                        # Probe actual duration to skip creator intro, channel stinger, or sponsors
+                        actual_dur = _get_video_duration(temp_full)
+                        if actual_dur >= 60.0:
+                            start_time = max(25.0, min(actual_dur * 0.35, actual_dur - 15.0))
+                        elif actual_dur >= 25.0:
+                            start_time = max(10.0, actual_dur * 0.25)
+                        elif actual_dur >= 10.0:
+                            start_time = max(3.5, actual_dur * 0.15)
+                        else:
+                            start_time = 0.0
+
                         cmd_cut = [
                             "ffmpeg", "-y",
-                            "-ss", str(start_time),
+                            "-ss", f"{start_time:.3f}",
                             "-i", temp_full,
                             "-t", str(slice_dur),
-                            "-c:v", "copy", "-c:a", "copy",
+                            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20",
+                            "-c:a", "aac",
+                            "-avoid_negative_ts", "make_zero",
                             out_path
                         ]
-                        subprocess.run(cmd_cut, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20)
+                        subprocess.run(cmd_cut, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=25)
                         try: os.remove(temp_full)
                         except Exception: pass
                         
                         if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
-                            print(f"[B-roll] YouTube authentic video slice download SUCCESS with client {client_str}!")
+                            print(f"[B-roll] YouTube authentic slice cut from t={start_time:.1f}s (skipped intro) with client {client_str}!")
                             c_name = candidate_info.get("uploader_name", "YouTube") if candidate_info else "YouTube"
                             c_handle = candidate_info.get("uploader_handle", "@YouTube") if candidate_info else "@YouTube"
                             credit_data = {
@@ -1378,72 +1389,51 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                     f.write(chunk)
 
         if os.path.exists(temp_file) and os.path.getsize(temp_file) > 10_000:
-            if is_webm or is_gif:
-                cmd = [
-                    "ffmpeg", "-y", "-i", temp_file,
-                    "-t", "15",
-                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "22",
-                    "-pix_fmt", "yuv420p", "-an", out_path
-                ]
-                res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=45)
-                if os.path.exists(temp_file):
-                    try: os.remove(temp_file)
-                    except Exception: pass
-                return res.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 10_000
+            actual_dur = _get_video_duration(temp_file)
+            if actual_dur >= 60.0:
+                stream_start = max(15.0, actual_dur * 0.25)
+            elif actual_dur >= 20.0:
+                stream_start = max(5.0, actual_dur * 0.15)
             else:
-                if os.path.exists(out_path):
-                    try: os.remove(out_path)
-                    except Exception: pass
-                os.rename(temp_file, out_path)
-                
-                # Strict Resolution & OCR Burnt-Text Quality Gate: Reject low-res or watermarked clips
-                try:
-                    probe_cmd = [
-                        "ffprobe", "-v", "error",
-                        "-select_streams", "v:0",
-                        "-show_entries", "stream=width,height",
-                        "-of", "csv=s=x:p=0",
-                        out_path
-                    ]
-                    probe_res = subprocess.check_output(probe_cmd).decode().strip()
-                    if "x" in probe_res:
-                        pw, ph = map(int, probe_res.split("x")[:2])
-                        if pw < 720 and ph < 720:
-                            print(f"[B-roll] REJECTED low-res/grainy clip ({pw}x{ph} < 720p) for segment {segment_index}.")
-                            try: os.remove(out_path)
-                            except Exception: pass
-                            return False
-                    
-                    # OCR check: reject foreign burnt-in text, subtitles, or timeline sliders
-                    try:
-                        import cv2, pytesseract
-                        temp_chk = f"output/ocr_chk_{segment_index}.jpg"
-                        cmd_ocr = ["ffmpeg", "-y", "-ss", "00:00:01.5", "-i", out_path, "-vframes", "1", temp_chk]
-                        subprocess.run(cmd_ocr, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
-                        if os.path.exists(temp_chk):
-                            oimg = cv2.imread(temp_chk)
-                            if oimg is not None:
-                                oh, ow = oimg.shape[:2]
-                                bot_crop = oimg[int(oh * 0.70):, :]
-                                top_crop = oimg[:int(oh * 0.25), :]
-                                bot_txt = pytesseract.image_to_string(bot_crop).strip()
-                                top_txt = pytesseract.image_to_string(top_crop).strip()
-                                combined_txt = f"{bot_txt} {top_txt}".strip()
-                                words = [w for w in combined_txt.split() if len(w) > 2 and w.isalpha()]
-                                if len(words) >= 2:
-                                    print(f"[B-roll] REJECTED clip with foreign burnt-in text/subtitles ({words}) for segment {segment_index}.")
-                                    try: os.remove(out_path)
-                                    except Exception: pass
-                                    try: os.remove(temp_chk)
-                                    except Exception: pass
-                                    return False
-                            try: os.remove(temp_chk)
-                            except Exception: pass
-                    except Exception:
-                        pass
-                except Exception:
-                    pass
-                return True
+                stream_start = 0.0
+
+            cmd = [
+                "ffmpeg", "-y",
+                "-ss", f"{stream_start:.3f}",
+                "-i", temp_file,
+                "-t", str(slice_dur),
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20",
+                "-pix_fmt", "yuv420p", "-an",
+                "-avoid_negative_ts", "make_zero",
+                out_path
+            ]
+            res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=45)
+            if os.path.exists(temp_file):
+                try: os.remove(temp_file)
+                except Exception: pass
+            if res.returncode != 0 or not os.path.exists(out_path) or os.path.getsize(out_path) < 10_000:
+                return False
+
+            # Probe resolution to reject low-res < 720p
+            try:
+                probe_cmd = [
+                    "ffprobe", "-v", "error",
+                    "-select_streams", "v:0",
+                    "-show_entries", "stream=width,height",
+                    "-of", "csv=s=x:p=0",
+                    out_path
+                ]
+                probe_res = subprocess.check_output(probe_cmd).decode().strip()
+                if "x" in probe_res:
+                    pw, ph = map(int, probe_res.split("x")[:2])
+                    if pw < 720 and ph < 720:
+                        print(f"[B-roll] REJECTED low-res/grainy clip ({pw}x{ph} < 720p) for segment {segment_index}.")
+                        try: os.remove(out_path)
+                        except Exception: pass
+                        return False
+            except Exception:
+                pass
+            return True
         return False
     except Exception as e:
         print(f"[B-roll] Robust download failed for {url}: {e}")
@@ -1478,7 +1468,7 @@ def _image_to_ken_burns_video(img_path: str, out_path: str, w: int, h: int, dura
     if not is_video:
         if not _validate_and_normalize_image(img_path):
             print(f"[B-roll] Image invalid for Ken Burns, synthesizing with PIL: {img_path}")
-            _pil_placeholder(caption or "DOCUMENTARY ARCHIVE", w, h, img_path)
+            _pil_placeholder("", w, h, img_path)
 
     fps    = 30
     frames = max(1, int(duration * fps))
@@ -1518,7 +1508,7 @@ def _image_to_ken_burns_video(img_path: str, out_path: str, w: int, h: int, dura
         subprocess.run(fallback_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception as e2:
         print(f"[B-roll] Safe scale also failed ({e2}). Synthesizing fallback video...")
-        _pil_placeholder(caption or "DOCUMENTARY ARCHIVE", w, h, img_path)
+        _pil_placeholder("", w, h, img_path)
         subprocess.run(fallback_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
@@ -1557,53 +1547,60 @@ def _pollinations_image(query: str, img_path: str, w: int = 1080, h: int = 1920)
 # ── Last resort: PIL gradient placeholder ────────────────────────────────────
 
 def _pil_placeholder(query: str, w: int, h: int, img_path: str):
-    """Better-looking placeholder: dark gradient with large centered text."""
-    from PIL import Image, ImageDraw, ImageFont
+    """
+    Generates a clean, text-free procedural cinematic dark visual plate.
+    Strictly eliminates text-only slides: NEVER draws letters, titles, or words.
+    Creates an atmospheric dark radial vignette with subtle geometric reticle accents.
+    """
+    from PIL import Image, ImageDraw
     import numpy as np
 
-    # Dark gradient background (top dark blue → bottom near-black)
+    # 1. Dark atmospheric radial gradient (deep charcoal to dark slate)
     arr = np.zeros((h, w, 3), dtype=np.uint8)
-    for y in range(h):
-        ratio = y / h
-        arr[y, :, 0] = int(10 + ratio * 5)   # R
-        arr[y, :, 1] = int(10 + ratio * 20)   # G
-        arr[y, :, 2] = int(40 + ratio * 20)   # B
+    cy, cx = h / 2.0, w / 2.0
+    max_dist = max(1.0, float(np.sqrt(cx**2 + cy**2)))
 
-    img  = Image.fromarray(arr)
+    y_coords, x_coords = np.ogrid[:h, :w]
+    dist_from_center = np.sqrt((x_coords - cx)**2 + (y_coords - cy)**2)
+    norm_dist = np.clip(dist_from_center / max_dist, 0.0, 1.0)
+
+    # Core: [16, 20, 28] -> Edge: [4, 6, 10]
+    arr[:, :, 0] = (16 - norm_dist * 12).astype(np.uint8)
+    arr[:, :, 1] = (20 - norm_dist * 14).astype(np.uint8)
+    arr[:, :, 2] = (28 - norm_dist * 18).astype(np.uint8)
+
+    img = Image.fromarray(arr)
     draw = ImageDraw.Draw(img)
 
-    # Draw centered query text, large and readable
-    words  = query.upper().split()
-    lines  = []
-    line   = ""
-    for word in words:
-        test = (line + " " + word).strip()
-        if len(test) > 18:
-            lines.append(line.strip())
-            line = word
-        else:
-            line = test
-    if line:
-        lines.append(line.strip())
+    # 2. Subtle geometric framing lines (15% opacity aesthetic, zero text)
+    reticle_color = (38, 48, 62)
+    accent_color = (55, 75, 105)
 
-    font_size = max(60, min(100, w // (max(len(l) for l in lines) + 1) if lines else 80))
-    try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
-    except Exception:
-        font = ImageFont.load_default()
+    # Center crosshairs
+    cx_i, cy_i = int(cx), int(cy)
+    draw.line([(cx_i - 40, cy_i), (cx_i - 10, cy_i)], fill=reticle_color, width=1)
+    draw.line([(cx_i + 10, cy_i), (cx_i + 40, cy_i)], fill=reticle_color, width=1)
+    draw.line([(cx_i, cy_i - 40), (cx_i, cy_i - 10)], fill=reticle_color, width=1)
+    draw.line([(cx_i, cy_i + 10), (cx_i, cy_i + 40)], fill=reticle_color, width=1)
 
-    total_text_h = len(lines) * (font_size + 10)
-    y_start      = (h - total_text_h) // 2
+    # Center subtle ring
+    draw.ellipse([(cx_i - 70, cy_i - 70), (cx_i + 70, cy_i + 70)], outline=reticle_color, width=1)
 
-    for i, line_text in enumerate(lines):
-        bbox = draw.textbbox((0, 0), line_text, font=font)
-        tw   = bbox[2] - bbox[0]
-        x    = (w - tw) // 2
-        y    = y_start + i * (font_size + 10)
-        # Shadow
-        draw.text((x + 3, y + 3), line_text, font=font, fill=(0, 0, 0))
-        # Main text
-        draw.text((x, y), line_text, font=font, fill=(255, 255, 255))
+    # Corner registration marks
+    margin = int(min(w, h) * 0.08)
+    c_len = int(min(w, h) * 0.04)
+    # Top-left
+    draw.line([(margin, margin), (margin + c_len, margin)], fill=accent_color, width=2)
+    draw.line([(margin, margin), (margin, margin + c_len)], fill=accent_color, width=2)
+    # Top-right
+    draw.line([(w - margin, margin), (w - margin - c_len, margin)], fill=accent_color, width=2)
+    draw.line([(w - margin, margin), (w - margin, margin + c_len)], fill=accent_color, width=2)
+    # Bottom-left
+    draw.line([(margin, h - margin), (margin + c_len, h - margin)], fill=accent_color, width=2)
+    draw.line([(margin, h - margin), (margin, h - margin - c_len)], fill=accent_color, width=2)
+    # Bottom-right
+    draw.line([(w - margin, h - margin), (w - margin - c_len, h - margin)], fill=accent_color, width=2)
+    draw.line([(w - margin, h - margin), (w - margin, h - margin - c_len)], fill=accent_color, width=2)
 
     img.save(img_path, "JPEG", quality=90)
 
@@ -1972,16 +1969,26 @@ def _sanitize_broll_query(query: str, topic: str = "") -> str:
 
 
 def _has_baked_text_ocr(frame_path: str) -> bool:
-    """Uses Tesseract OCR to detect hardcoded subtitle banners or text lines on candidate video frame top/bottom strips."""
+    """
+    Uses Tesseract OCR to detect hardcoded subtitle banners, text lines, PowerPoint slides,
+    lecture bullet points, or watermark logos across candidate video frames.
+    """
     if not frame_path or not os.path.exists(frame_path):
         return False
     try:
-        import cv2, subprocess, re, tempfile
+        import cv2, re
+        try:
+            import pytesseract
+            has_pytesseract = True
+        except ImportError:
+            has_pytesseract = False
+            import subprocess, tempfile
+
         img = cv2.imread(frame_path)
         if img is None:
             return False
         h, w = img.shape[:2]
-        
+
         # If it is a multi-frame collage (w > h * 2), split into individual frame images
         frames = []
         if w > h * 2:
@@ -1989,70 +1996,178 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
             frames = [img[:, :fw], img[:, fw:fw*2], img[:, fw*2:]]
         else:
             frames = [img]
-            
+
+        watermark_words = {
+            "stocksubmitter", "shutterstock", "watermark", "depositphotos", "dreamstime",
+            "gettyimages", "videohive", "pond5", "envato", "rights reserved", "all rights",
+            "copyright", "subscribe", "no copyright", "stock footage", "preview",
+            "recommendatory", "disclaimer", "investment", "subject to", "terms",
+            "upstox", "paytm", "zerodha", "groww", "download", "crystal maze",
+            "welcome back", "my channel", "like and share", "bell icon", "patreon",
+            "episode", "chapter", "presentation", "lecture", "bullet points", "definition",
+            "summary", "overview", "agenda", "slide", "lesson", "diagram", "figure",
+            "problem", "solution", "example", "formula"
+        }
+
+        def run_ocr(crop_img, psm=11) -> str:
+            if has_pytesseract:
+                cfg = f"--oem 1 --psm {psm} -l eng"
+                try:
+                    return pytesseract.image_to_string(crop_img, config=cfg)
+                except Exception:
+                    return ""
+            else:
+                import subprocess, tempfile
+                with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+                    tpath = tmp.name
+                try:
+                    cv2.imwrite(tpath, crop_img)
+                    cmd = ['tesseract', tpath, 'stdout', '--oem', '1', '--psm', str(psm), '-l', 'eng']
+                    res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                    return res.stdout
+                except Exception:
+                    return ""
+                finally:
+                    if os.path.exists(tpath):
+                        try:
+                            os.remove(tpath)
+                        except Exception:
+                            pass
+
         for f in frames:
             fh, fw = f.shape[:2]
-            top_crop = f[:int(fh * 0.25), :]
-            mid_crop = f[int(fh * 0.25):int(fh * 0.70), :]
-            bot_crop = f[int(fh * 0.70):, :]
-            
-            # 1) Check for commercial stock watermark/disclaimer keywords anywhere on full frame
-            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_full:
-                tmp_full_path = tmp_full.name
-            cv2.imwrite(tmp_full_path, f)
-            try:
-                cmd = ['tesseract', tmp_full_path, 'stdout', '--oem', '1', '--psm', '11', '-l', 'eng']
-                res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-                full_text = res.stdout.lower()
-                watermark_words = [
-                    "stocksubmitter", "shutterstock", "watermark", "depositphotos", "dreamstime",
-                    "gettyimages", "videohive", "pond5", "envato", "rights reserved", "all rights",
-                    "copyright", "subscribe", "no copyright", "stock footage", "preview",
-                    "recommendatory", "disclaimer", "investment", "subject to", "terms",
-                    "upstox", "paytm", "zerodha", "groww", "download", "crystal maze"
-                ]
-                if any(wm in full_text for wm in watermark_words):
-                    if os.path.exists(tmp_full_path):
-                        os.remove(tmp_full_path)
-                    return True
-            except Exception:
-                pass
-            if os.path.exists(tmp_full_path):
-                os.remove(tmp_full_path)
 
-            # 2) Check top and bottom strips for multi-word subtitles and disclaimers
-            disclaimer_words = {"recommendatory", "disclaimer", "copyright", "reserved", "investment", "upstox", "paytm", "zerodha", "groww", "subscribe", "terms", "condition"}
+            # 1. Full frame check
+            full_text = run_ocr(f, psm=11).lower()
+            if any(wm in full_text for wm in watermark_words):
+                return True
+            words_full = re.findall(r'\b[a-z]{3,}\b', full_text)
+            if len(words_full) >= 6:
+                # 6+ words anywhere on frame indicates slide, document, or heavy text overlay
+                return True
+
+            top_crop = f[:int(fh * 0.25), :]
+            mid_crop = f[int(fh * 0.20):int(fh * 0.80), :]
+            bot_crop = f[int(fh * 0.70):, :]
+
+            # 2. Middle crop check for lecture / PowerPoint bullet points / text cards
+            mid_text = run_ocr(mid_crop, psm=6).lower()
+            mid_words = re.findall(r'\b[a-z]{3,}\b', mid_text)
+            if any(wm in mid_text for wm in watermark_words):
+                return True
+            if len(mid_words) >= 3:
+                # 3+ words in the middle 60% of frame -> presentation slide or text card
+                return True
+
+            # 3. Top and bottom strips for subtitles / creator banners / disclaimers
             for crop in (top_crop, bot_crop):
                 if crop.size == 0:
                     continue
-                gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-                _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-                
-                for img_to_ocr in (crop, thresh):
-                    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
-                        tmp_path = tmp.name
-                    cv2.imwrite(tmp_path, img_to_ocr)
-                    try:
-                        for psm in ('11', '6'):
-                            cmd = ['tesseract', tmp_path, 'stdout', '--oem', '1', '--psm', psm, '-l', 'eng']
-                            res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-                            text = res.stdout.strip().lower()
-                            words = re.findall(r'\b[a-z]{3,}\b', text)
-                            if any(w in disclaimer_words for w in words):
-                                if os.path.exists(tmp_path):
-                                    os.remove(tmp_path)
-                                return True
-                            if len(words) >= 2:
-                                if os.path.exists(tmp_path):
-                                    os.remove(tmp_path)
-                                return True
-                    except Exception:
-                        pass
-                    if os.path.exists(tmp_path):
-                        os.remove(tmp_path)
+                crop_text = run_ocr(crop, psm=6).lower()
+                crop_words = re.findall(r'\b[a-z]{3,}\b', crop_text)
+                if any(wm in crop_text for wm in watermark_words):
+                    return True
+                if len(crop_words) >= 2:
+                    return True
+
         return False
     except Exception:
         return False
+
+
+def _deep_inspect_video_frames(
+    video_path: str,
+    query: str = "",
+    narration: str = "",
+    topic: str = "",
+) -> tuple[bool, str]:
+    """
+    Extracts frames across candidate video and performs deep frame-by-frame verification:
+    1. Duration & file integrity check
+    2. Luminance check (rejects pure black screens or blown-out white frames)
+    3. Multi-crop Tesseract OCR check (rejects slides, presentations, intro text, subtitles)
+    4. Gemini Flash Vision check on sample frames (rejects talking heads, vloggers, unrelated content)
+    Returns (is_valid, reason).
+    """
+    if not video_path or not os.path.exists(video_path) or os.path.getsize(video_path) < 10_000:
+        return False, "Video file missing or corrupt (<10KB)"
+
+    total_dur = _get_video_duration(video_path)
+    if total_dur < 1.0:
+        return False, f"Video duration too short ({total_dur:.2f}s)"
+
+    import cv2, numpy as np, tempfile
+
+    # Sample 4 timestamps across duration: 15%, 40%, 65%, 88%
+    sample_timestamps = [
+        max(0.1, total_dur * 0.15),
+        max(0.3, total_dur * 0.40),
+        max(0.5, total_dur * 0.65),
+        max(0.7, min(total_dur - 0.2, total_dur * 0.88)),
+    ]
+
+    temp_frames = []
+    frame_bytes_list = []
+
+    try:
+        for idx, ts in enumerate(sample_timestamps):
+            with tempfile.NamedTemporaryFile(suffix=f"_frame_{idx}.jpg", delete=False) as tf:
+                frame_file = tf.name
+            temp_frames.append(frame_file)
+
+            cmd = [
+                "ffmpeg", "-y", "-ss", f"{ts:.3f}",
+                "-i", video_path,
+                "-vframes", "1",
+                "-q:v", "2",
+                frame_file
+            ]
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+
+            if not os.path.exists(frame_file) or os.path.getsize(frame_file) < 1000:
+                return False, f"Failed to extract frame at t={ts:.2f}s"
+
+            img = cv2.imread(frame_file)
+            if img is None:
+                return False, f"Frame at t={ts:.2f}s corrupted"
+
+            # 1. Luminance check
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            mean_lum = float(np.mean(gray))
+            std_lum = float(np.std(gray))
+            if mean_lum < 5.0 and std_lum < 5.0:
+                return False, f"Black screen detected at t={ts:.2f}s (mean={mean_lum:.1f}, std={std_lum:.1f})"
+            if mean_lum > 248.0 and std_lum < 10.0:
+                return False, f"Washed out / white screen detected at t={ts:.2f}s"
+
+            # 2. OCR text & slide check
+            if _has_baked_text_ocr(frame_file):
+                return False, f"Baked text / presentation slide detected at t={ts:.2f}s"
+
+            # Keep frame bytes for vision check
+            with open(frame_file, "rb") as fh:
+                frame_bytes_list.append(fh.read())
+
+        # 3. Gemini Flash Vision check on representative frames (t=40% and t=65%)
+        if (narration or query) and len(frame_bytes_list) >= 2:
+            try:
+                from pipeline.vision_match import verify_video_frames
+                selected_frames = [frame_bytes_list[1], frame_bytes_list[2]]
+                is_valid, vision_reason = verify_video_frames(selected_frames, narration, query, topic=topic)
+                if not is_valid:
+                    return False, f"Vision rejected frames: {vision_reason}"
+            except Exception as e_v:
+                print(f"[B-roll] Vision verification note: {e_v}. Relying on heuristic frame checks.")
+
+        return True, "All frame inspections passed"
+
+    finally:
+        for f in temp_frames:
+            if os.path.exists(f):
+                try:
+                    os.remove(f)
+                except Exception:
+                    pass
 
 
 def fetch_broll(query: str, format_type: str, segment_index: int, duration: float = 6.0, narration: str = "", alt_queries: list[str] | None = None, used_urls: set[str] | None = None, channel: str = "general", topic: str = "") -> str:
@@ -2344,22 +2459,39 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             best_idx, match_found = vision_rank_broll(thumbs, narration, query, topic=topic)
 
             if match_found and best_idx is not None and best_idx < len(valid_candidates):
-                chosen = valid_candidates[best_idx]
-                print(f"[B-roll] Vision Match ACCEPTED verified candidate: {chosen.get('source', 'Unknown')} ({chosen['video_url'][:50]}...) for segment {segment_index}!")
-                temp_video_path = f"output/temp_video_{segment_index}.mp4"
-                if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen):
-                    if used_urls is not None:
-                        used_urls.add(chosen["video_url"])
-                    print(f"[B-roll] Video downloaded. Normalizing into assembly format...")
-                    _image_to_ken_burns_video(temp_video_path, out_path, w, h, duration, niche=channel, caption="")
-                    if os.path.exists(temp_video_path):
-                        try:
-                            os.remove(temp_video_path)
-                        except Exception:
-                            pass
-                    return out_path
-                else:
-                    print(f"[B-roll] Verified video download failed for {chosen['video_url'][:50]}. Will seek authentic documentary stills rather than generic stock.")
+                # Order candidates prioritizing best_idx, then remaining valid candidates (try up to 3)
+                ordered_indices = [best_idx] + [i for i in range(len(valid_candidates)) if i != best_idx]
+                for try_idx in ordered_indices[:3]:
+                    if budget_exceeded():
+                        break
+                    chosen = valid_candidates[try_idx]
+                    print(f"[B-roll] Trying candidate {try_idx} ({chosen.get('source', 'Unknown')}): {chosen['video_url'][:60]}...")
+                    temp_video_path = f"output/temp_video_{segment_index}.mp4"
+                    if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen):
+                        # Deep frame-by-frame inspection before accepting into video
+                        passed, reason = _deep_inspect_video_frames(temp_video_path, query=query, narration=narration, topic=topic)
+                        if not passed:
+                            print(f"[B-roll] Candidate {try_idx} REJECTED by frame inspection: {reason}. Trying next candidate...")
+                            if os.path.exists(temp_video_path):
+                                try:
+                                    os.remove(temp_video_path)
+                                except Exception:
+                                    pass
+                            continue
+
+                        # Frame inspection passed!
+                        if used_urls is not None:
+                            used_urls.add(chosen["video_url"])
+                        print(f"[B-roll] Candidate {try_idx} VERIFIED frame-by-frame! Normalizing into assembly format...")
+                        _image_to_ken_burns_video(temp_video_path, out_path, w, h, duration, niche=channel, caption="")
+                        if os.path.exists(temp_video_path):
+                            try:
+                                os.remove(temp_video_path)
+                            except Exception:
+                                pass
+                        return out_path
+                    else:
+                        print(f"[B-roll] Video download failed for candidate {try_idx}. Trying next candidate...")
             else:
                 print(f"[B-roll] Segment {segment_index}: Vision match strictly rejected all video candidates as unrelated stock slop.")
 
@@ -2441,19 +2573,19 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         
         print(f"[B-roll] Downloading video from {lbl} in parallel...")
         if _download_video_robust(vurl, temp_v, f"{segment_index}_{idx}"):
-            if _extract_collage_to_file(temp_v, temp_f):
-                if _has_baked_text_ocr(temp_f):
-                    print(f"[B-roll] Skipping candidate '{lbl}' due to detected baked text overlay/subtitles.")
-                else:
-                    with open(temp_f, "rb") as fh:
-                        f_data = fh.read()
-                    return {
-                        "label": lbl,
-                        "video_url": vurl,
-                        "temp_v": temp_v,
-                        "temp_f": temp_f,
-                        "frame_data": f_data
-                    }
+            passed, reason = _deep_inspect_video_frames(temp_v, query=query, narration=narration, topic=topic)
+            if not passed:
+                print(f"[B-roll] Skipping candidate '{lbl}' due to frame inspection: {reason}")
+            elif _extract_collage_to_file(temp_v, temp_f):
+                with open(temp_f, "rb") as fh:
+                    f_data = fh.read()
+                return {
+                    "label": lbl,
+                    "video_url": vurl,
+                    "temp_v": temp_v,
+                    "temp_f": temp_f,
+                    "frame_data": f_data
+                }
         
         # Cleanup on failure
         for p in [temp_v, temp_f]:
@@ -2588,9 +2720,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
         return out_path
 
-    # ── Fallback 5: Authentic Topic Schematic Slide with Ken Burns (Never blank abstract mandelbrot) ───
-    placeholder_text = topic or narration_query or query or "ARCHIVAL DOCUMENTARY"
-    print(f"[B-roll] Segment {segment_index}: Generating topic schematic slide for '{placeholder_text[:50]}'...")
-    _pil_placeholder(placeholder_text.upper(), w, h, img_path)
-    _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="DOCUMENTARY ARCHIVE")
+    # ── Fallback 5: Text-free Cinematic Background Plate with Ken Burns ───
+    print(f"[B-roll] Segment {segment_index}: Generating clean cinematic background plate...")
+    _pil_placeholder("", w, h, img_path)
+    _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
     return out_path

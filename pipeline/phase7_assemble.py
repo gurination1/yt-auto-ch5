@@ -45,6 +45,7 @@ def _harvest_emergency_visual(seg_query: str, seg_narration: str, out_path: str,
         _nasa_image,
         _pollinations_image,
         _pil_placeholder,
+        _deep_inspect_video_frames,
     )
 
     # 1. Try real video harvesting via MultiPlatformVideoHarvester
@@ -63,6 +64,13 @@ def _harvest_emergency_visual(seg_query: str, seg_narration: str, out_path: str,
                 "uploader_handle": cand.channel_name
             }
             if _download_video_robust(cand.stream_url or cand.url, temp_vid, 99, candidate_info=cand_dict):
+                passed, reason = _deep_inspect_video_frames(temp_vid, query=seg_query, narration=seg_narration, topic=script_topic)
+                if not passed:
+                    print(f"[Assemble] Emergency video candidate failed frame check: {reason}. Trying next...")
+                    if os.path.exists(temp_vid):
+                        try: os.remove(temp_vid)
+                        except Exception: pass
+                    continue
                 _image_to_ken_burns_video(temp_vid, out_path, w, h, duration=duration)
                 if os.path.exists(temp_vid):
                     try: os.remove(temp_vid)
@@ -98,7 +106,7 @@ def _harvest_emergency_visual(seg_query: str, seg_narration: str, out_path: str,
     for ent in entities:
         if _wikipedia_hd_image(ent, synth_img):
             print(f"[Assemble] Secured Wikipedia HD archival photo for '{ent}'. Applying Ken Burns...")
-            _image_to_ken_burns_video(synth_img, out_path, w, h, duration=duration, caption="ARCHIVAL SPECIMEN: WIKIMEDIA COMMONS")
+            _image_to_ken_burns_video(synth_img, out_path, w, h, duration=duration, caption="")
             if os.path.exists(synth_img):
                 try: os.remove(synth_img)
                 except Exception: pass
@@ -144,10 +152,10 @@ def _harvest_emergency_visual(seg_query: str, seg_narration: str, out_path: str,
             except Exception: pass
         return True
 
-    # 5. Last resort: PIL Dark Technical Schematic with Topic Title Overlay (NEVER raw gradient slop)
-    print(f"[Assemble] Generating technical schematic slide for '{best_entity}'...")
-    _pil_placeholder(best_entity.upper(), w, h, synth_img)
-    _image_to_ken_burns_video(synth_img, out_path, w, h, duration=duration, caption="DOCUMENTARY ARCHIVE")
+    # 5. Last resort: Clean text-free procedural cinematic dark visual plate
+    print(f"[Assemble] Generating clean cinematic background plate...")
+    _pil_placeholder("", w, h, synth_img)
+    _image_to_ken_burns_video(synth_img, out_path, w, h, duration=duration, caption="")
     if os.path.exists(synth_img):
         try: os.remove(synth_img)
         except Exception: pass
