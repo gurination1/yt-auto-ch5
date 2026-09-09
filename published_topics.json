@@ -72,9 +72,10 @@
     "TBMs That Hover: Moving Giants on Air",
     "The Ocean's Self-Sealing Tunnels: How Water Pressure Makes Them Stronger",
     "Ecuador's Chinese-Built Mega-Dam Plagued by 17,000 Cracks",
-    "How 'plug-and-play' self-erecting mega-cranes are now deploying in hours, not weeks, for mega-projects, with advanced AI-driven precision on challenging sites."
+    "How 'plug-and-play' self-erecting mega-cranes are now deploying in hours, not weeks, for mega-projects, with advanced AI-driven precision on challenging sites.",
+    "The skyscraper that *bends* with the sun: How supertalls visibly lean and grow meters daily."
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 5,
-  "call_count": 191
+  "subcluster_idx": 0,
+  "fallback_idx": 6,
+  "call_count": 192
 }
