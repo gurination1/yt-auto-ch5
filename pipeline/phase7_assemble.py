@@ -104,7 +104,7 @@ def _harvest_emergency_visual(seg_query: str, seg_narration: str, out_path: str,
 
     # 2. Authentic Wikipedia HD official photograph/micrograph
     for ent in entities:
-        if _wikipedia_hd_image(ent, synth_img):
+        if _wikipedia_hd_image(ent, synth_img, topic=script_topic):
             print(f"[Assemble] Secured Wikipedia HD archival photo for '{ent}'. Applying Ken Burns...")
             _image_to_ken_burns_video(synth_img, out_path, w, h, duration=duration, caption="")
             if os.path.exists(synth_img):
@@ -133,7 +133,7 @@ def _harvest_emergency_visual(seg_query: str, seg_narration: str, out_path: str,
                     with open(synth_img, "wb") as f_img:
                         f_img.write(r_img.content)
                     print(f"[Assemble] Secured authentic institutional photo ({img_url[:60]}). Applying Ken Burns...")
-                    _image_to_ken_burns_video(synth_img, out_path, w, h, duration=duration, caption="ARCHIVAL SPECIMEN")
+                    _image_to_ken_burns_video(synth_img, out_path, w, h, duration=duration, caption="")
                     if os.path.exists(synth_img):
                         try: os.remove(synth_img)
                         except Exception: pass

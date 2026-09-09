@@ -29,18 +29,52 @@ def _validate_and_normalize_image(img_path: str) -> bool:
                 pass
         return False
 
-def _wikipedia_hd_image(query: str, img_path: str) -> bool:
-    """Fetches official high-resolution authentic photograph/micrograph of entity from Wikipedia/Wikimedia."""
+def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = None, topic: str = "") -> bool:
+    """
+    Fetches official high-resolution authentic photograph/micrograph of entity from Wikipedia/Wikimedia.
+    Enforces strict topic/query relevance, rejects 2D diagrams/charts/flags, and prevents duplicate reuse.
+    """
     try:
-        words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in [
+        STOPLIST = {
             "footage", "real", "authentic", "documentary", "megaproject", "construction", "colossal", "machinery",
-            "what", "inside", "secret", "incredible", "shocking", "4k", "1080p", "hd", "video", "broll", "clip"
-        ]]
-        entity = " ".join(words[:4]) if words else query
+            "what", "inside", "secret", "incredible", "shocking", "4k", "1080p", "hd", "video", "broll", "clip",
+            "the", "and", "for", "with", "this", "that", "from", "into", "over", "under", "about", "scene", "view"
+        }
+        query_words = [w.lower() for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in STOPLIST]
+        topic_words = [w.lower() for w in re.sub(r'[^a-zA-Z0-9\s]', '', topic).split() if len(w) > 2 and w.lower() not in STOPLIST] if topic else []
+        anchor_words = set(query_words + topic_words)
+        if not anchor_words:
+            return False
+
+        entity = " ".join(query_words[:4]) if query_words else query[:60]
         headers = {"User-Agent": "yt-auto-fleet/2.0 (educational-video-pipeline; mailto:contact@gurination.com)"}
-        
-        # 1. Direct Wikipedia title match
+
+        BANNED_IMAGE_PATTERNS = [
+            "diagram", "drawing", "chart", "graph", "formula", "symbol", "icon", "logo", "flag",
+            "schematic", "sketch", "map_", "plan_", "table", "plot", "spectrum", "curves",
+            "render_3d_arrow", "arrows", "vector", "infographic", "illustration", "cartoon",
+            "locator_map", "location_map", "blank"
+        ]
+
+        def _is_valid_image(url: str, title: str = "") -> bool:
+            if not url or not url.startswith("http"):
+                return False
+            if used_urls is not None and url in used_urls:
+                return False
+            url_lower = url.lower()
+            title_lower = title.lower()
+            if any(p in url_lower or p in title_lower for p in BANNED_IMAGE_PATTERNS):
+                return False
+            # Title relevance check: require at least one anchor word in page/image title
+            if title_lower:
+                t_words = set(re.sub(r'[^a-zA-Z0-9\s]', ' ', title_lower).split())
+                if not (t_words & anchor_words):
+                    return False
+            return True
+
         url_wiki = "https://en.wikipedia.org/w/api.php"
+
+        # 1. Direct Wikipedia title match
         r = requests.get(url_wiki, params={
             "action": "query", "titles": entity, "prop": "pageimages", "format": "json", "pithumbsize": 1920
         }, headers=headers, timeout=8)
@@ -49,38 +83,44 @@ def _wikipedia_hd_image(query: str, img_path: str) -> bool:
             for pid, pdata in pages.items():
                 if pid != "-1":
                     thumb = pdata.get("thumbnail", {}).get("source")
-                    if thumb:
+                    p_title = pdata.get("title", "")
+                    if thumb and _is_valid_image(thumb, p_title):
                         r_img = requests.get(thumb, headers=headers, timeout=12)
                         if r_img.status_code == 200 and len(r_img.content) > 10_000:
                             with open(img_path, "wb") as f:
                                 f.write(r_img.content)
                             if _validate_and_normalize_image(img_path):
-                                print(f"[B-roll] Fetched official Wikipedia HD photo for '{entity}'.")
+                                if used_urls is not None:
+                                    used_urls.add(thumb)
+                                print(f"[B-roll] Fetched official Wikipedia HD photo for '{p_title}'.")
                                 return True
 
-        # 2. Fuzzy Wikipedia generator search
+        # 2. Wikipedia generator search with strict title verification
         r_gen = requests.get(url_wiki, params={
-            "action": "query", "generator": "search", "gsrsearch": entity, "gsrlimit": "2",
+            "action": "query", "generator": "search", "gsrsearch": entity, "gsrlimit": "4",
             "prop": "pageimages", "pithumbsize": 1920, "format": "json"
         }, headers=headers, timeout=8)
         if r_gen.status_code == 200:
             pages = r_gen.json().get("query", {}).get("pages", {})
             for pid, pdata in pages.items():
                 thumb = pdata.get("thumbnail", {}).get("source")
-                if thumb:
+                p_title = pdata.get("title", "")
+                if thumb and _is_valid_image(thumb, p_title):
                     r_img = requests.get(thumb, headers=headers, timeout=12)
                     if r_img.status_code == 200 and len(r_img.content) > 10_000:
                         with open(img_path, "wb") as f:
                             f.write(r_img.content)
                         if _validate_and_normalize_image(img_path):
-                            print(f"[B-roll] Fetched search-matched Wikipedia HD photo for '{entity}'.")
+                            if used_urls is not None:
+                                used_urls.add(thumb)
+                            print(f"[B-roll] Fetched search-matched Wikipedia HD photo for '{p_title}'.")
                             return True
 
-        # 3. Wikimedia Commons photo archive
+        # 3. Wikimedia Commons photo archive (photos only, strictly no diagrams)
         url_comm = "https://commons.wikimedia.org/w/api.php"
         r_comm = requests.get(url_comm, params={
-            "action": "query", "generator": "search", "gsrsearch": f"{entity} filetype:bitmap",
-            "gsrnamespace": "6", "gsrlimit": "3", "prop": "imageinfo", "iiprop": "url",
+            "action": "query", "generator": "search", "gsrsearch": f"{entity} -diagram -drawing -chart filetype:bitmap",
+            "gsrnamespace": "6", "gsrlimit": "5", "prop": "imageinfo", "iiprop": "url",
             "iiurlwidth": "1920", "format": "json"
         }, headers=headers, timeout=8)
         if r_comm.status_code == 200:
@@ -88,16 +128,24 @@ def _wikipedia_hd_image(query: str, img_path: str) -> bool:
             for pid, pdata in pages.items():
                 ii = pdata.get("imageinfo", [{}])[0]
                 thumb = ii.get("thumburl") or ii.get("url")
-                if thumb:
+                f_title = pdata.get("title", "")
+                if thumb and _is_valid_image(thumb, f_title):
                     r_img = requests.get(thumb, headers=headers, timeout=12)
                     if r_img.status_code == 200 and len(r_img.content) > 10_000:
                         with open(img_path, "wb") as f:
                             f.write(r_img.content)
                         if _validate_and_normalize_image(img_path):
-                            print(f"[B-roll] Fetched authentic Commons archive photo for '{entity}'.")
+                            if used_urls is not None:
+                                used_urls.add(thumb)
+                            print(f"[B-roll] Fetched authentic Commons archive photo for '{f_title}'.")
                             return True
     except Exception as e:
         print(f"[B-roll] Authentic HD photo fetch note: {e}")
+    if os.path.exists(img_path):
+        try:
+            os.remove(img_path)
+        except Exception:
+            pass
     return False
 
 def _get_ytdlp_bin() -> list[str]:
@@ -2458,7 +2506,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             from pipeline.vision_match import vision_rank_broll
             best_idx, match_found = vision_rank_broll(thumbs, narration, query, topic=topic)
 
-            if match_found and best_idx is not None and best_idx < len(valid_candidates):
+            if match_found is True and best_idx is not None and best_idx < len(valid_candidates):
                 # Order candidates prioritizing best_idx, then remaining valid candidates (try up to 3)
                 ordered_indices = [best_idx] + [i for i in range(len(valid_candidates)) if i != best_idx]
                 for try_idx in ordered_indices[:3]:
@@ -2492,6 +2540,42 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                         return out_path
                     else:
                         print(f"[B-roll] Video download failed for candidate {try_idx}. Trying next candidate...")
+            elif match_found is None:
+                print(f"[B-roll] Segment {segment_index}: Vision API unavailable/exhausted. Auditing top-scoring candidates with deep frame inspection...")
+                sorted_cands = sorted(valid_candidates, key=lambda c: c.get("_score", 0.0), reverse=True)
+                trusted_sources = {"NASA", "MBARI", "NOAA", "DVIDS", "Wikimedia"}
+                high_quality_cands = [c for c in sorted_cands if c.get("_score", 0.0) >= 40 or c.get("source") in trusted_sources]
+                if not high_quality_cands:
+                    high_quality_cands = sorted_cands[:3]
+
+                for try_idx, chosen in enumerate(high_quality_cands[:3]):
+                    if budget_exceeded():
+                        break
+                    print(f"[B-roll] Trying heuristic candidate {try_idx} ({chosen.get('source', 'Unknown')}, score={chosen.get('_score', 0.0):.1f}): {chosen['video_url'][:60]}...")
+                    temp_video_path = f"output/temp_video_{segment_index}.mp4"
+                    if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen):
+                        passed, reason = _deep_inspect_video_frames(temp_video_path, query=query, narration=narration, topic=topic)
+                        if not passed:
+                            print(f"[B-roll] Heuristic candidate {try_idx} REJECTED by frame inspection: {reason}. Trying next candidate...")
+                            if os.path.exists(temp_video_path):
+                                try:
+                                    os.remove(temp_video_path)
+                                except Exception:
+                                    pass
+                            continue
+
+                        if used_urls is not None:
+                            used_urls.add(chosen["video_url"])
+                        print(f"[B-roll] Heuristic candidate {try_idx} VERIFIED frame-by-frame! Normalizing into assembly format...")
+                        _image_to_ken_burns_video(temp_video_path, out_path, w, h, duration, niche=channel, caption="")
+                        if os.path.exists(temp_video_path):
+                            try:
+                                os.remove(temp_video_path)
+                            except Exception:
+                                pass
+                        return out_path
+                    else:
+                        print(f"[B-roll] Video download failed for heuristic candidate {try_idx}. Trying next...")
             else:
                 print(f"[B-roll] Segment {segment_index}: Vision match strictly rejected all video candidates as unrelated stock slop.")
 
@@ -2621,13 +2705,13 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         thumbs = [r["frame_data"] for r in downloaded_results]
         best_idx, match_found = vision_rank_broll(thumbs, narration, query, topic=topic)
         
-        if match_found and best_idx is not None and 0 <= best_idx < len(downloaded_results):
+        if match_found is True and best_idx is not None and 0 <= best_idx < len(downloaded_results):
             winner = downloaded_results[best_idx]
             winner_idx = best_idx
             print(f"[B-roll] Parallel winner chosen! Source: {winner['label']} (Index: {best_idx})")
             
-            # Run the video through Hyperframes overlays
-            print(f"[B-roll] Winner video. Running Hyperframes overlays...")
+            # Run the video through Ken Burns normalization
+            print(f"[B-roll] Winner video. Running video normalization...")
             _image_to_ken_burns_video(winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
             
             # Copy winner credit metadata if present
@@ -2649,6 +2733,26 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                         except Exception:
                             pass
             return out_path
+        elif match_found is None and downloaded_results:
+            winner = downloaded_results[0]
+            winner_idx = 0
+            print(f"[B-roll] Segment {segment_index}: Vision API unavailable. Accepting frame-verified video candidate from {winner['label']}...")
+            _image_to_ken_burns_video(winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
+            winner_credit_file = f"output/broll_{segment_index}_{winner_idx}_credit.json"
+            target_credit_file = f"output/broll_{segment_index}_credit.json"
+            if os.path.exists(winner_credit_file):
+                import shutil
+                shutil.copy(winner_credit_file, target_credit_file)
+            if used_urls is not None:
+                used_urls.add(winner["video_url"])
+            for r in downloaded_results:
+                for p in [r["temp_v"], r["temp_f"]]:
+                    if os.path.exists(p):
+                        try:
+                            os.remove(p)
+                        except Exception:
+                            pass
+            return out_path
         else:
             print(f"[B-roll] Segment {segment_index}: Vision match strictly rejected all downloaded video candidates. Proceeding to authentic topic stills / Pollinations Flux synthesis.")
             for r in downloaded_results:
@@ -2659,13 +2763,40 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                         except Exception:
                             pass
 
-    # ── Fallback 2: image sources (all converted with Ken Burns) ─────────────────────
-    print(f"[B-roll] Segment {segment_index}: trying authentic archival image sources…")
+    # ── Fallback 2: authentic topic imagery or Pollinations 4K synthesis ─────────────
+    print(f"[B-roll] Segment {segment_index}: trying authentic archival image sources and 4K scene synthesis…")
 
-    # Direct official Wikipedia / Wikimedia Commons HD photograph or micrograph
-    if _wikipedia_hd_image(sanitized_q or topic or query, img_path):
+    # High-authority NASA image if space topic
+    if NASA_BROLL_ENABLED and is_space_topic:
+        nasa_img_url = _nasa_image(sanitized_q or query)
+        if nasa_img_url and (used_urls is None or nasa_img_url not in used_urls):
+            try:
+                r_n = requests.get(nasa_img_url, timeout=20, headers={"User-Agent": "yt-auto/2.0"})
+                if r_n.status_code == 200 and len(r_n.content) > 10_000:
+                    with open(img_path, "wb") as f:
+                        f.write(r_n.content)
+                    if _validate_and_normalize_image(img_path):
+                        if used_urls is not None:
+                            used_urls.add(nasa_img_url)
+                        print(f"[B-roll] Segment {segment_index}: Official NASA HD space image secured. Applying Ken Burns…")
+                        _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+                        return out_path
+            except Exception as e:
+                print(f"[B-roll] NASA image fetch failed: {e}")
+
+    # Direct official Wikipedia / Wikimedia Commons HD photograph with strict title validation
+    if _wikipedia_hd_image(sanitized_q or topic or query, img_path, used_urls=used_urls, topic=topic):
         print(f"[B-roll] Segment {segment_index}: official Wikipedia/Wikimedia HD archival photo secured. Applying Ken Burns 2.5D…")
-        _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="ARCHIVAL SPECIMEN: WIKIMEDIA COMMONS")
+        _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+        return out_path
+
+    # Fallback 3: Unique Pollinations 4K Photorealistic Scene tailored to exact segment narration
+    pollin_query = f"{topic} {narration or query}".strip() if topic else (narration or query)
+    clean_prompt = f"4k cinematic documentary footage of {pollin_query[:100]}, photorealistic, 8k, detailed, national geographic photography, no text, no watermark, no slides"
+    print(f"[B-roll] Segment {segment_index}: Generating unique Pollinations AI 4K documentary visual...")
+    if _pollinations_image(clean_prompt, img_path, w, h):
+        print(f"[B-roll] Segment {segment_index}: 4K documentary scene synthesized! Applying Ken Burns motion…")
+        _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
         return out_path
 
     img_sources = []
@@ -2676,8 +2807,6 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     for q_candidate in queries_for_images:
         if not q_candidate:
             continue
-        if NASA_BROLL_ENABLED and is_space_topic:
-            img_sources.append((_nasa_image, q_candidate))
         img_sources.append((_wikimedia_image, q_candidate))
         img_sources.append((_wikipedia_image, q_candidate))
         img_sources.append((_openverse_image, q_candidate))
@@ -2703,24 +2832,9 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
             return out_path
         except Exception as e:
-            print(f"[B-roll] Image source failed: {e}. Trying Pollinations…")
+            print(f"[B-roll] Image source failed: {e}. Trying procedural plate…")
 
-    # ── Fallback 3: Pollinations AI / Unsplash 4K image ─────────────────────────────
-    pollin_query = f"{topic} {query}".strip() if topic else query
-    if _pollinations_image(pollin_query, img_path, w, h):
-        print(f"[B-roll] Segment {segment_index}: Topic-anchored image OK. Applying Ken Burns motion…")
-        _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
-        return out_path
-
-    # ── Fallback 4: Unique Pollinations 4K Photorealistic Motion Clip ─────────────────
-    print(f"[B-roll] Segment {segment_index}: Generating unique Pollinations AI motion clip...")
-    narration_query = narration or query
-    clean_prompt = f"4k cinematic documentary footage of {topic or narration_query}, photorealistic, 8k, detailed, no text, no watermark"
-    if _pollinations_image(clean_prompt, img_path, w, h):
-        _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
-        return out_path
-
-    # ── Fallback 5: Text-free Cinematic Background Plate with Ken Burns ───
+    # ── Fallback 4: Text-free Cinematic Background Plate with Ken Burns ───
     print(f"[B-roll] Segment {segment_index}: Generating clean cinematic background plate...")
     _pil_placeholder("", w, h, img_path)
     _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")

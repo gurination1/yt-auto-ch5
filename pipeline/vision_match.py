@@ -114,12 +114,14 @@ def vision_rank_broll(
             continue
 
     if resp is None or resp.status_code != 200:
-        print(f"[VisionMatch] Vision API unavailable or exhausted ({last_err}). Rejecting batch to prevent unverified filler.")
-        return None, False
+        print(f"[VisionMatch] Vision API unavailable or exhausted ({last_err}). Signaling api_unavailable (None, None).")
+        return None, None
 
     try:
         raw  = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-        data = json.loads(raw)
+        import re
+        raw_clean = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.MULTILINE)
+        data = json.loads(raw_clean)
 
         idx        = data.get("best_index")
         found      = bool(data.get("match_found", False))
@@ -157,8 +159,8 @@ def vision_rank_broll(
         return None, False
 
     except Exception as e:
-        print(f"[VisionMatch] Vision JSON parse note: {e}. Rejecting batch.")
-        return None, False
+        print(f"[VisionMatch] Vision JSON parse note: {e}. Signaling api_unavailable (None, None).")
+        return None, None
 
 
 def verify_video_frames(
