@@ -2020,28 +2020,32 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
     """
     Uses Tesseract OCR to detect hardcoded subtitle banners, text lines, PowerPoint slides,
     lecture bullet points, or watermark logos across candidate video frames.
+    Uses PIL and CLI tesseract (or pytesseract if available), zero cv2 dependency.
     """
     if not frame_path or not os.path.exists(frame_path):
         return False
     try:
-        import cv2, re
+        from PIL import Image
+        import re, subprocess, tempfile
         try:
             import pytesseract
             has_pytesseract = True
         except ImportError:
             has_pytesseract = False
-            import subprocess, tempfile
 
-        img = cv2.imread(frame_path)
-        if img is None:
-            return False
-        h, w = img.shape[:2]
+        with Image.open(frame_path) as orig_im:
+            img = orig_im.convert("RGB")
+        w, h = img.size
 
         # If it is a multi-frame collage (w > h * 2), split into individual frame images
         frames = []
         if w > h * 2:
             fw = w // 3
-            frames = [img[:, :fw], img[:, fw:fw*2], img[:, fw*2:]]
+            frames = [
+                img.crop((0, 0, fw, h)),
+                img.crop((fw, 0, fw * 2, h)),
+                img.crop((fw * 2, 0, w, h)),
+            ]
         else:
             frames = [img]
 
@@ -2057,33 +2061,32 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
             "problem", "solution", "example", "formula"
         }
 
-        def run_ocr(crop_img, psm=11) -> str:
+        def run_ocr(crop_im, psm=11) -> str:
             if has_pytesseract:
-                cfg = f"--oem 1 --psm {psm} -l eng"
                 try:
-                    return pytesseract.image_to_string(crop_img, config=cfg)
+                    cfg = f"--oem 1 --psm {psm} -l eng"
+                    return pytesseract.image_to_string(crop_im, config=cfg)
                 except Exception:
-                    return ""
-            else:
-                import subprocess, tempfile
-                with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
-                    tpath = tmp.name
-                try:
-                    cv2.imwrite(tpath, crop_img)
-                    cmd = ['tesseract', tpath, 'stdout', '--oem', '1', '--psm', str(psm), '-l', 'eng']
-                    res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-                    return res.stdout
-                except Exception:
-                    return ""
-                finally:
-                    if os.path.exists(tpath):
-                        try:
-                            os.remove(tpath)
-                        except Exception:
-                            pass
+                    pass
+            # CLI fallback using tesseract binary directly with a tempfile
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+                tpath = tmp.name
+            try:
+                crop_im.save(tpath, "JPEG", quality=85)
+                cmd = ['tesseract', tpath, 'stdout', '--oem', '1', '--psm', str(psm), '-l', 'eng']
+                res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                return res.stdout or ""
+            except Exception:
+                return ""
+            finally:
+                if os.path.exists(tpath):
+                    try:
+                        os.remove(tpath)
+                    except Exception:
+                        pass
 
         for f in frames:
-            fh, fw = f.shape[:2]
+            fw, fh = f.size
 
             # 1. Full frame check
             full_text = run_ocr(f, psm=11).lower()
@@ -2094,9 +2097,9 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
                 # 6+ words anywhere on frame indicates slide, document, or heavy text overlay
                 return True
 
-            top_crop = f[:int(fh * 0.25), :]
-            mid_crop = f[int(fh * 0.20):int(fh * 0.80), :]
-            bot_crop = f[int(fh * 0.70):, :]
+            top_crop = f.crop((0, 0, fw, int(fh * 0.25)))
+            mid_crop = f.crop((0, int(fh * 0.20), fw, int(fh * 0.80)))
+            bot_crop = f.crop((0, int(fh * 0.70), fw, fh))
 
             # 2. Middle crop check for lecture / PowerPoint bullet points / text cards
             mid_text = run_ocr(mid_crop, psm=6).lower()
@@ -2109,8 +2112,6 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
 
             # 3. Top and bottom strips for subtitles / creator banners / disclaimers
             for crop in (top_crop, bot_crop):
-                if crop.size == 0:
-                    continue
                 crop_text = run_ocr(crop, psm=6).lower()
                 crop_words = re.findall(r'\b[a-z]{3,}\b', crop_text)
                 if any(wm in crop_text for wm in watermark_words):
@@ -2135,7 +2136,7 @@ def _deep_inspect_video_frames(
     2. Luminance check (rejects pure black screens or blown-out white frames)
     3. Multi-crop Tesseract OCR check (rejects slides, presentations, intro text, subtitles)
     4. Gemini Flash Vision check on sample frames (rejects talking heads, vloggers, unrelated content)
-    Returns (is_valid, reason).
+    Returns (is_valid, reason). Zero cv2 dependency.
     """
     if not video_path or not os.path.exists(video_path) or os.path.getsize(video_path) < 10_000:
         return False, "Video file missing or corrupt (<10KB)"
@@ -2144,7 +2145,8 @@ def _deep_inspect_video_frames(
     if total_dur < 1.0:
         return False, f"Video duration too short ({total_dur:.2f}s)"
 
-    import cv2, numpy as np, tempfile
+    from PIL import Image
+    import numpy as np, tempfile
 
     # Sample 4 timestamps across duration: 15%, 40%, 65%, 88%
     sample_timestamps = [
@@ -2175,12 +2177,13 @@ def _deep_inspect_video_frames(
             if not os.path.exists(frame_file) or os.path.getsize(frame_file) < 1000:
                 return False, f"Failed to extract frame at t={ts:.2f}s"
 
-            img = cv2.imread(frame_file)
-            if img is None:
+            try:
+                with Image.open(frame_file) as im:
+                    gray = np.array(im.convert("L"))
+            except Exception:
                 return False, f"Frame at t={ts:.2f}s corrupted"
 
             # 1. Luminance check
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             mean_lum = float(np.mean(gray))
             std_lum = float(np.std(gray))
             if mean_lum < 5.0 and std_lum < 5.0:

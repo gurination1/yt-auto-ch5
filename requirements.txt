@@ -16,3 +16,5 @@ edge-tts>=7.0.0
 gTTS>=2.5.0
 pysocks
 requests[socks]
+opencv-python-headless>=4.8.0
+pytesseract>=0.3.10
