@@ -77,9 +77,10 @@
     "China's Undersea High-Speed Rail: Robots Battling Extreme Geology",
     "Norway's Floating Underwater Tunnels: Roads Suspended in Fjords",
     "The silent, inevitable death of every mega-dam: how they are paradoxically designed to fill up with millions of tons of river sediment, eventually becoming useless 'concrete coffins' for water.",
-    "Electric 'Urban Mining': 89% Gold Recovery from E-Waste with 100x Less Chemicals"
+    "Electric 'Urban Mining': 89% Gold Recovery from E-Waste with 100x Less Chemicals",
+    "Luxury Fashion's Secret Trash - EU Ban on Inventory Destruction"
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 10,
-  "call_count": 196
+  "subcluster_idx": 0,
+  "fallback_idx": 11,
+  "call_count": 197
 }
