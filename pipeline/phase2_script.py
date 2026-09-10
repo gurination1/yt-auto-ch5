@@ -49,15 +49,14 @@ def generate_script(topic: dict, format_type: str) -> dict:
             
         raw_topic_str = topic.get("topic", "science")
         import re
-        quoted = re.findall(r"['\"]([^'\"]{3,30})['\"]", raw_topic_str)
-        if quoted:
-            core_subj = quoted[0].strip()
-        elif ":" in raw_topic_str:
-            core_subj = raw_topic_str.split(":")[0].strip()
-        elif "-" in raw_topic_str:
-            core_subj = raw_topic_str.split("-")[0].strip()
+        # Strip out quoted substrings first to avoid picking figurative metaphors (e.g. 'concrete coffins')
+        cleaned_topic = re.sub(r"['\"][^'\"]*['\"]", " ", raw_topic_str)
+        if ":" in cleaned_topic:
+            core_subj_cand = cleaned_topic.split(":")[0].strip()
+        elif "-" in cleaned_topic:
+            core_subj_cand = cleaned_topic.split("-")[0].strip()
         else:
-            core_subj = raw_topic_str
+            core_subj_cand = cleaned_topic
 
         # Filter conversational verbs, prepositions, filler words from topic to extract core entity nouns
         topic_noise_words = {
@@ -69,111 +68,93 @@ def generate_script(topic: dict, format_type: str) -> dict:
             "could", "would", "might", "will", "can", "using", "with", "from", "at", "by",
             "for", "on", "in", "a", "an", "the", "that", "this", "these", "those", "over",
             "under", "between", "through", "across", "against", "without", "real", "actual",
-            "shocking", "incredible", "unbelievable", "insane", "bizarre", "strange", "epic"
+            "shocking", "incredible", "unbelievable", "insane", "bizarre", "strange", "epic",
+            "silent", "inevitable", "death", "every", "paradoxically", "designed", "eventually"
         }
-        all_words = re.sub(r"[^\w\s-]", " ", core_subj).split()
+        all_words = re.sub(r"[^\w\s-]", " ", core_subj_cand).split()
         entity_words = [w for w in all_words if w.lower() not in topic_noise_words and len(w) > 2]
         if entity_words:
-            core_subj = " ".join(entity_words[:4]).strip()
+            core_subj = " ".join(entity_words[:3]).strip()
         else:
-            clean_words = re.sub(r"[^\w\s-]", "", core_subj).split()
-            core_subj = " ".join(clean_words[:3]).strip() or raw_topic_str[:30]
+            subcluster = topic.get("subcluster", "")
+            sub_words = [w for w in re.sub(r"[^\w\s-]", " ", subcluster).split() if w.lower() not in topic_noise_words and len(w) > 2]
+            core_subj = " ".join(sub_words[:3]).strip() if sub_words else "documentary science"
 
         prompt = f"""Generate an extremely viral, high-retention 25-35 second YouTube Short educational script on the topic: "{topic['topic']}".
 Use the following hook concept as your core theme: "{hook_formatted}" (short hook: "{topic.get('short_hook', '')}").
 {lang_instruction}
 Narration Style Requirements (CRITICAL - MAXIMUM VIRALITY & SIMPLICITY):
-1. EXTREME SIMPLICITY & CONVERSATIONAL ENGLISH (8TH GRADE LEVEL):
+1. 0.0s PATTERN INTERRUPT HOOK (SEGMENT 1 MANDATE):
+   - Segment 1 MUST open with an immediate, startling declarative statement in the present tense with active verbs.
+   - ABSOLUTELY FORBIDDEN: NEVER start with rhetorical questions (NO "Could...", "Have you ever wondered...", "What if...", "Did you know...").
+   - Start directly with the jaw-dropping physical fact: e.g. "Microscopic machines are tearing apart toxic plastic right now." or "Every mega-dam on Earth is slowly choking itself to death."
+2. EXTREME SIMPLICITY & CONVERSATIONAL ENGLISH (8TH GRADE LEVEL):
    - Write like an excited friend telling an insane secret around a campfire.
    - ABSOLUTELY FORBIDDEN: Academic jargon, dense terminology, passive textbook lecturing.
      NEVER USE WORDS LIKE: "improbable", "desensitized", "homeostatic", "equilibrium", "methodology", "reconsider", "predatory instincts", "operational mechanisms", "unprecedented mechanisms", "fundamental reaction", "historical accounts suggest", "prompts to reconsider".
    - REQUIRED: Plain, sensory, visual language: "melts", "smashes", "tricks", "sneaks in", "explodes", "freezes solid", "eats through", "turns to dust".
-2. RAPID-FIRE PUNCHY BEATS (MAX 8-12 WORDS PER SENTENCE):
+3. RAPID-FIRE PUNCHY BEATS (MAX 8-12 WORDS PER SENTENCE):
    - Every sentence MUST be short and active. Maximum 12 words per sentence.
    - ABSOLUTELY FORBIDDEN: Long compound sentences or subordinate clauses (do NOT write sentences starting with "While...", "Although...", "Which means that...", "Making it...").
    - Break thoughts into punchy active beats: "A mantis shrimp doesn't just punch. Its claw strikes faster than a bullet. The water boils into a shockwave."
-3. MANDATORY STARTLING UNKNOWN FACT (THE REVEAL):
+4. MANDATORY STARTLING UNKNOWN FACT (THE REVEAL):
    - Every single script MUST reveal at least ONE specific, counterintuitive, jaw-dropping secret that 99% of people DO NOT KNOW.
    - NEVER deflate the hook with a wet blanket or say "actually it didn't happen". Deliver an astonishing, verified truth.
-4. ZERO TOPIC REPETITION:
+5. ZERO TOPIC REPETITION:
    - Introduce the subject in Segment 1. In subsequent segments, refer to it naturally ("this metal", "the ancient weapon", "the creature", "this machine"). NEVER repeat the full topic string.
-5. COMPLETE, SATISFYING CLOSING (ZERO DANGLING WORDS):
+6. SEAMLESS INFINITE LOOP CLOSING (SEGMENT {segment_count} MANDATE):
    - The final segment must be a 100% grammatically complete sentence ending with a period.
-   - ABSOLUTELY FORBIDDEN: Ending with dangling conjunctions or prepositions like "because", "which", "how", "and", "so", or ellipses "...".
+   - ABSOLUTELY FORBIDDEN: NEVER say "link in bio", "link in description", "subscribe", "follow", "check bio", or any social media callout in narration. It destroys loop retention.
+   - The final sentence must resolve the tension while phonetically and syntactically flowing seamlessly back into Segment 1's hook narration.
+   - The final sentence should THEMATICALLY echo or re-contextualize the opening hook.
 
 COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
 - CLARITY & ACCESSIBILITY RULE (SIMPLE & INTRIGUING, ZERO PHD JARGON):
   * Explain the mind-blowing mechanism using simple, vivid, conversational words and tangible physical comparisons.
   * FORBIDDEN: Academic jargon, dense textbook terminology, or abstract PhD words.
-  * REQUIRED: Describe what physically HAPPENS in punchy, visual language (e.g., 'lasers shoot light particles to smack hot atoms until they freeze completely still', 'water pressure heavy enough to crush a steel submarine like an aluminum soda can', 'giant drill heads hotter than boiling soup').
+  * REQUIRED: Describe what physically HAPPENS in punchy, visual language.
   * An 8th grader must understand the core revelation instantly while feeling genuinely mind-blown.
 
-- MANDATORY STARTLING UNKNOWN FACT (THE "I DIDN'T KNOW THAT!" FACTOR):
-  * Every single script MUST reveal at least ONE specific, counterintuitive, little-known mechanism or hidden physical reality that educated adults do NOT know.
-  * FORBIDDEN: Superficial textbook summaries (e.g., "whales are big", "pyramids are stone", "tunnels go under mountains", "black holes are dark").
-  * REQUIRED: The startling, precise hidden detail (e.g., "a sperm whale's spermaceti oil hardens into solid wax at deep cold depths to act as an automated buoyancy anchor", "the Great Pyramid has eight concave faces only visible from the sky on the exact equinox afternoon", "subsea tunnel boring machines freeze groundwater into a solid ice wall with liquid nitrogen so workers don't drown", "quantum lasers freeze atom kinetic momentum to near absolute zero").
-
-- FORMAT RULE (20-30s Shorts): The entire video IS the hook. Hook, content, and payoff happen simultaneously.
-  * Grab (0-3s): One powerful statement, visual, or question. No intro. No channel name. No fluff.
-  * Deliver (3-20s): The actual value/story/reveal. Fast. Dense. No filler.
-  * Payoff + CTA (20-30s): The punchline, answer, result, or twist (one line only), then end.
-  * Avoid: Words that do not carry weight, silence over 1s, padding, slow pacing.
-- NICHE QUALITY SIGNALS (Education):
-  * SHOW THE RESULT FIRST: State or show the answer/outcome before explaining how you get there. Viewers stay to understand something they just saw — not to wait.
-  * B-ROLL THAT PROVES THE POINT: Every concept explained verbally must have a visual that demonstrates it, not just decorates it.
-  * ONE CLEAR GAIN PER VIDEO: Teach exactly one thing. Script must answer: "What is the single thing this viewer will walk away with?"
-  * TEXT OVERLAYS THAT REINFORCE, NOT REPEAT: Use text for key terms, surprising numbers, simple diagrams, or summary sentences. Do not transcribe verbatim.
-  * CONTINUOUS CURIOSITY LOOP: Every 2-3 segments, give a new reason to stay with a new question (e.g., "But here's where it gets interesting...").
-
 - MANDATORY AUTHENTIC DOCUMENTARY SOURCING (ZERO AI SLOP / ZERO UNRELATED STOCK):
-  * CRITICAL: Every single segment's `broll_query` and every entry in `broll_queries` MUST BE EXPLICITLY ANCHORED to the core subject: "{core_subj}"!
-  * ABSOLUTELY FORBIDDEN: NEVER use unrelated terrestrial analogies!
-    - If the topic is about SPACE / PLANETS / ASTRONOMY: Every query MUST be space/planetary! FORBIDDEN: Earth factories, industrial steel foundries, factory workers, beach sunsets, ocean waves, city traffic, or office desks!
-    - If the topic is about NATURE / CREATURES: Every query MUST name the creature/organism! FORBIDDEN: Modern city streets, modern offices, or factories!
-    - If the topic is about HISTORY / WARFARE: Every query MUST name the ancient artifact, battle, or ruins! FORBIDDEN: Modern buildings or modern people!
-    - If the topic is about ENGINEERING / MEGAPROJECTS: Every query MUST name the specific machine or structure!
-  * REQUIRED: Target the EXACT real-world documentary subject, scientific apparatus, historical artifact, living species binomial, or celestial body:
-    - Space: "{core_subj} planet space 4k", "{core_subj} celestial atmosphere 4k", "{core_subj} deep space telescope 4k"
-    - Biology: "{core_subj} living specimen macro 4k", "{core_subj} natural habitat documentary 4k"
-    - History: "{core_subj} ancient artifact museum 4k", "{core_subj} historical ruins documentary 4k"
-    - Engineering: "{core_subj} colossal machine operation 4k", "{core_subj} structure aerial view 4k"
-  * ZERO BUZZWORDS IN BROLL QUERIES:
-    - ABSOLUTELY FORBIDDEN: Do NOT write marketing adjectives or vague descriptors like 'futuristic', 'next-generation', 'super bright', 'incredible', 'amazing', 'shocking', 'impossible', 'visualization', 'concept', 'animation', 'effect', 'demonstration', 'presenting'.
-    - REQUIRED: Name ONLY the concrete physical noun of the object/specimen/machine being discussed.
-
-For each segment, provide a `broll_queries` array with 3-5 ALTERNATIVE hyper-specific search queries targeting real footage and institutional archives. The first entry must match `broll_query`.
-
-For any named person, scientist, or historic figure: ALWAYS include their exact full name.
+  * Target REAL, PHYSICAL, FILMABLE entities:
+    - Science: scanning electron microscope, laser optical trap, silicon crystal ingot, cleanroom photolithography.
+    - Nature: macro wildlife close-up, deep sea ROV submersible, extremophile hydrothermal vent, ice core drill.
+    - History: ancient siege catapult, Roman ballista firing, unearthed bronze sword, archaeological excavation.
+    - Mystery: ocean floor sonar bathymetry, radar satellite scan, LIDAR jungle ruins, deep cave bore hole.
+    - Megaprojects: tunnel boring machine cutterhead, concrete batching plant, hydraulic spillway discharge, giant crawler crane.
+  * ABSOLUTELY FORBIDDEN IN B-ROLL QUERIES:
+    - NEVER include words: "animation", "simulation", "concept", "visualization", "fantasy", "cgi", "cartoon", "illustration", "3d model", "futuristic", "diagram".
+    - Queries must target physical real-world documentary footage.
 
 You MUST return your response ONLY as a raw JSON object with no markdown syntax. The JSON structure MUST be exactly like this:
 {{
   "title": "A catchy title under 40 chars, starting with a hook word/number and containing one emoji",
   "voiceover_plan": "A 2-3 sentence internal plan detailing the emotional arc of the voiceover. How should the narrator sound? Think step-by-step to plan the performance before writing.",
   "vocal_tone": "Select the single best vocal delivery style for this topic. Choose EXACTLY ONE from this list: 'dramatic_whisper', 'suspenseful_mystery', 'energetic_storytelling', 'deep_curiosity', 'bold_authority', 'warm_storyteller', 'dark_revelation', 'playful_wit'. Match the tone to the emotional core of the topic.",
-  "description": "Line1: restate the hook\nLine2: Fast. Accurate. Mind-blowing.\nLine3: 📲 Follow our socials & links -> {BEACONS_LINK}\n\n#science #didyouknow #facts",
+  "description": "Line1: restate the hook\\nLine2: Fast. Accurate. Mind-blowing.\\nLine3: 📲 Follow our socials & links -> {BEACONS_LINK}\\n\\n#science #didyouknow #facts",
   "tags": ["8 to 12 relevant tags under 500 characters total"],
   "category_id": "27",
   "segments": [
     // Provide exactly {segment_count} segments here.
     {{
       "id": 1,
-      "narration": "opening shocking hook complete sentence - 10 words or less, massive information gap",
-      "broll_query": "{core_subj} main visual subject 4k",
-      "broll_queries": ["{core_subj} main visual subject 4k", "{core_subj} optical macro close up 4k", "{core_subj} documentary authentic footage 4k"],
+      "narration": "opening shocking hook statement - 10 words or less, bold present-tense declaration, NO rhetorical question",
+      "broll_query": "specific physical documentary subject 4k",
+      "broll_queries": ["specific physical documentary subject 4k", "optical macro close up 4k", "authentic institutional archive 4k"],
       "duration_target": 6
     }},
     {{
       "id": 2,
       "narration": "Mind-bending real fact that delivers on the hook - 10 words or less",
-      "broll_query": "{core_subj} specific mechanism 4k",
-      "broll_queries": ["{core_subj} specific mechanism 4k", "{core_subj} laboratory observation 4k"],
+      "broll_query": "specific physical mechanism real footage 4k",
+      "broll_queries": ["specific physical mechanism real footage 4k", "laboratory physical experiment 4k"],
       "duration_target": 6
     }},
     {{
       "id": {segment_count},
-      "narration": "A complete, punchy final takeaway sentence delivering the ultimate mind-blowing payoff, plus a natural call-to-action (e.g. 'More wild secrets at the link in bio.'). MUST be a 100% complete sentence ending with a period. NEVER end with dangling words like 'because' or 'which'!",
-      "broll_query": "{core_subj} documentary footage 4k",
-      "broll_queries": ["{core_subj} documentary footage 4k", "{core_subj} action close up macro 4k"],
+      "narration": "A complete, punchy final payoff sentence that seamlessly loops back into the opening hook line. Complete sentence ending with a period. NO link in bio, NO subscribe.",
+      "broll_query": "macro physical evidence documentary 4k",
+      "broll_queries": ["macro physical evidence documentary 4k", "field expedition real footage 4k"],
       "duration_target": 6
     }}
   ],
@@ -182,21 +163,15 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
 }}
 
 For Segment 1 specifically:
-- `broll_query` MUST describe a high-motion, high-contrast, visually arresting shot (fast motion, bright colors, dramatic close-up) — this is the opening pattern-interrupt that determines whether viewers keep watching.
+- `broll_query` MUST describe a high-motion, high-contrast, visually arresting real shot (fast motion, dramatic close-up) — the opening pattern-interrupt.
 
 For Segments 2 to (n-1):
-- Frame facts with visual or scientific paradoxes (e.g., 'Something the size of a city that weighs more than the sun' or 'The man who failed entrance exams rewrote the universe').
-- Deliver the single most mind-bending scientific fact in Segment 2.
-- Introduce an open loop (a second mystery or surprise fact) in Segment 3 that builds tension towards the loop twist.
+- Deliver the single most mind-bending physical fact in Segment 2.
+- Introduce an open loop (a second mystery or surprise fact) in Segment 3 that builds tension.
 
 For the final segment (Segment {segment_count}) specifically:
-- MUST be a 1-sentence Call-to-Action that matches the video's emotional tone and drives viewers to check the link in description/bio.
-- MUST literally include the exact phrase "link in bio" or "link in the description".
-- Good examples: "For more mind-blowing details, check the link in bio.", "The full breakdown is waiting at the link in bio.", "Ready for the deep dive? Check the link in description."
-- NEVER write a generic CTA like "Dive deeper!" or "Want to learn more?" without explicitly mentioning the link.
-- Relaxed word limit: Up to 15 words to allow natural integration of the link phrase.
-- MUST resolve all loops and end on a transition that flows seamlessly back into Segment 1's hook narration.
-- The final sentence should THEMATICALLY echo or re-contextualize the IDEA from Segment 1's hook.
+- MUST be a complete, punchy sentence resolving the video and seamlessly linking back to Segment 1.
+- ABSOLUTELY NEVER mention 'link in bio' or 'description'. Loop the story.
 """
     else:  # long-form
         prompt = f"""Generate a comprehensive 7-10 minute YouTube educational script on the topic: "{topic['topic']}".

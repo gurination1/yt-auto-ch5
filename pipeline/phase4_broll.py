@@ -2093,8 +2093,11 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
             if any(wm in full_text for wm in watermark_words):
                 return True
             words_full = re.findall(r'\b[a-z]{3,}\b', full_text)
-            if len(words_full) >= 6:
-                # 6+ words anywhere on frame indicates slide, document, or heavy text overlay
+            slide_keywords = {"agenda", "summary", "conclusion", "presentation", "slide", "chapter", "overview", "bullet"}
+            if any(sk in full_text for sk in slide_keywords) and len(words_full) >= 5:
+                return True
+            if len(words_full) >= 12:
+                # 12+ words across full frame indicates document, book page, or full lecture slide
                 return True
 
             top_crop = f.crop((0, 0, fw, int(fh * 0.25)))
@@ -2102,21 +2105,22 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
             bot_crop = f.crop((0, int(fh * 0.70), fw, fh))
 
             # 2. Middle crop check for lecture / PowerPoint bullet points / text cards
-            mid_text = run_ocr(mid_crop, psm=6).lower()
+            mid_text = run_ocr(mid_crop, psm=11).lower()
             mid_words = re.findall(r'\b[a-z]{3,}\b', mid_text)
             if any(wm in mid_text for wm in watermark_words):
                 return True
-            if len(mid_words) >= 3:
-                # 3+ words in the middle 60% of frame -> presentation slide or text card
+            if len(mid_words) >= 8:
+                # 8+ words in the middle 60% of frame -> presentation slide or text card
                 return True
 
             # 3. Top and bottom strips for subtitles / creator banners / disclaimers
             for crop in (top_crop, bot_crop):
-                crop_text = run_ocr(crop, psm=6).lower()
+                crop_text = run_ocr(crop, psm=11).lower()
                 crop_words = re.findall(r'\b[a-z]{3,}\b', crop_text)
                 if any(wm in crop_text for wm in watermark_words):
                     return True
-                if len(crop_words) >= 2:
+                if len(crop_words) >= 8:
+                    # Only reject if heavy text banner; do NOT reject for corner 2-word badges
                     return True
 
         return False
@@ -2133,9 +2137,10 @@ def _deep_inspect_video_frames(
     """
     Extracts frames across candidate video and performs deep frame-by-frame verification:
     1. Duration & file integrity check
-    2. Luminance check (rejects pure black screens or blown-out white frames)
-    3. Multi-crop Tesseract OCR check (rejects slides, presentations, intro text, subtitles)
-    4. Gemini Flash Vision check on sample frames (rejects talking heads, vloggers, unrelated content)
+    2. Minimum resolution check (>= 720p)
+    3. Luminance check (rejects pure black screens or blown-out white frames)
+    4. Multi-crop Tesseract OCR check (rejects slides, presentations, intro text, subtitles)
+    5. Gemini Flash Vision check on sample frames (rejects talking heads, vloggers, unrelated content)
     Returns (is_valid, reason). Zero cv2 dependency.
     """
     if not video_path or not os.path.exists(video_path) or os.path.getsize(video_path) < 10_000:
@@ -2144,6 +2149,23 @@ def _deep_inspect_video_frames(
     total_dur = _get_video_duration(video_path)
     if total_dur < 1.0:
         return False, f"Video duration too short ({total_dur:.2f}s)"
+
+    # Resolution check (reject low-res/muddy 240p/360p upscaled videos)
+    try:
+        cmd_res = [
+            "ffprobe", "-v", "error", "-select_streams", "v:0",
+            "-show_entries", "stream=width,height",
+            "-of", "csv=s=x:p=0", video_path
+        ]
+        res_out = subprocess.check_output(cmd_res, text=True, timeout=5).strip()
+        if res_out and "x" in res_out:
+            dims = [int(dim) for dim in res_out.split("x") if dim.isdigit()]
+            if len(dims) >= 2:
+                vw, vh = dims[0], dims[1]
+                if max(vw, vh) < 720:
+                    return False, f"Resolution too low ({vw}x{vh} < 720p minimum)"
+    except Exception as e_res:
+        pass
 
     from PIL import Image
     import numpy as np, tempfile

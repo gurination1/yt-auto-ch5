@@ -262,42 +262,43 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
         vignette_angle = 0.48 if chan_niche == "mystery" else 0.40
 
         motion_idx = _rnd.randint(0, 4)
+        grain_filter = "noise=alls=8:allf=t"
         
-        # Base scale-crop to cover full bleed with unsharp masking for enhanced clarity
+        # Base scale-crop to cover full bleed with 1.20x scale (crops edge watermarks/subs)
         if motion_idx == 0:
-            # 1. Slow Cinematic Diagonal Pan Up-Right
+            # 1. Dynamic Push-in Zoom (scale-crop zoom with subtle upward drift)
             vf_chain = (
-                f"scale=trunc({w}*1.15/2)*2:trunc({h}*1.15/2)*2:force_original_aspect_ratio=increase,"
-                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 + (t-{duration}/2)*12))':'max(0, min(in_h-out_h, (in_h-out_h)/2 + (t-{duration}/2)*12))',"
-                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,vignette=angle={vignette_angle},setsar=1" + drawtext_chain
+                f"scale=trunc({w}*1.22/2)*2:trunc({h}*1.22/2)*2:force_original_aspect_ratio=increase,"
+                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 + (t-{duration}/2)*22))':'max(0, min(in_h-out_h, (in_h-out_h)/2 + (t-{duration}/2)*22))',"
+                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,{grain_filter},vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         elif motion_idx == 1:
-            # 2. Slow Panning Upward
+            # 2. Dynamic Panning Upward
             vf_chain = (
-                f"scale=trunc({w}*1.15/2)*2:trunc({h}*1.15/2)*2:force_original_aspect_ratio=increase,"
-                f"crop={w}:{h}:'(in_w-out_w)/2':'max(0, min(in_h-out_h, (in_h-out_h)/2 + (t-{duration}/2)*15))',"
-                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,vignette=angle={vignette_angle},setsar=1" + drawtext_chain
+                f"scale=trunc({w}*1.20/2)*2:trunc({h}*1.20/2)*2:force_original_aspect_ratio=increase,"
+                f"crop={w}:{h}:'(in_w-out_w)/2':'max(0, min(in_h-out_h, (in_h-out_h)/2 + (t-{duration}/2)*26))',"
+                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,{grain_filter},vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         elif motion_idx == 2:
-            # 3. Slow Panning Downward
+            # 3. Dynamic Panning Downward
             vf_chain = (
-                f"scale=trunc({w}*1.15/2)*2:trunc({h}*1.15/2)*2:force_original_aspect_ratio=increase,"
-                f"crop={w}:{h}:'(in_w-out_w)/2':'max(0, min(in_h-out_h, (in_h-out_h)/2 - (t-{duration}/2)*15))',"
-                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,vignette=angle={vignette_angle},setsar=1" + drawtext_chain
+                f"scale=trunc({w}*1.20/2)*2:trunc({h}*1.20/2)*2:force_original_aspect_ratio=increase,"
+                f"crop={w}:{h}:'(in_w-out_w)/2':'max(0, min(in_h-out_h, (in_h-out_h)/2 - (t-{duration}/2)*26))',"
+                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,{grain_filter},vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         elif motion_idx == 3:
-            # 4. Slow Panning Right
+            # 4. Dynamic Panning Right
             vf_chain = (
-                f"scale=trunc({w}*1.15/2)*2:trunc({h}*1.15/2)*2:force_original_aspect_ratio=increase,"
-                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 + (t-{duration}/2)*15))':'(in_h-out_h)/2',"
-                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,vignette=angle={vignette_angle},setsar=1" + drawtext_chain
+                f"scale=trunc({w}*1.20/2)*2:trunc({h}*1.20/2)*2:force_original_aspect_ratio=increase,"
+                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 + (t-{duration}/2)*26))':'(in_h-out_h)/2',"
+                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,{grain_filter},vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         else:
-            # 5. Slow Panning Left
+            # 5. Dynamic Panning Left
             vf_chain = (
-                f"scale=trunc({w}*1.15/2)*2:trunc({h}*1.15/2)*2:force_original_aspect_ratio=increase,"
-                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 - (t-{duration}/2)*15))':'(in_h-out_h)/2',"
-                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,vignette=angle={vignette_angle},setsar=1" + drawtext_chain
+                f"scale=trunc({w}*1.20/2)*2:trunc({h}*1.20/2)*2:force_original_aspect_ratio=increase,"
+                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 - (t-{duration}/2)*26))':'(in_h-out_h)/2',"
+                f"{color_curves},unsharp=5:5:0.8:5:5:0.4,{grain_filter},vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
             
         cmd = [
@@ -430,10 +431,12 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
 
     niche_clean = (script.get("channel") or os.environ.get("CHANNEL_NICHE") or "science").lower()
     from pipeline.config import get_channel_profile
-    chan_profile = get_channel_profile(niche_clean)
     duck = chan_profile.get("ducking", {
-        "attack": 25, "release": 250, "ratio": 3.5, "threshold": 0.08, "music_vol": 0.25, "sfx_vol": 0.26
+        "attack": 25, "release": 250, "ratio": 3.5, "threshold": 0.08, "music_vol": 0.20, "sfx_vol": 0.65
     })
+    # Ensure Foley impacts and transition whooshes are clearly audible
+    duck["sfx_vol"] = max(float(duck.get("sfx_vol", 0.26)), 0.65)
+    duck["music_vol"] = min(float(duck.get("music_vol", 0.25)), 0.22)
     meta = chan_profile.get("container_metadata", {})
     artist = meta.get("artist", "Axiom Lab Studios / Science & Frontier Tech")
     genre = meta.get("genre", "Science & Technology")
