@@ -161,7 +161,7 @@ STRICT CHANNEL BOUNDARY & NEGATIVE CONSTRAINTS (MANDATORY — ZERO TOLERANCE):
 
 CRITICAL RULES:
 - Violating ANY of the negative constraints or drifting into another channel's domain leads to IMMEDIATE DISCARD.
-- Never propose stock market finance, cryptocurrency, hedge funds, or trading.
+- Stay 100% strictly within the designated CHANNEL NICHE SCOPE and ACTIVE TARGET SUB-CLUSTER.
 - Never propose abstract philosophical theories without concrete physical manifestations.
 - Do NOT suggest any topic similar to these recently published topics:
 {json.dumps(recent_topics, indent=2)}

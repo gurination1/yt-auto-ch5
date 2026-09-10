@@ -95,75 +95,33 @@ THUMBNAIL_LAYOUTS = [
     "split_left",
 ]
 
-# ── Channel Boundary & Topic Isolation (Channel 5: Megaprojects & Engineering) ──
-CHANNEL_NICHE = os.environ.get("CHANNEL_NICHE", "engineering")
+# ── Channel Boundary & Topic Isolation (Channel 5: Mind Here Business - Business, Global Trade & Market Secrets) ──
+CHANNEL_NICHE = os.environ.get("CHANNEL_NICHE", "business")
 
 CHANNEL_BOUNDARY = {
     "channel_id": "ch5",
-    "name": "Channel 5: Megaprojects & Engineering",
-    "niche_description": "Colossal tunnel boring machines (TBMs), subsea immersed tunnels, mega hydroelectric dams, extreme heavy machinery (Bagger 288/293, crawler-transporters, super-cranes), and supertall skyscraper tuned mass dampers and seismic engineering.",
+    "name": "Channel 5: Mind Here Business (Business, Global Trade & Market Secrets)",
+    "niche_description": "High-stakes corporate maneuvers, global supply chain chokepoints, dark commodity cartels, pricing psychology, market anomalies, and secret economic machinery behind billion-dollar industries.",
     "allowed_subclusters": [
-        "colossal tunnel boring machines (TBMs) and deep subterranean engineering",
-        "subsea immersed tunnels, undersea rail crossings, and precast tubes",
-        "colossal hydroelectric mega-dams, concrete gravity barriers, and water redirection",
-        "extreme heavy machinery, super-cranes, crawler-transporters, and bucket-wheel excavators",
-        "supertall skyscraper engineering, tuned mass dampers, and aerodynamic vortex shedding"
+        "global supply chain chokepoints and maritime trade bottlenecks: Suez Canal economics, Malacca Straits, ASML lithography monopoly, and semiconductor foundries",
+        "corporate pricing psychology and hidden profit engines: Costco hot dog loss leader economics, cinema concession profit margins, airline dynamic seat tiering, and supermarket layout psychology",
+        "commodity monopolies and dark resource syndicates: global sand mining cartels, vanilla syndicate wars, cobalt supply chains, and lithium reserves",
+        "industrial alchemy and unexpected corporate pivots: how jet engine manufacturers make zero profit on engines and billions on hourly flight hour contracts, and e-waste gold recovery",
+        "artificial scarcity and luxury cartel mechanics: De Beers diamond supply vaults, Hermès quota systems, Swiss watch waitlists, and designer fashion inventory destruction"
     ],
     "strict_negative_constraints": [
-        "NO space science, astronomy, astrophysics, telescopes, cosmology, rockets, or Mars/Moon missions.",
-        "NO financial markets, hedge funds, crypto, stocks, billionaire trading, private equity, or tax-loss harvesting.",
-        "NO animals, wildlife, zoology, insects, marine biology, or nature documentaries.",
-        "NO ancient historical battles, swords, shields, Roman warfare, or medieval knights."
+        "NO space astrophysics, astronomy, cosmology, telescopes, black holes, or rocket engines.",
+        "NO wildlife biology, animal adaptations, zoology, marine predators, or nature documentaries.",
+        "NO ancient Roman legions, medieval swords, catapults, or ancient battlefield sieges.",
+        "NO heavy civil construction specs, crane lift charts, or TBM cutterhead engineering.",
+        "NO crypto shitcoin shilling, day-trading chart analysis, forex signals, or get-rich-quick motivational hustle advice."
     ],
     "negative_keywords": [
-        "astronomy",
-        "astrophysics",
-        "telescope",
-        "james webb",
-        "galaxy",
-        "orbit",
-        "mars rover",
-        "moon landing",
-        "exoplanet",
-        "dark energy",
-        "supernova",
-        "black hole",
-        "cosmic ray",
-        "solar storm",
-        "spacewalk",
-        "rocket launch",
-        "crypto",
-        "bitcoin",
-        "ethereum",
-        "hedge fund",
-        "stock market",
-        "private equity",
-        "tax-loss",
-        "wall street",
-        "venture capital",
-        "saylor",
-        "asness",
-        "goodhart",
-        "billionaire wealth",
-        "family office",
-        "animal",
-        "creature",
-        "predator",
-        "biology",
-        "zoology",
-        "wildlife",
-        "insect",
-        "species",
-        "reptile",
-        "shark",
-        "ancient battle",
-        "roman army",
-        "roman legion",
-        "gladiator",
-        "medieval siege",
-        "trebuchet",
-        "sword fight",
-        "phalanx"
+        "astronomy", "astrophysics", "telescope", "james webb", "black hole", "cosmology", "galaxy", "supernova",
+        "wildlife documentary", "zoology", "apex predator", "venomous snake", "insect swarm", "mammal species", "deep sea creature",
+        "roman legion", "gladiator battle", "trebuchet", "catapult", "medieval battle", "ancient warfare",
+        "tunnel boring machine", "tbm cutterhead", "bridge pier", "crawler crane", "concrete gravity dam",
+        "crypto token", "shiba inu", "memecoin", "day trading chart", "candlestick pattern", "forex signals", "get rich quick", "hustle mindset"
     ]
 }
 
@@ -177,185 +135,185 @@ ENGINEERING_SUBCLUSTERS = CHANNEL_SUBCLUSTERS
 NICHE_SUBCLUSTERS = CHANNEL_SUBCLUSTERS
 
 YT_CATEGORY_EDUCATION = "27"
-YT_CATEGORY_SCIENCE   = "28"
-YT_CATEGORY_DEFAULT   = "28"
-NASA_BROLL_ENABLED    = True
+YT_CATEGORY_SCIENCE   = "27"
+YT_CATEGORY_DEFAULT   = "27"
+NASA_BROLL_ENABLED    = False
 
 RICH_FALLBACK_TOPICS = [
     {
-        "topic": "The Bagger 293: The 14,000-ton colossal bucket-wheel excavator that holds the record for heaviest land vehicle",
-        "short_hook": "This machine is heavier than 30 Boeing 747s!",
+        "topic": "The Costco Hot Dog Paradox: Why Costco's founder threatened to murder the CEO if he raised the $1.50 hot dog price, and how it anchors $200B in sales",
+        "short_hook": "Why will Costco fire any executive who touches the $1.50 hot dog?",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "extreme heavy machinery, super-cranes, crawler-transporters, and bucket-wheel excavators"
+        "subcluster": "corporate pricing psychology and hidden profit engines: Costco hot dog loss leader economics, cinema concession profit margins, airline dynamic seat tiering, and supermarket layout psychology"
     },
     {
-        "topic": "The Gotthard Base Tunnel: How four colossal TBMs bored 57 kilometers beneath the Alps under 2,000 meters of granite",
-        "short_hook": "How did engineers drill 57 kilometers under mountains?",
+        "topic": "ASML's Extreme UV Monopoly: How a single Dutch company controls 100% of the world's extreme UV chipmaking machines and holds the tech economy hostage",
+        "short_hook": "One Dutch company holds a monopoly on every advanced computer chip on Earth.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "colossal tunnel boring machines (TBMs) and deep subterranean engineering"
+        "subcluster": "global supply chain chokepoints and maritime trade bottlenecks: Suez Canal economics, Malacca Straits, ASML lithography monopoly, and semiconductor foundries"
     },
     {
-        "topic": "The Taipei 101 Tuned Mass Damper: The 660-ton golden pendulum suspended across five floors to counteract typhoon sway",
-        "short_hook": "A 660-ton golden ball saves this skyscraper.",
+        "topic": "The Global Sand Mafia: How illegal syndicates and armed cartels steal millions of tons of beach and river sand to feed the concrete construction boom",
+        "short_hook": "Why are armed syndicates fighting deadly cartel wars over river sand?",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "supertall skyscraper engineering, tuned mass dampers, and aerodynamic vortex shedding"
+        "subcluster": "commodity monopolies and dark resource syndicates: global sand mining cartels, vanilla syndicate wars, cobalt supply chains, and lithium reserves"
     },
     {
-        "topic": "The Fehmarnbelt Fixed Link: The 18-kilometer immersed tunnel sinking 73,000-ton concrete elements onto the seabed",
-        "short_hook": "How engineers sink massive concrete tunnels under oceans.",
+        "topic": "Rolls-Royce Power-by-the-Hour: Why jet engine manufacturers sell multi-million-dollar engines at a loss and print billions renting uptime by the minute",
+        "short_hook": "Why do jet engine makers sell their engines at a massive loss?",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "subsea immersed tunnels, undersea rail crossings, and precast tubes"
+        "subcluster": "industrial alchemy and unexpected corporate pivots: how jet engine manufacturers make zero profit on engines and billions on hourly flight hour contracts, and e-waste gold recovery"
     },
     {
-        "topic": "The Three Gorges Dam: The colossal 2.3-kilometer concrete gravity barrier holding 40 billion cubic meters of water",
-        "short_hook": "This mega dam holds 40 billion tons of water.",
+        "topic": "The De Beers Diamond Illusion: How an offshore cartel invented the engagement ring tradition out of thin air and artificially stockpiled diamonds to inflate prices",
+        "short_hook": "How a cartel tricked the world into believing clear carbon rocks are rare and valuable.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "colossal hydroelectric mega-dams, concrete gravity barriers, and water redirection"
+        "subcluster": "artificial scarcity and luxury cartel mechanics: De Beers diamond supply vaults, Hermès quota systems, Swiss watch waitlists, and designer fashion inventory destruction"
     },
     {
-        "topic": "The NASA Crawler-Transporter: The 3,000-ton tracked giant moving 18-million-pound launch loads on laser-leveled roads",
-        "short_hook": "The 3,000-ton machine that moves launch rockets.",
+        "topic": "The Suez Canal Chokepoint: How a single stuck container ship froze $9.6 billion of global trade every day and triggered a worldwide inflation shockwave",
+        "short_hook": "How one stuck boat paralyzed 10 billion dollars of global trade every single day.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "extreme heavy machinery, super-cranes, crawler-transporters, and bucket-wheel excavators"
+        "subcluster": "global supply chain chokepoints and maritime trade bottlenecks: Suez Canal economics, Malacca Straits, ASML lithography monopoly, and semiconductor foundries"
     },
     {
-        "topic": "The Channel Tunnel TBMs: How French and British boring machines met 50 meters under the sea with millimeter precision",
-        "short_hook": "Two tunneling machines met under the sea with millimeter accuracy.",
+        "topic": "Cinema Popcorn Economics: Why movie theaters are actually popcorn concessions that show Hollywood movies as an excuse to sell 1,200% markup snacks",
+        "short_hook": "Movie theaters don't make money on tickets. They make it on 1,200% popcorn markup.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "colossal tunnel boring machines (TBMs) and deep subterranean engineering"
+        "subcluster": "corporate pricing psychology and hidden profit engines: Costco hot dog loss leader economics, cinema concession profit margins, airline dynamic seat tiering, and supermarket layout psychology"
     },
     {
-        "topic": "The Akashi Kaikyo Bridge: The 4-kilometer suspension bridge that survived a 7.2 magnitude earthquake mid-construction",
-        "short_hook": "This bridge survived a massive earthquake mid-construction.",
+        "topic": "The Madagascar Vanilla Syndicate: Why natural vanilla beans are worth more by weight than silver and protected by armed jungle militias",
+        "short_hook": "Why is natural vanilla more valuable by weight than solid silver?",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "subsea immersed tunnels, undersea rail crossings, and precast tubes"
+        "subcluster": "commodity monopolies and dark resource syndicates: global sand mining cartels, vanilla syndicate wars, cobalt supply chains, and lithium reserves"
     },
     {
-        "topic": "The Big Bertha TBM: The 57-foot-diameter monster cutterhead built to dig Seattle's two-mile subterranean highway",
-        "short_hook": "The world's widest tunnel drill dug under an entire city.",
+        "topic": "The Hermès Birkin Quota Game: How a luxury brand uses forced artificial scarcity and purchase histories to make handbags appreciate faster than the stock market",
+        "short_hook": "Why having $30,000 cash still won't let you buy a Birkin bag from Hermès.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "colossal tunnel boring machines (TBMs) and deep subterranean engineering"
+        "subcluster": "artificial scarcity and luxury cartel mechanics: De Beers diamond supply vaults, Hermès quota systems, Swiss watch waitlists, and designer fashion inventory destruction"
     },
     {
-        "topic": "The Millau Viaduct: The French cable-stayed bridge standing 343 meters tall, piercing above the Tarn Valley cloud ceiling",
-        "short_hook": "The bridge taller than the Eiffel Tower built above clouds.",
+        "topic": "The Gillette Razor and Blades Model: How industrial consumables trap millions of consumers into high-margin refill subscriptions for decades",
+        "short_hook": "The genius corporate trap that gets you to pay for the rest of your life.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "subsea immersed tunnels, undersea rail crossings, and precast tubes"
+        "subcluster": "corporate pricing psychology and hidden profit engines: Costco hot dog loss leader economics, cinema concession profit margins, airline dynamic seat tiering, and supermarket layout psychology"
     },
     {
-        "topic": "The Panama Canal Expansion: The colossal 3,000-ton rolling lock gates engineered to transit neo-Panamax supertankers",
-        "short_hook": "How 3,000-ton rolling gates lift ocean ships across mountains.",
+        "topic": "The Strait of Malacca Bottleneck: Why 25% of all global traded oil passes through a 1.7-mile maritime corridor and what happens if it shuts down",
+        "short_hook": "A 1.7-mile stretch of water controls 25% of all oil shipped on planet Earth.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "colossal hydroelectric mega-dams, concrete gravity barriers, and water redirection"
+        "subcluster": "global supply chain chokepoints and maritime trade bottlenecks: Suez Canal economics, Malacca Straits, ASML lithography monopoly, and semiconductor foundries"
     },
     {
-        "topic": "The Shanghai Tower Eddy Current Damper: The 1,000-ton stabilization system using magnetic induction at 632 meters",
-        "short_hook": "A 1,000-ton magnetic damper stabilizes this mega skyscraper.",
+        "topic": "E-Waste Urban Mining: Why extracting gold and palladium from a ton of discarded smartphones yields 100 times more precious metal than mining raw gold ore",
+        "short_hook": "A ton of old smartphones holds 100 times more gold than a ton of gold ore.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "supertall skyscraper engineering, tuned mass dampers, and aerodynamic vortex shedding"
+        "subcluster": "industrial alchemy and unexpected corporate pivots: how jet engine manufacturers make zero profit on engines and billions on hourly flight hour contracts, and e-waste gold recovery"
     },
     {
-        "topic": "The Chesapeake Bay Bridge-Tunnel: The 17-mile crossing that dives beneath shipping channels via prefabricated sunken tubes",
-        "short_hook": "The highway that dives beneath ocean shipping channels.",
+        "topic": "Surge Pricing & Battery Drain Algorithms: How travel apps and rideshares detect your remaining battery percentage and demand velocity to secretly inflate prices",
+        "short_hook": "Does your phone's dying battery actually make your Uber ride more expensive?",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "subsea immersed tunnels, undersea rail crossings, and precast tubes"
+        "subcluster": "corporate pricing psychology and hidden profit engines: Costco hot dog loss leader economics, cinema concession profit margins, airline dynamic seat tiering, and supermarket layout psychology"
     },
     {
-        "topic": "The Itaipu Dam: The hydroelectric mega-barrier built with enough concrete to construct 210 Olympic stadiums",
-        "short_hook": "The mega-dam built with concrete for 210 stadiums.",
+        "topic": "The Gray Market Rolex Syndicate: How authorized dealers secretly funnel brand-new luxury watches to gray-market flippers for double retail price",
+        "short_hook": "Why your local luxury watch dealer is secretly selling watches to gray market flippers.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "colossal hydroelectric mega-dams, concrete gravity barriers, and water redirection"
+        "subcluster": "artificial scarcity and luxury cartel mechanics: De Beers diamond supply vaults, Hermès quota systems, Swiss watch waitlists, and designer fashion inventory destruction"
     },
     {
-        "topic": "The Liebherr LR 13000: The most powerful crawler crane on Earth capable of lifting 3,000 metric tons in one hoist",
-        "short_hook": "The monster crane capable of lifting 3,000 tons.",
+        "topic": "The Lithium Triangle Geopolitics: How Chile, Bolivia, and Argentina control 50% of the world's battery reserves and play superpowers against each other",
+        "short_hook": "Three countries in South America control 50% of the world's battery future.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "extreme heavy machinery, super-cranes, crawler-transporters, and bucket-wheel excavators"
+        "subcluster": "commodity monopolies and dark resource syndicates: global sand mining cartels, vanilla syndicate wars, cobalt supply chains, and lithium reserves"
     },
     {
-        "topic": "The Seikan Undersea Rail Tunnel: The 53-kilometer Japanese tunnel bored through explosive undersea fault fractures",
-        "short_hook": "Japan's 53-kilometer train tunnel beneath the ocean floor.",
+        "topic": "The Gruen Transfer in Supermarket Architecture: Why grocery stores place milk in the furthest back corner and pump bakery scents to force impulse purchases",
+        "short_hook": "Why is milk always placed at the furthest possible corner of every grocery store?",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "colossal tunnel boring machines (TBMs) and deep subterranean engineering"
+        "subcluster": "corporate pricing psychology and hidden profit engines: Costco hot dog loss leader economics, cinema concession profit margins, airline dynamic seat tiering, and supermarket layout psychology"
     },
     {
-        "topic": "The Danyang-Kunshan Grand Bridge: The 164-kilometer high-speed railway viaduct crossing lakes on 10,000 concrete pillars",
-        "short_hook": "The 164-kilometer bridge that spans across rivers and lakes.",
+        "topic": "The DRC Cobalt Chokepoint: How 70% of the global cobalt supply needed for every electric vehicle and smartphone originates from a single mining province",
+        "short_hook": "70% of the world's smartphone batteries depend on a single country's mines.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "subsea immersed tunnels, undersea rail crossings, and precast tubes"
+        "subcluster": "commodity monopolies and dark resource syndicates: global sand mining cartels, vanilla syndicate wars, cobalt supply chains, and lithium reserves"
     },
     {
-        "topic": "The Marmaray Undersea Tunnel: The seismic immersed rail tube laid 60 meters beneath the turbulent Bosphorus strait",
-        "short_hook": "How engineers built an earthquake-proof tunnel under the Bosphorus.",
+        "topic": "The SaaS Subscription Shift: How software companies abandoned $50 lifetime licenses for recurring monthly fees and multiplied corporate valuations tenfold",
+        "short_hook": "Why did software companies kill lifetime licenses to force monthly rent on users?",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "subsea immersed tunnels, undersea rail crossings, and precast tubes"
+        "subcluster": "corporate pricing psychology and hidden profit engines: Costco hot dog loss leader economics, cinema concession profit margins, airline dynamic seat tiering, and supermarket layout psychology"
     },
     {
-        "topic": "The Oosterscheldekering Storm Barrier: The 9-kilometer Dutch engineering marvel featuring 62 hydraulic sliding steel gates",
-        "short_hook": "How the Dutch built 62 giant steel gates against the sea.",
+        "topic": "Haber-Bosch and Fertilizer Economics: How natural gas feedstock produces global ammonia fertilizer that feeds 50% of the human population",
+        "short_hook": "Half of the world's food supply depends on this single chemical trade route.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "colossal hydroelectric mega-dams, concrete gravity barriers, and water redirection"
+        "subcluster": "commodity monopolies and dark resource syndicates: global sand mining cartels, vanilla syndicate wars, cobalt supply chains, and lithium reserves"
     },
     {
-        "topic": "The Burj Khalifa Foundation: How 192 friction piles driven 50 meters into desert sediment support a half-million-ton tower",
-        "short_hook": "How desert sand holds up a half-million-ton skyscraper.",
+        "topic": "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+        "short_hook": "Supermarkets sell gallon milk at a guaranteed loss just to crush local competitors.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "supertall skyscraper engineering, tuned mass dampers, and aerodynamic vortex shedding"
+        "subcluster": "corporate pricing psychology and hidden profit engines: Costco hot dog loss leader economics, cinema concession profit margins, airline dynamic seat tiering, and supermarket layout psychology"
     },
     {
-        "topic": "The BelAZ 75710 Haul Truck: The world's largest dump truck powered by dual 16-cylinder diesel engines hauling 450 tons",
-        "short_hook": "The two-story dump truck that carries 450 tons of rock.",
+        "topic": "The Intermodal Shipping Container: How a standardized corrugated steel box invented by Malcolm McLean dropped freight transport costs by 99%",
+        "short_hook": "How this plain steel box dropped the cost of global trade by 99%.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "extreme heavy machinery, super-cranes, crawler-transporters, and bucket-wheel excavators"
+        "subcluster": "global supply chain chokepoints and maritime trade bottlenecks: Suez Canal economics, Malacca Straits, ASML lithography monopoly, and semiconductor foundries"
     },
     {
-        "topic": "The Jinping Underground Laboratory: The 2,400-meter deep rock cavern accessed by a 6-kilometer tunnel under Mount Jinping",
-        "short_hook": "The deepest subterranean laboratory on Earth under a mountain.",
+        "topic": "Luxury Inventory Burning: Why Burberry and Cartier destroyed hundreds of millions in pristine unsold coats and watches rather than discount them",
+        "short_hook": "Why luxury fashion brands set fire to millions of dollars of unsold clothes.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "colossal tunnel boring machines (TBMs) and deep subterranean engineering"
+        "subcluster": "artificial scarcity and luxury cartel mechanics: De Beers diamond supply vaults, Hermès quota systems, Swiss watch waitlists, and designer fashion inventory destruction"
     },
     {
-        "topic": "The Pioneering Spirit Megaship: The world's largest construction vessel that lifts whole 48,000-ton offshore platforms",
-        "short_hook": "The giant ship that lifts entire 48,000-ton oil platforms.",
+        "topic": "The Global Helium Crisis: Why medical MRI machines and semiconductor cleanrooms are scrambling over an irreplaceable non-renewable underground gas",
+        "short_hook": "Why the world is quietly running out of the gas that cools MRI machines.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "extreme heavy machinery, super-cranes, crawler-transporters, and bucket-wheel excavators"
+        "subcluster": "commodity monopolies and dark resource syndicates: global sand mining cartels, vanilla syndicate wars, cobalt supply chains, and lithium reserves"
     },
     {
-        "topic": "The Shimizu Mega-City Pyramid Concept: The 2,000-meter carbon-truss geometric city planned to house 1 million residents",
-        "short_hook": "The proposed 2,000-meter pyramid city for 1 million people.",
+        "topic": "Casino Floor Psychological Engineering: Why casinos eliminate windows, remove all clocks, and curve carpet pathways to distort time and risk perception",
+        "short_hook": "The calculated psychological tricks casinos use to make you lose track of time.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "supertall skyscraper engineering, tuned mass dampers, and aerodynamic vortex shedding"
+        "subcluster": "corporate pricing psychology and hidden profit engines: Costco hot dog loss leader economics, cinema concession profit margins, airline dynamic seat tiering, and supermarket layout psychology"
     },
     {
-        "topic": "The Lake Mead Intake No. 3: How engineers used a deep-water TBM to drill directly into the floor of a 400-foot reservoir",
-        "short_hook": "Drilling a giant tunnel into the floor of a 400-foot reservoir.",
+        "topic": "Pharmaceutical Patent Thickets: How drug corporations file hundreds of minor secondary patents to delay generic life-saving medicine competition for 30 years",
+        "short_hook": "How drug companies build patent fortresses to block cheap medicine for 30 years.",
         "hook_type": "curiosity_gap",
         "for_format": "both",
-        "subcluster": "colossal tunnel boring machines (TBMs) and deep subterranean engineering"
+        "subcluster": "corporate pricing psychology and hidden profit engines: Costco hot dog loss leader economics, cinema concession profit margins, airline dynamic seat tiering, and supermarket layout psychology"
     }
 ]
 
@@ -589,8 +547,8 @@ FLEET_NICHE_PROFILES = {
         "thumb_border": "#0B0014",
     },
     "engineering": {
-        "channel_id": "ch5",
-        "name": "Megaprojects & Engineering",
+        "channel_id": "ch4",
+        "name": "Marvel Engeneering (Engineering Marvels & How It Works)",
         "gemini_voice": "Orus",
         "kokoro_voice": "am_puck",
         "edge_voice": "en-US-BrianNeural",
@@ -623,18 +581,66 @@ FLEET_NICHE_PROFILES = {
             "sfx_vol": 0.32,
         },
         "container_metadata": {
-            "artist": "Apex Megaprojects / Heavy Industrial Engineering",
-            "genre": "Civil Engineering & Heavy Machinery / Megastructures",
-            "comment": "Documenting extreme infrastructure, tunnel boring breakthroughs, and colossal machines.",
+            "artist": "Marvel Engeneering / Engineering Marvels & How It Works",
+            "genre": "Engineering & Technology / Colossal Machines & Extreme Feats",
+            "comment": "Documenting colossal machines, extreme kinetic mechanisms, and how impossible engineering feats work.",
         },
         "color_curves": "eq=contrast=1.12:saturation=1.16:gamma=0.94,colorbalance=rs=0.02:rh=0.05:gh=0.02:bs=0.04:bh=-0.03",
-        "badge_text": "⚡ MEGA PROJECT",
+        "badge_text": "⚙ ENGINEERING MARVEL",
         "badge_border": "#FF5500",
         "badge_bg": "#101418",
         "thumb_font": "Barlow Condensed",
         "thumb_color1": "#FFFFFF",
         "thumb_color2": "#FF5500",
         "thumb_border": "#1A1E24",
+    },
+    "business": {
+        "channel_id": "ch5",
+        "name": "Mind Here Business (Business, Global Trade & Market Secrets)",
+        "gemini_voice": "Charon",
+        "kokoro_voice": "am_michael",
+        "edge_voice": "en-US-ChristopherNeural",
+        "cadence_speed": 1.02,
+        "vocal_tone": "bold_authority",
+        "persona_desc": "authoritative financial & trade investigator, 1.02x",
+        "subtitle_fonts": ["Montserrat", "Montserrat Black", "Bebas Neue"],
+        "c_base": "&H00FFFFFF&",          # Base: Pure Crisp White (#FFFFFF)
+        "c_active": "&H00A3E500&",        # Active: Wealth Emerald (#00E5A3)
+        "c_power": "&H0000D7FF&",         # Power Accent: Gold (#FFD700)
+        "outline_color": "&H000A0805&",   # Outline: 9px #05080A (obsidian navy)
+        "shadow_color": "&H80000000&",    # Shadow: 3px
+        "outline_w": 9,
+        "shadow_d": 3,
+        "blur": 1,
+        "margin_v": 440,
+        "procedural_chords": [
+            [("C", "min"), ("Ab", "maj"), ("Eb", "maj"), ("Bb", "maj")],
+            [("D", "min"), ("Bb", "maj"), ("F", "maj"), ("C", "maj")],
+            [("A", "min"), ("F", "maj"), ("C", "maj"), ("G", "maj")],
+        ],
+        "music_bpm": 112,
+        "foley_type": "digital_tech",
+        "ducking": {
+            "attack": 20,
+            "release": 250,
+            "ratio": 3.8,
+            "threshold": 0.08,
+            "music_vol": 0.22,
+            "sfx_vol": 0.28,
+        },
+        "container_metadata": {
+            "artist": "Mind Here Business / Global Trade & Corporate Investigations",
+            "genre": "Business & Economics / Global Trade & Market Secrets",
+            "comment": "Investigative documentary series on global supply chain chokepoints, corporate monopolies, and market secrets.",
+        },
+        "color_curves": "eq=contrast=1.12:saturation=1.10:gamma=0.95,colorbalance=rs=0.03:gs=0.04:bs=-0.02",
+        "badge_text": "$ TRADE SECRETS",
+        "badge_border": "#00E5A3",
+        "badge_bg": "#05120C",
+        "thumb_font": "Montserrat",
+        "thumb_color1": "#FFFFFF",
+        "thumb_color2": "#00E5A3",
+        "thumb_border": "#05080A",
     },
 }
 
