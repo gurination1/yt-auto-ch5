@@ -76,9 +76,10 @@
     "The skyscraper that *bends* with the sun: How supertalls visibly lean and grow meters daily.",
     "China's Undersea High-Speed Rail: Robots Battling Extreme Geology",
     "Norway's Floating Underwater Tunnels: Roads Suspended in Fjords",
-    "The silent, inevitable death of every mega-dam: how they are paradoxically designed to fill up with millions of tons of river sediment, eventually becoming useless 'concrete coffins' for water."
+    "The silent, inevitable death of every mega-dam: how they are paradoxically designed to fill up with millions of tons of river sediment, eventually becoming useless 'concrete coffins' for water.",
+    "Electric 'Urban Mining': 89% Gold Recovery from E-Waste with 100x Less Chemicals"
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 9,
-  "call_count": 195
+  "subcluster_idx": 4,
+  "fallback_idx": 10,
+  "call_count": 196
 }
