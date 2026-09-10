@@ -25,6 +25,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Free Disk Space on Cloud Runner
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          df -h
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -51,7 +56,9 @@ jobs:
             ${{ runner.os }}-whisper-
 
       - name: Install dependencies
-        run: pip install -r requirements.txt && pip install -U --pre "yt-dlp[default]"
+        run: |
+          pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt && pip install -U --pre "yt-dlp[default]"
 
       - name: Generate Long
         timeout-minutes: 150
