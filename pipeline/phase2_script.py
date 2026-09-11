@@ -127,6 +127,8 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
     - NEVER use metaphorical language, idioms, or abstract analogies in 'broll_query' or 'broll_queries'.
     - ABSOLUTELY FORBIDDEN IN B-ROLL QUERIES:
       * NEVER write queries like 'tiny warriors', 'antidote factory', 'quantum leaps all around us', 'weird spots inside Earth', 'dark mystery', 'mind blowing', 'secret weapon'.
+      * NEVER use slang like 'bug' or 'critter' for bacteria, fungi, microorganisms, or non-insect organisms.
+      * NEVER write pop-culture or mythical nicknames like 'Conan the Bacterium', 'Frankenstein', or 'monster'. Use proper scientific subject name (e.g. 'Deinococcus radiodurans bacterium scanning electron microscope').
       * NEVER include words: "animation", "simulation", "concept", "visualization", "fantasy", "cgi", "cartoon", "illustration", "3d model", "futuristic", "diagram".
     - REQUIRED: Every segment MUST specify the CONCRETE, OBSERVABLE physical entity being discussed:
       * If narration says "These tiny warriors smash venom apart" -> broll_query MUST BE: "rattlesnake blood antibodies microscope" or "antivenom protein reaction lab".
@@ -574,16 +576,14 @@ Return ONLY a raw JSON object for this segment with the updated "narration" and 
                 narr += "."
             seg["narration"] = narr
 
-    # ── Ensure CTA Segment Narration Mentions Link Cleanly ───────────────────
-    if format_type == "short":
-        cta_idx = len(script.get("segments", [])) - 1
-        if cta_idx >= 0:
-            cta_seg = script["segments"][cta_idx]
-            cta_narration = cta_seg.get("narration", "")
-            if "link" not in cta_narration.lower():
-                print(f"[Phase 2] CTA Segment narration '{cta_narration}' lacks link mention. Enforcing...")
-                cta_clean = cta_narration.rstrip(".!?,")
-                cta_seg["narration"] = f"{cta_clean} — link in bio!"
+    # ── Ensure Clean Infinite Loop Narration (No Spoken Social Spam) ─────────
+    for seg in script.get("segments", []):
+        narr = seg.get("narration", "")
+        narr_clean = re.sub(r'\s*[-—–:]*\s*(?:link in bio|link in description|check bio|subscribe|follow).*$', '', narr, flags=re.IGNORECASE).strip()
+        if narr_clean:
+            if not narr_clean.endswith((".", "!", "?")):
+                narr_clean += "."
+            seg["narration"] = narr_clean
 
     # ── Ensure Beacons Link in Description ────────────────────────────────────
     if "description" in script:

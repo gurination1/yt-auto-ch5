@@ -15,17 +15,24 @@ def _http_status(exc: Exception) -> int:
     return int(getattr(response, "status_code", 0) or 0)
 
 
-def _get_judge_key() -> str | None:
+def _get_judge_key(attempt: int = 0) -> str | None:
+    judge_env_key = os.environ.get("GEMINI_JUDGE_API_KEY", "").strip()
+    if judge_env_key and attempt == 0:
+        return judge_env_key
     key = _shared_pool.get_available_key()
     if key:
         return key
+    if judge_env_key:
+        return judge_env_key
     now = time.time()
-    earliest_idx = min(range(len(_shared_pool)), key=lambda idx: _shared_pool._cooldowns[idx])
-    wait_time = max(1.0, _shared_pool._cooldowns[earliest_idx] - now)
-    wait_time = min(15.0, wait_time)
-    print(f"[JudgeAI] All Gemini keys on cooldown. Waiting {wait_time:.1f}s for key slot {earliest_idx + 1}...")
-    time.sleep(wait_time)
-    return _shared_pool.get_available_key()
+    if len(_shared_pool) > 0:
+        earliest_idx = min(range(len(_shared_pool)), key=lambda idx: _shared_pool._cooldowns[idx])
+        wait_time = max(1.0, _shared_pool._cooldowns[earliest_idx] - now)
+        wait_time = min(15.0, wait_time)
+        print(f"[JudgeAI] All Gemini keys on cooldown. Waiting {wait_time:.1f}s for key slot {earliest_idx + 1}...")
+        time.sleep(wait_time)
+        return _shared_pool.get_available_key()
+    return None
 
 def upload_file_to_gemini(filepath: str, api_key: str) -> dict:
     mime_type, _ = mimetypes.guess_type(filepath)
@@ -142,19 +149,21 @@ class JudgeClient:
             if time.time() - start_ts > 90:
                 print("[JudgeAI] Hard timeout (90s) reached. Raising exception to trigger local health fallback.")
                 break
-            api_key = _get_judge_key()
+            api_key = _get_judge_key(attempt)
             if not api_key:
                 break
-            slot = _shared_pool._keys.index(api_key) + 1
+            slot = _shared_pool._keys.index(api_key) + 1 if api_key in _shared_pool._keys else "DEDICATED"
             try:
                 report = self._review_video_with_key(video_path, metadata, api_key)
-                _shared_pool.mark_success(api_key)
+                if api_key in _shared_pool._keys:
+                    _shared_pool.mark_success(api_key)
                 return report
             except Exception as exc:
                 last_error = exc
                 status = _http_status(exc)
-                print(f"[JudgeAI] Key slot {slot}/{len(_shared_pool)} failed during review (status {status or 'unknown'}): {exc}")
-                _shared_pool.mark_failed(api_key, status or 429, transient=False)
+                print(f"[JudgeAI] Key slot {slot} failed during review (status {status or 'unknown'}): {exc}")
+                if api_key in _shared_pool._keys:
+                    _shared_pool.mark_failed(api_key, status or 429, transient=False)
         print(f"[Judge AI] Gemini Files API review skipped or quota exhausted ({last_error}). Running local video health checks...")
         import subprocess
         try:
@@ -169,13 +178,13 @@ class JudgeClient:
                 print("[Judge AI] Local health check detected black frames!")
                 return {"score": 40, "status": "REJECTED", "reason": "Black frames detected by local scanner", "failed_segments": [0]}
             
-            print(f"[Judge AI] Local health check PASSED (duration: {dur:.2f}s, 0 black frames).")
+            print(f"[Judge AI] Multimodal AI check was unavailable ({last_error}). Format verification OK (duration: {dur:.2f}s), but strictly REJECTING automated publishing to prevent unverified visual slop.")
             return {
-                "score": 93,
-                "status": "PASSED",
-                "reason": f"Passed local audio-video health check & blackdetect verification (Duration: {dur:.2f}s)",
-                "cohesiveness_score": 92,
-                "failed_segments": []
+                "score": 50,
+                "status": "REJECTED",
+                "reason": f"Multimodal AI visual check was unavailable ({last_error}). Strictly rejecting auto-publish to prevent video mismatches.",
+                "cohesiveness_score": 50,
+                "failed_segments": [0, 1, 2, 3, 4]
             }
         except Exception as local_err:
             raise RuntimeError(f"Local video health check failed: {local_err}") from local_err
@@ -208,9 +217,11 @@ Please watch the video and evaluate it against these rubrics:
    - Check for any mismatch (e.g. if the audio discusses "Quantum Computing" but the text caption or B-roll displays terms like "CRISPR" or "Gene Editing").
    - Look out for generic or symbolic placeholders (e.g. a generic man with glasses looking at a screen, generic office workers) that do not directly represent specific scientific/technical/space concepts described in the audio (like 'asteroid wobble', 'planetary defense', 'Bose-Einstein condensate', etc.).
    - STRICT BAN ON IRRELEVANT TERRESTRIAL ANALOGIES: If the video is about Space, Astronomy, Planets, Deep Sea, or Nature, REJECT ANY terrestrial stock footage such as steel mills, factories, foundries, metal smelting, blast furnaces, modern office spaces, traffic, city streets, or beach sunsets. (For example: showing a steel mill foundry when discussing planetary core compression or diamond rain is an UNACCEPTABLE mismatch).
+   - STRICT BAN ON ELECTRONICS / WORKBENCH / CAMERA MISMATCHES: If the video is about Nature, Biology, Animals, Extremophiles, or Science, strictly REJECT any footage showing electronics technicians, soldering irons, circuit boards, computer debugging, hardware workshops, camera sensor cleaning, or mechanic tools. (For example: showing a technician soldering or cleaning a camera lens when narration discusses DNA repair or bacterial enzymes is a CRITICAL mismatch).
+   - STRICT BAN ON FANTASY MONSTERS / AI BEASTS: Reject fantasy werewolf/monster creatures, fictional beasts, or cartoon characters when the video is about real biological microorganisms, animals, or natural phenomena.
    - All visual B-roll clips must visually and contextually represent the core topic entity and narration sentence.
    - Check if the SAME visual clip is repeated or looped twice in different parts of the video. Repeating the same B-roll clip is a critical quality failure.
-   - If there is any mismatched topic (like a factory or city for space, or a desert for deep sea), symbolic placeholder, or repeated clip, you MUST set status="REJECTED", set score below 80, and list the exact 0-based segment numbers that failed in failed_segments.
+   - If there is any mismatched topic (like a factory or city for space, or electronics/camera cleaning for biology), symbolic placeholder, fantasy beast, or repeated clip, you MUST set status="REJECTED", set score below 75, and list the exact 0-based segment numbers that failed in failed_segments.
 2. **Hook Appeal**: Is the hook in the first 3-5 seconds of the video engaging and curiosity-inducing?
 3. **Subtitles/Captions (CRITICAL)**: Are subtitles present, readable, and synchronized with the narration?
    - This video uses modern rapid-fire single-word (karaoke) subtitle style. This is EXPECTED and CORRECT.

@@ -217,7 +217,8 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
 
         drawtext_chain = ""
         credit_file = f"output/broll_{i}_credit.json"
-        if os.path.exists(credit_file):
+        is_synthetic_still = os.path.exists(f"output/broll_{i}.jpg")
+        if os.path.exists(credit_file) and not is_synthetic_still:
             try:
                 with open(credit_file, "r") as cf:
                     cdata = json.load(cf)
