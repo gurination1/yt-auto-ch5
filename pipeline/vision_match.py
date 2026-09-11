@@ -16,6 +16,49 @@ def _shrink(img_bytes: bytes, max_dim: int = 768) -> bytes:
     img.save(buf, format="JPEG", quality=80)
     return buf.getvalue()
 
+def _parse_vision_json(raw: str) -> dict:
+    import re
+    cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.MULTILINE)
+    cleaned = re.sub(r"//.*$", "", cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r"/\*.*?\*/", "", cleaned, flags=re.DOTALL)
+    try:
+        return json.loads(cleaned)
+    except Exception:
+        pass
+    # Fix unquoted keys: e.g. { best_index: ... } -> { "best_index": ... }
+    fixed = re.sub(r'(?<=[{,\s])([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'"\1":', cleaned)
+    # Replace single quotes around values
+    fixed = re.sub(r"'([^'\\]*(?:\\.[^'\\]*)*)'", r'"\1"', fixed)
+    # Strip trailing commas
+    fixed = re.sub(r',\s*([\]}])', r'\1', fixed)
+    try:
+        return json.loads(fixed)
+    except Exception:
+        pass
+    res = {}
+    m_idx = re.search(r'"?best_index"?\s*:\s*(\d+)', cleaned)
+    if m_idx:
+        res["best_index"] = int(m_idx.group(1))
+    m_found = re.search(r'"?match_found"?\s*:\s*(true|false)', cleaned, re.IGNORECASE)
+    if m_found:
+        res["match_found"] = m_found.group(1).lower() == "true"
+    m_conf = re.search(r'"?confidence"?\s*:\s*(\d+)', cleaned)
+    if m_conf:
+        res["confidence"] = int(m_conf.group(1))
+    m_scores = re.search(r'"?candidate_scores"?\s*:\s*\[([0-9,\s]+)\]', cleaned)
+    if m_scores:
+        try:
+            res["candidate_scores"] = [int(s.strip()) for s in m_scores.group(1).split(",") if s.strip().isdigit()]
+        except Exception:
+            pass
+    m_reason = re.search(r'"?reject_reason"?\s*:\s*"([^"]*)"', cleaned)
+    if m_reason:
+        res["reject_reason"] = m_reason.group(1)
+    m_valid = re.search(r'"?is_valid"?\s*:\s*(true|false)', cleaned, re.IGNORECASE)
+    if m_valid:
+        res["is_valid"] = m_valid.group(1).lower() == "true"
+    return res
+
 def vision_rank_broll(
     thumbnails: list[bytes],
     narration: str,
@@ -124,9 +167,7 @@ def vision_rank_broll(
 
     try:
         raw  = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-        import re
-        raw_clean = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.MULTILINE)
-        data = json.loads(raw_clean)
+        data = _parse_vision_json(raw)
 
         idx        = data.get("best_index")
         found      = bool(data.get("match_found", False))
@@ -164,8 +205,8 @@ def vision_rank_broll(
         return None, False
 
     except Exception as e:
-        print(f"[VisionMatch] Vision JSON parse note: {e}. Signaling api_unavailable (None, None).")
-        return None, None
+        print(f"[VisionMatch] Vision JSON parse note: {e}. Strictly rejecting batch to force authentic fallback.")
+        return None, False
 
 
 def verify_video_frames(
@@ -184,7 +225,7 @@ def verify_video_frames(
     Returns (is_valid, reason).
     """
     if not frames:
-        return True, "No frames to inspect"
+        return False, "No frames to inspect"
 
     import os
     if os.environ.get("BYPASS_VISION_MATCH") == "1":
@@ -208,7 +249,10 @@ def verify_video_frames(
         f"9. GENERIC WALLS & ROOMS: Reject plain blank/beige/white/gray walls, empty apartment/office rooms, plain ceilings, or blurry indoor backgrounds.\n"
         f"10. GENERIC PEOPLE & PHONES: Reject back-of-head or over-the-shoulder shots of unidentified people looking around, generic hands holding smartphones/tablets, or staged actors with electronics.\n"
         f"11. SYMBOLIC ANALOGIES FOR BIOLOGY / SCIENCE: Reject cartoon mice/superheroes used as analogies for biological processes or antidote production, generic whole animals (e.g. green tree snake) when narration describes microscopic blood/molecules/antibodies/venom breakdown, and generic outer-space planets when narration describes Earth's mantle or core.\n"
-        f"12. DIRECT PHYSICAL CORRELATION: Visual MUST directly portray the concrete physical subject described in narration (microscopy, crystallography, laboratory apparatus, or authentic documentary specimen).\n\n"
+        f"12. DIRECT PHYSICAL CORRELATION: Visual MUST directly portray the concrete physical subject described in narration (microscopy, crystallography, laboratory apparatus, or authentic documentary specimen).\n"
+        f"13. ELECTRONICS & WORKBENCHES: Reject soldering irons, printed circuit boards, microchips, electronics lab benches, computer hardware debugging, or wiring when topic is biology/nature/wildlife/astronomy.\n"
+        f"14. CAMERA & MECHANICAL REPAIR: Reject camera sensor cleaning, lens disassembly, watch repair, or mechanic tools when topic is biology/nature/science.\n"
+        f"15. FANTASY BEASTS & MONSTERS: Reject werewolves, minotaurs, mythical monsters, or CGI beast creatures when topic is scientific or biological organisms.\n\n"
         f"ACCEPTABLE (Return is_valid=true):\n"
         f"Authentic documentary footage, archival footage, natural landscapes, machinery, scientific apparatus, specimens, space imagery, or relevant historical footage.\n\n"
         f"Return ONLY valid JSON (no markdown):\n"
@@ -248,24 +292,22 @@ def verify_video_frames(
             continue
 
     if resp is None or resp.status_code != 200:
-        return True, "Vision API unavailable; local heuristic checks passed"
+        return False, f"Vision API unavailable (status={getattr(resp, 'status_code', 'none')}). Strictly rejecting candidate to prevent visual slop."
 
     try:
         raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-        import re
-        raw_clean = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.MULTILINE)
-        data = json.loads(raw_clean)
+        data = _parse_vision_json(raw)
         is_valid = bool(data.get("is_valid", False))
         conf = int(data.get("confidence", 0))
         reason = data.get("reject_reason", "")
         if not is_valid:
             print(f"[VisionMatch] Frame verification REJECTED: {reason}")
             return False, reason or "Rejected by vision gate"
-        if conf < 50:
+        if conf < 70:
             print(f"[VisionMatch] Frame verification rejected due to low confidence: {conf}%")
             return False, f"Low visual confidence ({conf}%)"
         print(f"[VisionMatch] Frame verification PASSED: confidence={conf}%")
         return True, "Vision verified"
     except Exception as e:
-        return True, f"JSON parse note: {e}; local checks passed"
+        return False, f"Vision frame verification parse note: {e}. Strictly rejecting unverified clip."
 

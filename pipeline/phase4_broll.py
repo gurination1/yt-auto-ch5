@@ -1565,14 +1565,19 @@ def _image_to_ken_burns_video(img_path: str, out_path: str, w: int, h: int, dura
 
 def _pollinations_image(query: str, img_path: str, w: int = 1080, h: int = 1920) -> bool:
     """Returns True if 4K cinematic stock image was downloaded successfully via Pollinations AI."""
-    # Extract core nouns to avoid overloading URL length while preserving subject entity
-    words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in [
+    banned_words = {
+        "conan", "barbarian", "frankenstein", "godzilla", "monster", "werewolf", "beast",
         "footage", "real", "authentic", "documentary", "megaproject", "construction", "colossal", "machinery"
-    ]]
-    clean_q = " ".join(words[:6]) if words else query[:60]
-    
+    }
+    if query.strip().startswith("4k cinematic"):
+        clean_prompt = query.strip()
+    else:
+        words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in banned_words]
+        clean_q = " ".join(words[:8]) if words else query[:60]
+        clean_prompt = f"4k cinematic documentary photo of {clean_q}, national geographic photography, hyperrealistic, 8k, highly detailed, photorealistic, no text, no watermark, no slides, no humans"
+
     req_w, req_h = (w, h) if (w and h) else (1080, 1920)
-    encoded_prompt = urllib.parse.quote(f"4k cinematic documentary photo of {clean_q}, national geographic photography, hyperrealistic, 8k, highly detailed, photorealistic, no text, no watermark")
+    encoded_prompt = urllib.parse.quote(clean_prompt[:240])
     for model, t_out in [("flux", 25), ("turbo", 15)]:
         try:
             seed = random.randint(1, 100000)
@@ -1848,11 +1853,23 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0, topic
     if is_nature:
         banned_nature = [
             "factory floor", "modern office", "boardroom", "corporate meeting", "traffic jam",
-            "highway driving", "assembly line", "warehouse", "nightclub", "casino", "cryptocurrency"
+            "highway driving", "assembly line", "warehouse", "nightclub", "casino", "cryptocurrency",
+            "soldering", "circuit board", "circuit", "motherboard", "electronics", "technician",
+            "computer repair", "hardware", "software", "programmer", "coding", "keyboard",
+            "camera repair", "cleaning sensor", "hasselblad", "dslr", "workbench", "workshop",
+            "repairman", "mechanic", "car repair", "engine", "welding", "automotive",
+            "werewolf", "monster", "barbarian", "conan", "demon", "warlock"
         ]
         for bad in banned_nature:
             if bad in text_lower:
-                return -200.0
+                return -300.0
+
+        # Bio-anchor check: if query/topic is microscopic/biological, reject mechanical/hardware footage
+        is_bio_micro = any(w in combined_context for w in ["dna", "gene", "protein", "cell", "bacteri", "micro", "organism", "enzyme", "virus"])
+        if is_bio_micro:
+            has_bio_keyword = any(w in text_lower for w in ["dna", "cell", "bacteri", "micro", "organism", "protein", "enzyme", "biolog", "specimen", "nature", "wildlife", "animal"])
+            if not has_bio_keyword:
+                return -250.0
 
     if is_history:
         banned_history = [
@@ -1866,7 +1883,8 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0, topic
     # Extract meaningful subject words (strip generic filler words)
     stop_words = {
         "4k", "1080p", "hd", "footage", "real", "authentic", "cinematic", "video", 
-        "broll", "the", "and", "for", "with", "from", "into", "that", "this", "science", "laboratory"
+        "broll", "the", "and", "for", "with", "from", "into", "that", "this", "science", "laboratory",
+        "repair", "process", "mechanism", "action", "structure", "super", "fast", "like", "they", "tiny"
     }
     query_words = [w.strip(",.?!:;-()\"'").lower() for w in query.split()]
     meaningful_words = [w for w in query_words if len(w) > 2 and w not in stop_words]
@@ -2271,6 +2289,20 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         except Exception:
             pass
 
+    # Ensure any stale credit files from previous attempts are wiped
+    for f_stale in [
+        f"output/broll_{segment_index}_credit.json",
+        f"output/broll_{segment_index}_0_credit.json",
+        f"output/broll_{segment_index}_1_credit.json",
+        f"output/broll_{segment_index}_2_credit.json",
+        f"output/broll_{segment_index}_3_credit.json",
+    ]:
+        if os.path.exists(f_stale):
+            try:
+                os.remove(f_stale)
+            except Exception:
+                pass
+
     def budget_exceeded() -> bool:
         if time.monotonic() <= deadline:
             return False
@@ -2602,10 +2634,12 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             elif match_found is None:
                 print(f"[B-roll] Segment {segment_index}: Vision API unavailable/exhausted. Auditing top-scoring candidates with deep frame inspection...")
                 sorted_cands = sorted(valid_candidates, key=lambda c: c.get("_score", 0.0), reverse=True)
-                trusted_sources = {"NASA", "MBARI", "NOAA", "DVIDS", "Wikimedia"}
-                high_quality_cands = [c for c in sorted_cands if c.get("_score", 0.0) >= 40 or c.get("source") in trusted_sources]
+                trusted_sources = {"NASA", "MBARI", "NOAA", "DVIDS", "Wikimedia", "Wikipedia"}
+                # When Vision API is down, ONLY accept verified institutional archives. NEVER accept commercial stock without vision verification.
+                high_quality_cands = [c for c in sorted_cands if c.get("_score", 0.0) >= 50 and c.get("source") in trusted_sources]
                 if not high_quality_cands:
-                    high_quality_cands = sorted_cands[:3]
+                    print(f"[B-roll] Segment {segment_index}: No trusted institutional archives available while Vision API is down. Skipping unverified commercial stock to prevent mismatches.")
+                    high_quality_cands = []
 
                 for try_idx, chosen in enumerate(high_quality_cands[:3]):
                     if budget_exceeded():
@@ -2795,26 +2829,38 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                             pass
             return out_path
         elif match_found is None and downloaded_results:
-            winner = downloaded_results[0]
-            winner_idx = 0
-            print(f"[B-roll] Segment {segment_index}: Vision API unavailable. Accepting frame-verified video candidate from {winner['label']}...")
-            _image_to_ken_burns_video(winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
-            winner_credit_file = f"output/broll_{segment_index}_{winner_idx}_credit.json"
-            target_credit_file = f"output/broll_{segment_index}_credit.json"
-            if os.path.exists(winner_credit_file):
-                import shutil
-                shutil.copy(winner_credit_file, target_credit_file)
-            if used_urls is not None:
-                used_urls.add(winner["video_url"])
-                used_urls.add(_candidate_fingerprint(winner))
-            for r in downloaded_results:
-                for p in [r["temp_v"], r["temp_f"]]:
-                    if os.path.exists(p):
-                        try:
-                            os.remove(p)
-                        except Exception:
-                            pass
-            return out_path
+            trusted_labels = ["nasa", "mbari", "noaa", "dvids", "wikimedia", "wikipedia", "archive"]
+            trusted_winners = [r for r in downloaded_results if any(tl in r.get("label", "").lower() for tl in trusted_labels)]
+            if trusted_winners:
+                winner = trusted_winners[0]
+                winner_idx = downloaded_results.index(winner)
+                print(f"[B-roll] Segment {segment_index}: Vision API unavailable. Accepting institutional candidate from {winner['label']}...")
+                _image_to_ken_burns_video(winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
+                winner_credit_file = f"output/broll_{segment_index}_{winner_idx}_credit.json"
+                target_credit_file = f"output/broll_{segment_index}_credit.json"
+                if os.path.exists(winner_credit_file):
+                    import shutil
+                    shutil.copy(winner_credit_file, target_credit_file)
+                if used_urls is not None:
+                    used_urls.add(winner["video_url"])
+                    used_urls.add(_candidate_fingerprint(winner))
+                for r in downloaded_results:
+                    for p in [r["temp_v"], r["temp_f"]]:
+                        if os.path.exists(p):
+                            try:
+                                os.remove(p)
+                            except Exception:
+                                pass
+                return out_path
+            else:
+                print(f"[B-roll] Segment {segment_index}: Vision API unavailable and no trusted institutional archives found. Strictly rejecting commercial stock to prevent mismatches. Proceeding to authentic topic stills / Pollinations Flux synthesis.")
+                for r in downloaded_results:
+                    for p in [r["temp_v"], r["temp_f"]]:
+                        if os.path.exists(p):
+                            try:
+                                os.remove(p)
+                            except Exception:
+                                pass
         else:
             print(f"[B-roll] Segment {segment_index}: Vision match strictly rejected all downloaded video candidates. Proceeding to authentic topic stills / Pollinations Flux synthesis.")
             for r in downloaded_results:
@@ -2824,6 +2870,14 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                             os.remove(p)
                         except Exception:
                             pass
+
+    # Ensure stale video credit files are strictly wiped before any image fallback
+    stale_credit_f = f"output/broll_{segment_index}_credit.json"
+    if os.path.exists(stale_credit_f):
+        try:
+            os.remove(stale_credit_f)
+        except Exception:
+            pass
 
     # ── Fallback 2: authentic topic imagery or Pollinations 4K synthesis ─────────────
     print(f"[B-roll] Segment {segment_index}: trying authentic archival image sources and 4K scene synthesis…")
@@ -2842,6 +2896,9 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                             used_urls.add(nasa_img_url)
                         print(f"[B-roll] Segment {segment_index}: Official NASA HD space image secured. Applying Ken Burns…")
                         _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+                        if os.path.exists(stale_credit_f):
+                            try: os.remove(stale_credit_f)
+                            except Exception: pass
                         return out_path
             except Exception as e:
                 print(f"[B-roll] NASA image fetch failed: {e}")
@@ -2850,15 +2907,39 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     if _wikipedia_hd_image(sanitized_q or topic or query, img_path, used_urls=used_urls, topic=topic):
         print(f"[B-roll] Segment {segment_index}: official Wikipedia/Wikimedia HD archival photo secured. Applying Ken Burns 2.5D…")
         _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+        if os.path.exists(stale_credit_f):
+            try: os.remove(stale_credit_f)
+            except Exception: pass
         return out_path
 
     # Fallback 3: Unique Pollinations 4K Photorealistic Scene tailored to exact segment narration
     pollin_query = f"{topic} {narration or query}".strip() if topic else (narration or query)
-    clean_prompt = f"4k cinematic documentary footage of {pollin_query[:100]}, photorealistic, 8k, detailed, national geographic photography, no text, no watermark, no slides"
+    banned_metaphors = [
+        "conan the bacterium", "conan the barbarian", "conan", "frankenstein", "godzilla",
+        "monster", "beast", "werewolf", "tiny warriors", "antidote factory", "secret weapon",
+        "magic bullet", "superhero", "zombie", "alien invader", "vampire"
+    ]
+    sanitized_pollin = pollin_query
+    for b in banned_metaphors:
+        sanitized_pollin = re.sub(r'\b' + re.escape(b) + r'\b', '', sanitized_pollin, flags=re.IGNORECASE)
+    if channel in ["nature", "science"]:
+        sanitized_pollin = re.sub(r'\bbugs?\b', 'microorganisms', sanitized_pollin, flags=re.IGNORECASE)
+    sanitized_pollin = re.sub(r'\s+', ' ', sanitized_pollin).strip()
+
+    if channel == "nature":
+        clean_prompt = f"4k cinematic authentic national geographic macro photography or electron micrograph of {sanitized_pollin[:90]}, biological specimen, wild nature, scientific documentary, hyperrealistic, 8k, highly detailed, photorealistic, no text, no watermark, no slides, no humans"
+    elif channel == "science":
+        clean_prompt = f"4k cinematic scientific photography or scanning electron micrograph of {sanitized_pollin[:90]}, laboratory apparatus, physics, hyperrealistic, 8k, photorealistic, no text, no watermark, no slides, no humans"
+    else:
+        clean_prompt = f"4k cinematic documentary footage of {sanitized_pollin[:90]}, photorealistic, 8k, detailed, national geographic photography, no text, no watermark, no slides"
+
     print(f"[B-roll] Segment {segment_index}: Generating unique Pollinations AI 4K documentary visual...")
     if _pollinations_image(clean_prompt, img_path, w, h):
         print(f"[B-roll] Segment {segment_index}: 4K documentary scene synthesized! Applying Ken Burns motion…")
         _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+        if os.path.exists(stale_credit_f):
+            try: os.remove(stale_credit_f)
+            except Exception: pass
         return out_path
 
     img_sources = []
