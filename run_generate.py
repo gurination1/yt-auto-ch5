@@ -54,27 +54,49 @@ def _video_health_ok(video_path: str) -> tuple[bool, str]:
     return True, f"basic video health passed: {duration:.1f}s, 0s black screen"
 
 
-def _repair_queries(seg: dict, judge_reason: str) -> list[str]:
+def _repair_queries(seg: dict, judge_reason: str, judge_issues: list = None, topic: str = "") -> list[str]:
     base = seg.get("broll_query", "")
     narration = seg.get("narration", "")
     queries: list[str] = []
+
+    # 1. High-precision LLM repair: extract exact physical object/micrograph from critique
+    try:
+        from pipeline.gemini import GeminiClient
+        client = GeminiClient()
+        issues_str = "\n".join(judge_issues) if judge_issues else judge_reason
+        repair_prompt = f"""You are an expert documentary archival researcher repairing a rejected video segment.
+VIDEO TOPIC: "{topic}"
+SEGMENT NARRATION: "{narration}"
+PREVIOUS FAILED B-ROLL QUERY: "{base}"
+JUDGE AI CRITIQUE: "{issues_str}"
+
+Generate 4 CONCRETE, AUTHENTIC DOCUMENTARY search queries (2-4 words each) that directly fix the Judge AI critique and target real-world physical specimens, micrographs, scientific apparatus, or historical archives.
+DO NOT use abstract words or metaphors (NO 'tiny warriors', 'antidote factory', 'quantum leaps all around'). Target exact physical objects visible on camera.
+Return ONLY a JSON list of strings."""
+        resp = client.generate_text(repair_prompt, temperature=0.2)
+        import json, re
+        m = re.search(r'\[.*\]', resp, re.DOTALL)
+        if m:
+            smart_queries = json.loads(m.group(0))
+            if isinstance(smart_queries, list) and smart_queries:
+                for sq in smart_queries:
+                    if isinstance(sq, str) and sq.strip() and sq.strip() not in queries:
+                        queries.append(sq.strip())
+    except Exception as e:
+        print(f"[Judge AI] Smart query repair note: {e}")
+
+    # 2. Add fallback queries
     queries.extend(seg.get("broll_queries") or [])
     for item in [
-        base,
+        f"{topic} {base}",
         f"real footage {base}",
-        f"documentary footage {base}",
-        f"close up {base}",
-        f"macro footage {base}",
-        f"natural world {base}",
-        " ".join(narration.split()[:8]),
+        f"documentary {base}",
+        f"macro {base}",
+        base
     ]:
         item = item.strip()
         if item and item not in queries:
             queries.append(item)
-    if judge_reason:
-        cleaned = " ".join(judge_reason.replace(",", " ").replace(".", " ").split()[:10])
-        if cleaned and cleaned not in queries:
-            queries.append(cleaned)
     return queries
 
 def main():
@@ -284,10 +306,11 @@ def main():
                     except Exception as e:
                         print(f"Warning: Could not remove old B-roll: {e}")
                 
-                repair_queries = _repair_queries(seg, reason)
-                print(f"[Judge AI] Re-fetching Segment {idx} with {len(repair_queries)} repair queries and used_urls...")
+                repair_queries = _repair_queries(seg, reason, judge_issues=review_result.get("issues"), topic=topic.get("topic", ""))
+                primary_query = repair_queries[0] if repair_queries else seg.get("broll_query", "")
+                print(f"[Judge AI] Re-fetching Segment {idx} with primary query '{primary_query}' and {len(repair_queries)} repair queries...")
                 bpath = phase4.fetch_broll(
-                    seg["broll_query"],
+                    primary_query,
                     args.format,
                     idx,
                     duration=dur,

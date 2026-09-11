@@ -1757,24 +1757,30 @@ def _extract_collage_to_file(video_path: str, out_path: str) -> bool:
         return False
 
 
-def _expand_query(query: str, channel: str, n: int = 5) -> list[str]:
+def _expand_query(query: str, channel: str, n: int = 5, narration: str = "", topic: str = "") -> list[str]:
     from pipeline.gemini import _post_with_rotation
     from pipeline.config import GEMINI_API_BASE, GEMINI_FLASH
     try:
+        context_lines = []
+        if topic:
+            context_lines.append(f"Video Topic: '{topic}'")
+        if narration:
+            context_lines.append(f"Segment Narration: '{narration}'")
+        context_str = ("\n" + "\n".join(context_lines) + "\n") if context_lines else ""
         prompt_text = (
-            f"You are a professional video stock researcher. Query: '{query}'. Channel Niche: {channel}.\n"
-            f"Generate {n} SHORT, CONCRETE stock footage search terms (2-4 words maximum).\n"
+            f"You are an expert documentary footage archivist. Base Query: '{query}'. Channel Niche: {channel}.{context_str}\n"
+            f"Generate {n} SHORT, CONCRETE physical search terms (2-4 words maximum) that describe the ACTUAL physical science, machinery, specimen, or setting depicted in this narration.\n"
             f"CRITICAL RULES:\n"
-            f"1. Use ONLY concrete physical objects, settings, or human actions (e.g. 'microscope lab scientist', 'blue ocean coral reef', 'engine piston moving').\n"
-            f"2. NEVER use abstract words like 'concept', 'breakthrough', 'discovery', 'mind-blowing', 'chemical' (alone), 'important'.\n"
-            f"3. Focus on real-world visual symbols, settings, or close-ups that represent '{query}'.\n"
+            f"1. Use ONLY concrete physical objects, scientific apparatus, micrographs, specimens, or camera close-ups (e.g. 'microscope blood cells', 'rattlesnake striking slow motion', 'quantum laser cryostat', 'tunnel boring machine cutterhead').\n"
+            f"2. NEVER use abstract metaphors or symbolic phrases (NO 'tiny warriors', 'antidote factory', 'quantum leaps all around', 'mind-blowing', 'concept').\n"
+            f"3. Focus on real-world visual proof and authentic documentary footage.\n"
             f"Return ONLY a JSON array of strings."
         )
         url = f"{GEMINI_API_BASE}/models/{GEMINI_FLASH}:generateContent?key={{key}}"
         payload = {
             "contents": [{"role": "user", "parts": [{"text": prompt_text}]}],
             "generationConfig": {
-                "temperature": 0.7,
+                "temperature": 0.3,
                 "responseMimeType": "application/json",
             },
         }
@@ -2065,7 +2071,7 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
             if has_pytesseract:
                 try:
                     cfg = f"--oem 1 --psm {psm} -l eng"
-                    return pytesseract.image_to_string(crop_im, config=cfg)
+                    return pytesseract.image_to_string(crop_im, config=cfg, timeout=3)
                 except Exception:
                     pass
             # CLI fallback using tesseract binary directly with a tempfile
@@ -2074,7 +2080,7 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
             try:
                 crop_im.save(tpath, "JPEG", quality=85)
                 cmd = ['tesseract', tpath, 'stdout', '--oem', '1', '--psm', str(psm), '-l', 'eng']
-                res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                res = subprocess.run(cmd, capture_output=True, text=True, timeout=3)
                 return res.stdout or ""
             except Exception:
                 return ""
@@ -2310,7 +2316,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         if q_tri not in queries_to_try: queries_to_try.insert(0, q_tri)
 
     if not budget_exceeded():
-        expanded = _expand_query(sanitized_q or query, channel=channel, n=4)
+        expanded = _expand_query(sanitized_q or query, channel=channel, n=4, narration=narration, topic=topic)
         queries_to_try.extend(expanded)
 
     candidates = []
@@ -2449,10 +2455,37 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     for src in sources:
         print(f"[B-roll] Source '{src}' returned {source_counts[src]} unique candidates.")
 
+    def _candidate_fingerprint(item: dict) -> str:
+        url = str(item.get("video_url", "")).strip()
+        title = str(item.get("title", "")).strip().lower()
+        yt_m = re.search(r'(?:v=|youtu\.be/|shorts/)([a-zA-Z0-9_-]{11})', url)
+        if yt_m:
+            return f"yt:{yt_m.group(1)}"
+        red_m = re.search(r'comments/([a-zA-Z0-9]+)', url)
+        if red_m:
+            return f"reddit:{red_m.group(1)}"
+        pex_m = re.search(r'pexels[^\d]*(\d+)', url)
+        if pex_m:
+            return f"pexels:{pex_m.group(1)}"
+        pix_m = re.search(r'pixabay[^\d]*(\d+)', url)
+        if pix_m:
+            return f"pixabay:{pix_m.group(1)}"
+        if title and len(title) > 8:
+            title_slug = re.sub(r'[^a-z0-9]', '', title)[:30]
+            return f"title:{title_slug}"
+        return url.split("?")[0].rstrip("/")
+
     # Apply de-duplication: filter out candidates that have already been used
     if used_urls:
         original_count = len(candidates)
-        candidates = [c for c in candidates if c["video_url"] not in used_urls]
+        filtered_cands = []
+        for c in candidates:
+            vurl = c.get("video_url", "")
+            fp = _candidate_fingerprint(c)
+            if vurl in used_urls or fp in used_urls:
+                continue
+            filtered_cands.append(c)
+        candidates = filtered_cands
         if len(candidates) < original_count:
             print(f"[B-roll] De-duplicated candidates: filtered out {original_count - len(candidates)} already used clips.")
 
@@ -2555,6 +2588,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                         # Frame inspection passed!
                         if used_urls is not None:
                             used_urls.add(chosen["video_url"])
+                            used_urls.add(_candidate_fingerprint(chosen))
                         print(f"[B-roll] Candidate {try_idx} VERIFIED frame-by-frame! Normalizing into assembly format...")
                         _image_to_ken_burns_video(temp_video_path, out_path, w, h, duration, niche=channel, caption="")
                         if os.path.exists(temp_video_path):
@@ -2591,6 +2625,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
                         if used_urls is not None:
                             used_urls.add(chosen["video_url"])
+                            used_urls.add(_candidate_fingerprint(chosen))
                         print(f"[B-roll] Heuristic candidate {try_idx} VERIFIED frame-by-frame! Normalizing into assembly format...")
                         _image_to_ken_burns_video(temp_video_path, out_path, w, h, duration, niche=channel, caption="")
                         if os.path.exists(temp_video_path):
@@ -2748,6 +2783,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
             if used_urls is not None:
                 used_urls.add(winner["video_url"])
+                used_urls.add(_candidate_fingerprint(winner))
                 
             # Clean up temporary video files
             for r in downloaded_results:
@@ -2770,6 +2806,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                 shutil.copy(winner_credit_file, target_credit_file)
             if used_urls is not None:
                 used_urls.add(winner["video_url"])
+                used_urls.add(_candidate_fingerprint(winner))
             for r in downloaded_results:
                 for p in [r["temp_v"], r["temp_f"]]:
                     if os.path.exists(p):

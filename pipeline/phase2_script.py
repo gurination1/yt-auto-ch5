@@ -122,9 +122,17 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
     - History: ancient siege catapult, Roman ballista firing, unearthed bronze sword, archaeological excavation.
     - Mystery: ocean floor sonar bathymetry, radar satellite scan, LIDAR jungle ruins, deep cave bore hole.
     - Megaprojects: tunnel boring machine cutterhead, concrete batching plant, hydraulic spillway discharge, giant crawler crane.
-  * ABSOLUTELY FORBIDDEN IN B-ROLL QUERIES:
-    - NEVER include words: "animation", "simulation", "concept", "visualization", "fantasy", "cgi", "cartoon", "illustration", "3d model", "futuristic", "diagram".
-    - Queries must target physical real-world documentary footage.
+    - Business: container cargo ship port, semiconductor cleanroom fabrication, bulk commodity trading floor, cargo aircraft loading.
+  * STRICT NO-METAPHOR VISUAL RULE (CRITICAL FOR VIRAL QUALITY):
+    - NEVER use metaphorical language, idioms, or abstract analogies in 'broll_query' or 'broll_queries'.
+    - ABSOLUTELY FORBIDDEN IN B-ROLL QUERIES:
+      * NEVER write queries like 'tiny warriors', 'antidote factory', 'quantum leaps all around us', 'weird spots inside Earth', 'dark mystery', 'mind blowing', 'secret weapon'.
+      * NEVER include words: "animation", "simulation", "concept", "visualization", "fantasy", "cgi", "cartoon", "illustration", "3d model", "futuristic", "diagram".
+    - REQUIRED: Every segment MUST specify the CONCRETE, OBSERVABLE physical entity being discussed:
+      * If narration says "These tiny warriors smash venom apart" -> broll_query MUST BE: "rattlesnake blood antibodies microscope" or "antivenom protein reaction lab".
+      * If narration says "quantum leaps happening all around us" -> broll_query MUST BE: "quantum laser cryostat optical table" or "silicon wafer cleanroom photolithography".
+      * If narration says "weird spots inside Earth" -> broll_query MUST BE: "earth mantle core boundary seismic scan" or "geological high pressure diamond anvil".
+      * If narration says "supply chain choke point" -> broll_query MUST BE: "container cargo ship suez canal" or "malacca strait bulk carrier tanker".
 
 You MUST return your response ONLY as a raw JSON object with no markdown syntax. The JSON structure MUST be exactly like this:
 {{
