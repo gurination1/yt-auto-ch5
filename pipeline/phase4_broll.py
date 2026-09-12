@@ -4,10 +4,21 @@ import re
 import random
 import requests
 
+BANNED_IMAGE_PATTERNS = [
+    "diagram", "drawing", "chart", "graph", "formula", "symbol", "icon", "logo", "flag",
+    "schematic", "sketch", "map_", "plan_", "table", "plot", "spectrum", "curves",
+    "render_3d_arrow", "arrows", "vector", "infographic", "illustration", "cartoon",
+    "locator_map", "location_map", "blank", "phylogen", "cladogram", "taxonomy",
+    "classification", "tree", "pterygota", "neoptera", "paleoptera", "hierarchy",
+    "structure", "systematics", "evolutionary", "schema", "graphical", "poster",
+    "infograph", "slide", "presentation", "figure_", "fig_", "plate_", "model_"
+]
+
 def _validate_and_normalize_image(img_path: str) -> bool:
     """Validates image with PIL, converts to standard 8-bit RGB JPEG, caps dimensions to 2560px, returns True if valid."""
     try:
         from PIL import Image
+        import numpy as np
         if not os.path.exists(img_path) or os.path.getsize(img_path) < 1000:
             return False
         with Image.open(img_path) as im:
@@ -18,6 +29,33 @@ def _validate_and_normalize_image(img_path: str) -> bool:
             if max(w, h) > 2560:
                 scale = 2560 / max(w, h)
                 im = im.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
+
+            # 1. Pitch-black / blank screen rejection
+            gray = np.array(im.convert("L"))
+            ch, cw = gray.shape
+            center_crop = gray[int(ch*0.25):int(ch*0.75), int(cw*0.15):int(cw*0.85)]
+            if float(np.mean(center_crop)) < 18.0:
+                print(f"[B-roll] Image rejected as pitch black / dark placeholder (center mean={float(np.mean(center_crop)):.1f}).")
+                return False
+
+            # 2. Scientific diagram, cladogram, circuit schematic, chart, and slide rejection
+            arr = np.array(im)
+            r, g, b = arr[:, :, 0].astype(int), arr[:, :, 1].astype(int), arr[:, :, 2].astype(int)
+            is_paper = (r > 170) & (g > 170) & (b > 170) & (np.maximum(np.maximum(r, g), b) - np.minimum(np.minimum(r, g), b) < 20)
+            paper_ratio = float(np.mean(is_paper))
+            if paper_ratio > 0.35:
+                try:
+                    import pytesseract
+                    txt = pytesseract.image_to_string(im).lower()
+                    words = re.findall(r'\b[a-z]{3,}\b', txt)
+                    if len(words) >= 3 or paper_ratio > 0.65:
+                        print(f"[B-roll] Image rejected as scientific diagram/paper slide (paper_ratio={paper_ratio:.1%}, words={len(words)}).")
+                        return False
+                except Exception:
+                    if paper_ratio > 0.60:
+                        print(f"[B-roll] Image rejected as scientific diagram/white plate (paper_ratio={paper_ratio:.1%}).")
+                        return False
+
             im.save(img_path, "JPEG", quality=95)
         return True
     except Exception as e:
@@ -58,12 +96,6 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
 
         headers = {"User-Agent": "yt-auto-fleet/2.0 (educational-video-pipeline; mailto:contact@gurination.com)"}
 
-        BANNED_IMAGE_PATTERNS = [
-            "diagram", "drawing", "chart", "graph", "formula", "symbol", "icon", "logo", "flag",
-            "schematic", "sketch", "map_", "plan_", "table", "plot", "spectrum", "curves",
-            "render_3d_arrow", "arrows", "vector", "infographic", "illustration", "cartoon",
-            "locator_map", "location_map", "blank"
-        ]
 
         def _is_valid_image(url: str, title: str = "") -> bool:
             if not url or not url.startswith("http"):
@@ -749,7 +781,10 @@ def _wikimedia_image(query: str, used_urls: set[str] | None = None) -> str | Non
                     ii = ii_list[0]
                     mime = ii.get("mime", "")
                     if "image" in mime and not mime.endswith("svg+xml"):
+                        title = pdata.get("title", "").lower()
                         thumb = ii.get("thumburl") or ii.get("url")
+                        if any(p in title or (thumb and p in thumb.lower()) for p in BANNED_IMAGE_PATTERNS):
+                            continue
                         if thumb and (used_urls is None or thumb not in used_urls):
                             return thumb
     except Exception as e:

@@ -303,13 +303,13 @@ def main():
                 seg = script["segments"][idx]
                 dur = tts_durations[idx] if tts_durations else 6.0
                 
-                # Delete existing failed broll to ensure we generate a new one
-                old_broll = f"output/broll_{idx}.mp4"
-                if os.path.exists(old_broll):
-                    try:
-                        os.remove(old_broll)
-                    except Exception as e:
-                        print(f"Warning: Could not remove old B-roll: {e}")
+                # Delete existing failed broll files to ensure a fresh clip is sourced
+                for f_old in [f"output/broll_{idx}.mp4", f"output/broll_{idx}.jpg", f"output/broll_{idx}_normalized.mp4"]:
+                    if os.path.exists(f_old):
+                        try:
+                            os.remove(f_old)
+                        except Exception:
+                            pass
                 
                 repair_queries = _repair_queries(seg, reason, judge_issues=review_result.get("issues"), topic=topic.get("topic", ""))
                 primary_query = repair_queries[0] if repair_queries else seg.get("broll_query", "")
