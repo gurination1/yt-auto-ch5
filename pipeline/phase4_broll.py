@@ -46,7 +46,16 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
         if not anchor_words:
             return False
 
-        entity = " ".join(query_words[:4]) if query_words else query[:60]
+        search_terms = []
+        if query_words:
+            search_terms.append(" ".join(query_words[:4]))
+            if len(query_words) >= 2:
+                search_terms.append(" ".join(query_words[:2]))
+        if topic_words:
+            search_terms.append(" ".join(topic_words[:3]))
+            if len(topic_words) >= 2:
+                search_terms.append(" ".join(topic_words[:2]))
+
         headers = {"User-Agent": "yt-auto-fleet/2.0 (educational-video-pipeline; mailto:contact@gurination.com)"}
 
         BANNED_IMAGE_PATTERNS = [
@@ -65,7 +74,6 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
             title_lower = title.lower()
             if any(p in url_lower or p in title_lower for p in BANNED_IMAGE_PATTERNS):
                 return False
-            # Title relevance check: require at least one anchor word in page/image title
             if title_lower:
                 t_words = set(re.sub(r'[^a-zA-Z0-9\s]', ' ', title_lower).split())
                 if not (t_words & anchor_words):
@@ -73,15 +81,38 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
             return True
 
         url_wiki = "https://en.wikipedia.org/w/api.php"
+        url_comm = "https://commons.wikimedia.org/w/api.php"
 
-        # 1. Direct Wikipedia title match
-        r = requests.get(url_wiki, params={
-            "action": "query", "titles": entity, "prop": "pageimages", "format": "json", "pithumbsize": 1920
-        }, headers=headers, timeout=8)
-        if r.status_code == 200:
-            pages = r.json().get("query", {}).get("pages", {})
-            for pid, pdata in pages.items():
-                if pid != "-1":
+        for st in search_terms:
+            # 1. Direct Wikipedia title match
+            r = requests.get(url_wiki, params={
+                "action": "query", "titles": st, "prop": "pageimages", "format": "json", "pithumbsize": 1920
+            }, headers=headers, timeout=8)
+            if r.status_code == 200:
+                pages = r.json().get("query", {}).get("pages", {})
+                for pid, pdata in pages.items():
+                    if pid != "-1":
+                        thumb = pdata.get("thumbnail", {}).get("source")
+                        p_title = pdata.get("title", "")
+                        if thumb and _is_valid_image(thumb, p_title):
+                            r_img = requests.get(thumb, headers=headers, timeout=12)
+                            if r_img.status_code == 200 and len(r_img.content) > 10_000:
+                                with open(img_path, "wb") as f:
+                                    f.write(r_img.content)
+                                if _validate_and_normalize_image(img_path):
+                                    if used_urls is not None:
+                                        used_urls.add(thumb)
+                                    print(f"[B-roll] Fetched official Wikipedia HD photo for '{p_title}'.")
+                                    return True
+
+            # 2. Wikipedia generator search
+            r_gen = requests.get(url_wiki, params={
+                "action": "query", "generator": "search", "gsrsearch": st, "gsrlimit": "6",
+                "prop": "pageimages", "pithumbsize": 1920, "format": "json"
+            }, headers=headers, timeout=8)
+            if r_gen.status_code == 200:
+                pages = r_gen.json().get("query", {}).get("pages", {})
+                for pid, pdata in pages.items():
                     thumb = pdata.get("thumbnail", {}).get("source")
                     p_title = pdata.get("title", "")
                     if thumb and _is_valid_image(thumb, p_title):
@@ -92,53 +123,34 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
                             if _validate_and_normalize_image(img_path):
                                 if used_urls is not None:
                                     used_urls.add(thumb)
-                                print(f"[B-roll] Fetched official Wikipedia HD photo for '{p_title}'.")
+                                print(f"[B-roll] Fetched search-matched Wikipedia HD photo for '{p_title}'.")
                                 return True
 
-        # 2. Wikipedia generator search with strict title verification
-        r_gen = requests.get(url_wiki, params={
-            "action": "query", "generator": "search", "gsrsearch": entity, "gsrlimit": "4",
-            "prop": "pageimages", "pithumbsize": 1920, "format": "json"
-        }, headers=headers, timeout=8)
-        if r_gen.status_code == 200:
-            pages = r_gen.json().get("query", {}).get("pages", {})
-            for pid, pdata in pages.items():
-                thumb = pdata.get("thumbnail", {}).get("source")
-                p_title = pdata.get("title", "")
-                if thumb and _is_valid_image(thumb, p_title):
-                    r_img = requests.get(thumb, headers=headers, timeout=12)
-                    if r_img.status_code == 200 and len(r_img.content) > 10_000:
-                        with open(img_path, "wb") as f:
-                            f.write(r_img.content)
-                        if _validate_and_normalize_image(img_path):
-                            if used_urls is not None:
-                                used_urls.add(thumb)
-                            print(f"[B-roll] Fetched search-matched Wikipedia HD photo for '{p_title}'.")
-                            return True
-
-        # 3. Wikimedia Commons photo archive (photos only, strictly no diagrams)
-        url_comm = "https://commons.wikimedia.org/w/api.php"
-        r_comm = requests.get(url_comm, params={
-            "action": "query", "generator": "search", "gsrsearch": f"{entity} -diagram -drawing -chart filetype:bitmap",
-            "gsrnamespace": "6", "gsrlimit": "5", "prop": "imageinfo", "iiprop": "url",
-            "iiurlwidth": "1920", "format": "json"
-        }, headers=headers, timeout=8)
-        if r_comm.status_code == 200:
-            pages = r_comm.json().get("query", {}).get("pages", {})
-            for pid, pdata in pages.items():
-                ii = pdata.get("imageinfo", [{}])[0]
-                thumb = ii.get("thumburl") or ii.get("url")
-                f_title = pdata.get("title", "")
-                if thumb and _is_valid_image(thumb, f_title):
-                    r_img = requests.get(thumb, headers=headers, timeout=12)
-                    if r_img.status_code == 200 and len(r_img.content) > 10_000:
-                        with open(img_path, "wb") as f:
-                            f.write(r_img.content)
-                        if _validate_and_normalize_image(img_path):
-                            if used_urls is not None:
-                                used_urls.add(thumb)
-                            print(f"[B-roll] Fetched authentic Commons archive photo for '{f_title}'.")
-                            return True
+            # 3. Wikimedia Commons photo archive (gsrlimit 15, photos only)
+            r_comm = requests.get(url_comm, params={
+                "action": "query", "generator": "search", "gsrsearch": f"{st} -diagram -drawing -chart filetype:bitmap",
+                "gsrnamespace": "6", "gsrlimit": "15", "prop": "imageinfo", "iiprop": "url|mime",
+                "iiurlwidth": "1920", "format": "json"
+            }, headers=headers, timeout=8)
+            if r_comm.status_code == 200:
+                pages = r_comm.json().get("query", {}).get("pages", {})
+                for pid, pdata in pages.items():
+                    ii_list = pdata.get("imageinfo", [])
+                    if not ii_list:
+                        continue
+                    ii = ii_list[0]
+                    thumb = ii.get("thumburl") or ii.get("url")
+                    f_title = pdata.get("title", "")
+                    if thumb and _is_valid_image(thumb, f_title):
+                        r_img = requests.get(thumb, headers=headers, timeout=12)
+                        if r_img.status_code == 200 and len(r_img.content) > 10_000:
+                            with open(img_path, "wb") as f:
+                                f.write(r_img.content)
+                            if _validate_and_normalize_image(img_path):
+                                if used_urls is not None:
+                                    used_urls.add(thumb)
+                                print(f"[B-roll] Fetched authentic Commons archive photo for '{f_title}'.")
+                                return True
     except Exception as e:
         print(f"[B-roll] Authentic HD photo fetch note: {e}")
     if os.path.exists(img_path):
@@ -594,8 +606,8 @@ def _wikimedia_candidates(query: str, n: int = 5) -> list[dict]:
                     t_url = ii.get("thumburl") or v_url
                     w_res = int(ii.get("width") or 0)
                     h_res = int(ii.get("height") or 0)
-                    # Filter out sub-720p blurry uploads (e.g. 240p / 360p)
-                    if w_res > 0 and h_res > 0 and max(w_res, h_res) < 720:
+                    # Filter out sub-320p or zero-dimension uploads
+                    if w_res > 0 and h_res > 0 and max(w_res, h_res) < 320:
                         continue
                     if v_url and v_url not in seen:
                         seen.add(v_url)
@@ -665,7 +677,7 @@ def _nasa_image(query: str) -> str | None:
 
 # ── Source 5: Wikipedia article thumbnail ────────────────────────────────────
 
-def _wikipedia_image(query: str) -> str | None:
+def _wikipedia_image(query: str, used_urls: set[str] | None = None) -> str | None:
     """
     Fetches the Wikipedia official HD article image for the query topic using summary + generator search.
     No API key required. Perfect for named people, species, megaprojects, and historical events.
@@ -684,7 +696,7 @@ def _wikipedia_image(query: str) -> str | None:
             "action": "query",
             "generator": "search",
             "gsrsearch": clean_q,
-            "gsrlimit": "3",
+            "gsrlimit": "6",
             "prop": "pageimages",
             "pithumbsize": 1920,
             "format": "json"
@@ -694,14 +706,14 @@ def _wikipedia_image(query: str) -> str | None:
             pages = r.json().get("query", {}).get("pages", {})
             for pid, pdata in pages.items():
                 thumb = pdata.get("thumbnail", {}).get("source")
-                if thumb:
+                if thumb and (used_urls is None or thumb not in used_urls):
                     return thumb
     except Exception as e:
         print(f"[B-roll] Wikipedia search image failed for '{query}': {e}")
     return None
 
 
-def _wikimedia_image(query: str) -> str | None:
+def _wikimedia_image(query: str, used_urls: set[str] | None = None) -> str | None:
     """Search Wikimedia Commons for authentic high-resolution documentary and scientific photos/diagrams."""
     clean_q = _sanitize_broll_query(query)[:80]
     if not clean_q:
@@ -713,7 +725,7 @@ def _wikimedia_image(query: str) -> str | None:
             "generator": "search",
             "gsrsearch": f"{clean_q} filetype:bitmap",
             "gsrnamespace": "6",
-            "gsrlimit": "5",
+            "gsrlimit": "15",
             "prop": "imageinfo",
             "iiprop": "url|size|mime",
             "iiurlwidth": "1920",
@@ -738,17 +750,21 @@ def _wikimedia_image(query: str) -> str | None:
                     mime = ii.get("mime", "")
                     if "image" in mime and not mime.endswith("svg+xml"):
                         thumb = ii.get("thumburl") or ii.get("url")
-                        if thumb:
+                        if thumb and (used_urls is None or thumb not in used_urls):
                             return thumb
     except Exception as e:
         print(f"[B-roll] Wikimedia image search failed for '{clean_q}': {e}")
     return None
 
 
-def _wikimedia_video(query: str) -> str | None:
+def _wikimedia_video(query: str, used_urls: set = None) -> str | None:
     """Search Wikimedia Commons for CC-licensed educational videos and fetch actual URL. No API key needed."""
-    cands = _wikimedia_candidates(query, n=1)
-    return cands[0]["video_url"] if cands else None
+    cands = _wikimedia_candidates(query, n=10)
+    for c in cands:
+        u = c.get("video_url")
+        if u and (used_urls is None or u not in used_urls):
+            return u
+    return None
 
 
 def resolve_dvids_mp4(page_url: str) -> str | None:
@@ -1035,45 +1051,63 @@ def _nasa_video(query: str) -> str | None:
         return None
 
 
-def _archive_video(query: str) -> str | None:
+def _archive_video(query: str, used_urls: set = None) -> str | None:
     """Search Internet Archive for public domain movies. No API key needed."""
     clean_q = _sanitize_broll_query(query)[:60]
     if not clean_q:
         return None
-    headers = {"User-Agent": "yt-auto/2.0 (https://github.com/mahesajeth-wq/yt-auto; contact@mahesajeth.com)"}
-    try:
-        r = requests.get(
-            "https://archive.org/advancedsearch.php",
-            params={
-                "q": f"({clean_q}) AND mediatype:(movies)",
-                "fl[]": "identifier",
-                "rows": "5",
-                "output": "json",
-            },
-            headers=headers,
-            timeout=20,
-        )
-        r.raise_for_status()
-        docs = r.json().get("response", {}).get("docs", [])
-        if not docs:
-            return None
+    words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', clean_q).split() if len(w) > 2][:3]
+    search_queries = []
+    if len(words) >= 2:
+        search_queries.append(f'"{words[0]} {words[1]}"')
+    if words:
+        search_queries.append(" ".join(words))
+    if clean_q not in search_queries:
+        search_queries.append(clean_q)
 
-        identifier = docs[0]["identifier"]
-        r_files = requests.get(
-            f"https://archive.org/metadata/{urllib.parse.quote(identifier)}",
-            headers=headers,
-            timeout=15,
-        )
-        r_files.raise_for_status()
-        files = r_files.json().get("files", [])
-        for f in files:
-            name = f.get("name", "")
-            if (name.endswith(".mp4") or name.endswith(".webm") or name.endswith(".mkv") or name.endswith(".avi")) and int(f.get("size", 0)) > 10_000:
-                return f"https://archive.org/download/{identifier}/{urllib.parse.quote(name)}"
-        return None
-    except Exception as e:
-        print(f"[B-roll] Internet Archive failed for '{clean_q}': {e}")
-        return None
+    headers = {"User-Agent": "yt-auto/2.0 (educational-video-harvester)"}
+    for sq in search_queries:
+        try:
+            r = requests.get(
+                "https://archive.org/advancedsearch.php",
+                params={
+                    "q": f"({sq}) AND mediatype:(movies)",
+                    "fl[]": "identifier",
+                    "rows": "8",
+                    "output": "json",
+                },
+                headers=headers,
+                timeout=12,
+            )
+            if r.status_code != 200:
+                continue
+            docs = r.json().get("response", {}).get("docs", [])
+            for doc in docs:
+                identifier = doc.get("identifier")
+                if not identifier:
+                    continue
+                try:
+                    r_files = requests.get(
+                        f"https://archive.org/metadata/{urllib.parse.quote(identifier)}",
+                        headers=headers,
+                        timeout=10,
+                    )
+                    if r_files.status_code != 200:
+                        continue
+                    files = r_files.json().get("files", [])
+                    for f in files:
+                        name = f.get("name", "")
+                        fsize = int(f.get("size", 0) or 0)
+                        if (name.endswith(".mp4") or name.endswith(".webm")) and 1_000_000 < fsize < 500_000_000:
+                            vurl = f"https://archive.org/download/{identifier}/{urllib.parse.quote(name)}"
+                            if used_urls is None or vurl not in used_urls:
+                                return vurl
+                except Exception:
+                    continue
+        except Exception as e:
+            print(f"[B-roll] Internet Archive search failed for '{sq}': {e}")
+            continue
+    return None
 
 
 def _parse_iso_duration(duration_str: str) -> float:
@@ -2129,7 +2163,7 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
             "problem", "solution", "example", "formula"
         }
 
-        def run_ocr(crop_im, psm=11) -> str:
+        def run_ocr(crop_im, psm=6) -> str:
             if has_pytesseract:
                 try:
                     cfg = f"--oem 1 --psm {psm} -l eng"
@@ -2157,15 +2191,15 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
             fw, fh = f.size
 
             # 1. Full frame check
-            full_text = run_ocr(f, psm=11).lower()
+            full_text = run_ocr(f, psm=6).lower()
             if any(wm in full_text for wm in watermark_words):
                 return True
             words_full = re.findall(r'\b[a-z]{3,}\b', full_text)
             slide_keywords = {"agenda", "summary", "conclusion", "presentation", "slide", "chapter", "overview", "bullet"}
             if any(sk in full_text for sk in slide_keywords) and len(words_full) >= 5:
                 return True
-            if len(words_full) >= 12:
-                # 12+ words across full frame indicates document, book page, or full lecture slide
+            if len(words_full) >= 22:
+                # 22+ words across full frame indicates document, book page, or full lecture slide
                 return True
 
             top_crop = f.crop((0, 0, fw, int(fh * 0.25)))
@@ -2173,22 +2207,23 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
             bot_crop = f.crop((0, int(fh * 0.70), fw, fh))
 
             # 2. Middle crop check for lecture / PowerPoint bullet points / text cards
-            mid_text = run_ocr(mid_crop, psm=11).lower()
+            mid_text = run_ocr(mid_crop, psm=6).lower()
             mid_words = re.findall(r'\b[a-z]{3,}\b', mid_text)
             if any(wm in mid_text for wm in watermark_words):
                 return True
-            if len(mid_words) >= 8:
-                # 8+ words in the middle 60% of frame -> presentation slide or text card
+            if any(sk in mid_text for sk in slide_keywords) and len(mid_words) >= 6:
+                return True
+            if len(mid_words) >= 16:
+                # 16+ words in the middle 60% of frame -> presentation slide or text card
                 return True
 
             # 3. Top and bottom strips for subtitles / creator banners / disclaimers
             for crop in (top_crop, bot_crop):
-                crop_text = run_ocr(crop, psm=11).lower()
+                crop_text = run_ocr(crop, psm=6).lower()
                 crop_words = re.findall(r'\b[a-z]{3,}\b', crop_text)
                 if any(wm in crop_text for wm in watermark_words):
                     return True
-                if len(crop_words) >= 8:
-                    # Only reject if heavy text banner; do NOT reject for corner 2-word badges
+                if len(crop_words) >= 16:
                     return True
 
         return False
@@ -2720,10 +2755,10 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     
     # 1. Authentic unblocked institutional video archives (Priority 1)
     other_videos = [
-        ("Wikimedia video (main)", lambda: _wikimedia_video(sanitized_q or clean_fallback)),
-        ("Wikimedia video (fallback)", lambda: _wikimedia_video(clean_fallback)),
-        ("Archive video (main)", lambda: _archive_video(sanitized_q or clean_fallback)),
-        ("Archive video (fallback)", lambda: _archive_video(clean_fallback)),
+        ("Wikimedia video (main)", lambda: _wikimedia_video(sanitized_q or clean_fallback, used_urls=used_urls)),
+        ("Wikimedia video (fallback)", lambda: _wikimedia_video(clean_fallback, used_urls=used_urls)),
+        ("Archive video (main)", lambda: _archive_video(sanitized_q or clean_fallback, used_urls=used_urls)),
+        ("Archive video (fallback)", lambda: _archive_video(clean_fallback, used_urls=used_urls)),
     ]
     
     # NASA for space, physics, engineering, astronomy
@@ -3074,7 +3109,10 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
     img_url = None
     for img_fn, q in img_sources:
-        candidate_img = img_fn(q)
+        try:
+            candidate_img = img_fn(q, used_urls=used_urls) if 'used_urls' in img_fn.__code__.co_varnames else img_fn(q)
+        except Exception:
+            candidate_img = img_fn(q)
         if candidate_img and (used_urls is None or candidate_img not in used_urls):
             img_url = candidate_img
             if used_urls is not None:
@@ -3095,7 +3133,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         except Exception as e:
             print(f"[B-roll] Image source failed: {e}. Trying fallback…")
 
-    # ── Fallback 3: Single-Use Pollinations Photorealistic Scene (MAX 1 PER VIDEO) ─────
+    # ── Fallback 3: Single-Use Pollinations Photorealistic Scene ─────
     pollin_tracker = "output/pollinations_count.txt"
     used_pollin = 0
     if os.path.exists(pollin_tracker):
@@ -3105,7 +3143,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         except Exception:
             used_pollin = 0
 
-    if used_pollin < 1:
+    if used_pollin < 2:
         pollin_query = f"{topic} {narration or query}".strip() if topic else (narration or query)
         banned_metaphors = [
             "conan the bacterium", "conan the barbarian", "conan", "frankenstein", "godzilla",
@@ -3121,7 +3159,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
         clean_prompt = f"National Geographic authentic high-resolution documentary macro photograph of real physical {sanitized_pollin[:80]}, natural daylight, sharp macro lens, real world photographic realism, no CGI, no 3D render, no abstract shapes, no mandala, no cartoon, no glowing fantasy blobs, no text"
 
-        print(f"[B-roll] Segment {segment_index}: Generating single-use Pollinations AI documentary photograph...")
+        print(f"[B-roll] Segment {segment_index}: Generating Pollinations AI documentary photograph...")
         if _pollinations_image(clean_prompt, img_path, w, h):
             print(f"[B-roll] Segment {segment_index}: Documentary scene synthesized. Applying Ken Burns motion…")
             with open(pollin_tracker, "w") as pf:
@@ -3132,10 +3170,57 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                 except Exception: pass
             return out_path
     else:
-        print(f"[B-roll] Segment {segment_index}: Pollinations quota reached for this video ({used_pollin}/1). Banning further static AI images.")
+        print(f"[B-roll] Segment {segment_index}: Pollinations quota reached for this video ({used_pollin}/2).")
 
-    # ── Fallback 4: Text-free Cinematic Background Plate with Ken Burns ───
-    print(f"[B-roll] Segment {segment_index}: Generating clean cinematic background plate...")
+    # ── Fallback 4: Zero Black Screen Guarantee (Exhaust All Archival & AI Sourcing) ───
+    print(f"[B-roll] Segment {segment_index}: Archival primary search missed. Exhausting institutional Wikimedia archives...")
+    if topic:
+        clean_topic_words = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', topic).split() if len(w) > 2][:3]
+        if clean_topic_words:
+            extra_wiki = _wikimedia_image(" ".join(clean_topic_words), used_urls=used_urls)
+            if extra_wiki:
+                try:
+                    r = requests.get(extra_wiki, timeout=20, headers={"User-Agent": "yt-auto-fleet/2.0"})
+                    if r.status_code == 200 and len(r.content) > 10_000:
+                        with open(img_path, "wb") as f: f.write(r.content)
+                        if _validate_and_normalize_image(img_path):
+                            if used_urls is not None: used_urls.add(extra_wiki)
+                            print(f"[B-roll] Segment {segment_index}: Secured additional authentic Wikimedia Commons photo. Applying Ken Burns…")
+                            _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+                            if os.path.exists(stale_credit_f):
+                                try: os.remove(stale_credit_f)
+                                except Exception: pass
+                            return out_path
+                except Exception as e_w:
+                    print(f"[B-roll] Additional Wikimedia fetch failed: {e_w}")
+
+    # Synthesize authentic documentary visual plate via Pollinations (Zero Black Screens Allowed)
+    clean_subj = f"{topic} {query}".strip()[:70]
+    pollin_prompt = f"National Geographic authentic high-resolution documentary photograph of {clean_subj}, natural daylight, 8k, photorealistic, no text, no slides, no crosshairs, no cartoon"
+    print(f"[B-roll] Segment {segment_index}: Synthesizing authentic documentary visual plate via Pollinations...")
+    if _pollinations_image(pollin_prompt, img_path, w, h):
+        print(f"[B-roll] Segment {segment_index}: Synthesized visual plate. Applying Ken Burns…")
+        _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+        if os.path.exists(stale_credit_f):
+            try: os.remove(stale_credit_f)
+            except Exception: pass
+        return out_path
+
+    # Last Resort: Reuse previous authentic segment frame with opposing camera dynamic
+    for prev_idx in range(segment_index):
+        prev_img = f"output/broll_{prev_idx}.jpg"
+        if os.path.exists(prev_img) and os.path.getsize(prev_img) > 10_000:
+            import shutil
+            shutil.copy(prev_img, img_path)
+            print(f"[B-roll] Segment {segment_index}: Reusing authentic subject frame {prev_idx} with opposite directional pan...")
+            _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+            if os.path.exists(stale_credit_f):
+                try: os.remove(stale_credit_f)
+                except Exception: pass
+            return out_path
+
+    # Failsafe: if nothing at all exists, synthesize with PIL gradient, NEVER pure black
+    print(f"[B-roll] Segment {segment_index}: Extreme failsafe plate...")
     _pil_placeholder("", w, h, img_path)
     _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
     return out_path

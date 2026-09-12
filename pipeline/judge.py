@@ -228,7 +228,43 @@ class JudgeClient:
             bd_proc = subprocess.run(bd_cmd, capture_output=True, text=True)
             if "black_start" in bd_proc.stderr:
                 print("[Judge AI] Local health check detected black frames!")
-                return {"score": 40, "status": "REJECTED", "reason": "Black frames detected by local scanner", "failed_segments": [0]}
+                return {"score": 30, "status": "REJECTED", "reason": "Black frames detected by local scanner", "failed_segments": [0, 1]}
+
+            # Deep center-crop luminance check across 4 sample frames to catch dark placeholder/crosshair plates
+            import numpy as np
+            from PIL import Image
+            black_detected = False
+            for ts_f in [0.25, 0.50, 0.75]:
+                sample_t = max(0.5, dur * ts_f)
+                temp_frame = f"output/health_check_frame_{ts_f}.jpg"
+                cmd_f = ["ffmpeg", "-y", "-ss", f"{sample_t:.2f}", "-i", video_path, "-vframes", "1", "-q:v", "2", temp_frame]
+                subprocess.run(cmd_f, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+                if os.path.exists(temp_frame):
+                    try:
+                        with Image.open(temp_frame) as im:
+                            gray = np.array(im.convert("L"))
+                            ch, cw = gray.shape
+                            center_crop = gray[int(ch*0.25):int(ch*0.75), int(cw*0.15):int(cw*0.85)]
+                            mean_center = float(np.mean(center_crop))
+                            if mean_center < 18.0:
+                                black_detected = True
+                                print(f"[Judge AI] Frame at t={sample_t:.1f}s is pitch black / dark placeholder (center mean={mean_center:.1f})!")
+                    except Exception:
+                        pass
+                    finally:
+                        if os.path.exists(temp_frame):
+                            try: os.remove(temp_frame)
+                            except Exception: pass
+                if black_detected:
+                    break
+
+            if black_detected:
+                return {
+                    "score": 30,
+                    "status": "REJECTED",
+                    "reason": "Pitch black or blank placeholder screen detected in video.",
+                    "failed_segments": [0, 1, 2, 3]
+                }
             
             print(f"[Judge AI] Multimodal AI check was unavailable ({last_error}). Format verification OK (duration: {dur:.2f}s), but strictly REJECTING automated publishing to prevent unverified visual slop.")
             return {
@@ -279,11 +315,15 @@ Please watch the video and evaluate it against these rubrics:
    - REJECT ANY video where segments consist of static 2D AI illustrations, static artwork, fantasy mandala drawings, glowing circular blobs, or still photos with slow Ken Burns pan.
    - If 2 or more segments contain static AI images rather than real dynamic motion footage, you MUST set status="REJECTED", score <= 68, cohesiveness_score <= 50, and flag those segments in failed_segments!
    - Under NO circumstances excuse static AI images as "abstract biological animations" or "creative visuals" — they are static AI slop and MUST BE REJECTED.
+6. **STRICT BAN ON BLANK, BLACK, OR RETICLE/CROSSHAIR SCREENS (ZERO TOLERANCE)**:
+   - You must verify that EVERY segment displays real, visible subject matter (real animals, machinery, historical scenes, or space).
+   - If ANY segment of the video is pitch black, nearly black, or displays only an empty plate or crosshairs with subtitles, you MUST IMMEDIATELY REJECT with status="REJECTED", score <= 30, and list the failed segment IDs in failed_segments!
+   - Do NOT assume visual content exists based on what is heard in the audio voiceover. If the visuals are blank/black, FAIL THE VIDEO.
 
 Output strictly valid JSON with this exact schema:
 {{
-  "score": 91, // 0-100 overall viral score. Videos with ANY irrelevant terrestrial stock analogy, hardware/workbench mismatch, horror monster, repeated clips, OR STATIC AI SLOP / SLIDESHOWS MUST score <= 70 and fail!
-  "status": "PASSED", // "PASSED" if score >= 91 and no critical mismatches/repeated clips, otherwise "REJECTED"
+  "score": 91, // 0-100 overall viral score. Videos with ANY irrelevant terrestrial stock analogy, hardware/workbench mismatch, horror monster, repeated clips, blank/black screens, OR STATIC AI SLOP / SLIDESHOWS MUST score <= 70 and fail!
+  "status": "PASSED", // "PASSED" if score >= 91 and no critical mismatches/repeated clips/blank screens, otherwise "REJECTED"
   "reason": "Explain the decision in detail",
   "cohesiveness_score": 91, // 0-100 score for audio-visual-caption matching
   "hook_score": 91, // 0-100 score for hook appeal
