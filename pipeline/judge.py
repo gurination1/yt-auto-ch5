@@ -307,6 +307,11 @@ You MUST return your review ONLY as a raw JSON object with no markdown syntax. T
                 raise RuntimeError(f"Unexpected response format: {response_data}") from parse_err
                 
             report = json.loads(_clean_json_output(text_response))
+            s = int(report.get("score", 0) or 0)
+            c = int(report.get("cohesiveness_score", 100) or 0)
+            fs = report.get("failed_segments", [])
+            if s < 85 or c < 75 or (isinstance(fs, list) and len(fs) > 0):
+                report["status"] = "REJECTED"
             print(f"Judge AI Review complete. Status: {report.get('status')} (Score: {report.get('score')}/100)")
             return report
             
@@ -353,6 +358,11 @@ You MUST return your review ONLY as a raw JSON object with no markdown syntax. T
                 raise RuntimeError(f"Unexpected fallback response format: {response_data}") from parse_err
                 
             report = json.loads(_clean_json_output(text_response))
+            s = int(report.get("score", 0) or 0)
+            c = int(report.get("cohesiveness_score", 100) or 0)
+            fs = report.get("failed_segments", [])
+            if s < 85 or c < 75 or (isinstance(fs, list) and len(fs) > 0):
+                report["status"] = "REJECTED"
             print(f"Judge AI Review complete via fallback. Status: {report.get('status')} (Score: {report.get('score')}/100)")
             return report
             

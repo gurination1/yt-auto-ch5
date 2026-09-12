@@ -1345,16 +1345,29 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
             ]
 
             for client_str in client_options:
-                cmd_dl = ytdlp_bin_cmd + proxy_args + [
+                target_end = int(15 + slice_dur + 2)
+                cmd_dl_section = ytdlp_bin_cmd + proxy_args + [
                     "--extractor-args", f"youtube:player_client={client_str}",
                     "--format", "18/22/136/137/best[ext=mp4]/best",
+                    "--download-sections", f"*15-{target_end}",
+                    "--force-keyframes-at-cuts",
                     "--no-check-certificates",
                     "--socket-timeout", "15",
                     "-o", temp_full,
                     url
                 ]
                 try:
-                    res_dl = subprocess.run(cmd_dl, capture_output=True, text=True, timeout=40)
+                    res_dl = subprocess.run(cmd_dl_section, capture_output=True, text=True, timeout=25)
+                    if not (os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000):
+                        cmd_dl_full = ytdlp_bin_cmd + proxy_args + [
+                            "--extractor-args", f"youtube:player_client={client_str}",
+                            "--format", "18/22/136/137/best[ext=mp4]/best",
+                            "--no-check-certificates",
+                            "--socket-timeout", "15",
+                            "-o", temp_full,
+                            url
+                        ]
+                        res_dl = subprocess.run(cmd_dl_full, capture_output=True, text=True, timeout=40)
                     if os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000:
                         # Probe actual duration to skip creator intro, channel stinger, or sponsors
                         actual_dur = _get_video_duration(temp_full)
@@ -1858,7 +1871,9 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0, topic
             "computer repair", "hardware", "software", "programmer", "coding", "keyboard",
             "camera repair", "cleaning sensor", "hasselblad", "dslr", "workbench", "workshop",
             "repairman", "mechanic", "car repair", "engine", "welding", "automotive",
-            "werewolf", "monster", "barbarian", "conan", "demon", "warlock"
+            "werewolf", "monster", "barbarian", "conan", "demon", "warlock",
+            "piston", "cad", "instrument render", "mechanical render", "acoustic doppler",
+            "hydraulic machine", "industrial render", "canister"
         ]
         for bad in banned_nature:
             if bad in text_lower:
@@ -1870,6 +1885,16 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0, topic
             has_bio_keyword = any(w in text_lower for w in ["dna", "cell", "bacteri", "micro", "organism", "protein", "enzyme", "biolog", "specimen", "nature", "wildlife", "animal"])
             if not has_bio_keyword:
                 return -250.0
+
+    is_engineering = (channel == "engineering") or any(w in (topic or "").lower() for w in ["tunnel", "dam", "bridge", "tbm", "skyscraper", "excavator", "pendulum", "damper", "crane"])
+    if is_engineering:
+        banned_eng = [
+            "satellite payload", "space probe", "bunny suit", "cleanroom", "astronaut",
+            "space shuttle", "iss", "orbital", "mars rover", "hubble", "james webb"
+        ]
+        for bad in banned_eng:
+            if bad in text_lower:
+                return -300.0
 
     if is_history:
         banned_history = [

@@ -133,7 +133,7 @@ def generate_thumbnail(final_video_path: str, thumbnail_text: str, topic_prompt:
     fontsize = 135 if max_len <= 8 else 115 if max_len <= 12 else 95
 
     filter_parts = [
-        "scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720",
+        "crop=in_w:in_h-48:0:0,scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720",
         "drawbox=x=0:y=0:w=iw:h=ih:color=black@0.22:t=fill",
         f"drawtext=text='{badge_text}':font='{thumb_font}':fontsize=32:fontcolor='{badge_border}':box=1:boxcolor='{badge_bg}@0.90':boxborderw=12:borderw=2:bordercolor='{badge_border}':x=60:y=50"
     ]
