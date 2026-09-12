@@ -130,6 +130,7 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
       * NEVER use slang like 'bug' or 'critter' for bacteria, fungi, microorganisms, or non-insect organisms.
       * NEVER write pop-culture or mythical nicknames like 'Conan the Bacterium', 'Frankenstein', or 'monster'. Use proper scientific subject name (e.g. 'Deinococcus radiodurans bacterium scanning electron microscope').
       * NEVER include words: "animation", "simulation", "concept", "visualization", "fantasy", "cgi", "cartoon", "illustration", "3d model", "futuristic", "diagram".
+      * NEVER use biological organisms (plants, seedlings, flowers, fungi, trees, animals), waterfalls, rivers, or weather as metaphors or analogies for physical science (time dilation, speed, gravity, black holes, semiconductors, or quantum states).
     - REQUIRED: Every segment MUST specify the CONCRETE, OBSERVABLE physical entity being discussed:
       * If narration says "These tiny warriors smash venom apart" -> broll_query MUST BE: "rattlesnake blood antibodies microscope" or "antivenom protein reaction lab".
       * If narration says "quantum leaps happening all around us" -> broll_query MUST BE: "quantum laser cryostat optical table" or "silicon wafer cleanroom photolithography".

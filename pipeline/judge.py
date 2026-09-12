@@ -315,58 +315,6 @@ Output strictly valid JSON with this exact schema:
                 report["status"] = "REJECTED"
             print(f"Judge AI Review complete. Status: {report.get('status')} (Score: {report.get('score')}/100)")
             return report
-            
-        except Exception as model_err:
-            print(f"Primary model review failed: {model_err}. Falling back to {GEMINI_FLASH}...")
-            model_to_use = GEMINI_FLASH
-            url_fallback = f"{self.base_url}/models/{model_to_use}:generateContent?key={api_key}"
-            payload["generationConfig"] = {"temperature": 0.2}
-            
-            response = None
-            for attempt in range(4):
-                try:
-                    response = requests.post(url_fallback, headers=headers, json=payload, timeout=180)
-                    if response.status_code == 429:
-                        from pipeline.gemini import _is_daily_quota_exhausted
-                        if _is_daily_quota_exhausted(response):
-                            print(f"[JudgeAI][fallback] Daily quota exhausted on key slot {slot}. Rotating immediately.")
-                            raise requests.exceptions.HTTPError("Daily quota exhausted during fallback review", response=response)
-                        wait_s = (attempt + 1) * 15
-                        print(f"[JudgeAI][fallback] 429 rate limit. Waiting {wait_s}s...")
-                        time.sleep(wait_s)
-                        continue
-                    if response.status_code in (500, 502, 503, 504):
-                        wait_s = (attempt + 1) * 5
-                        print(f"[JudgeAI][fallback] {response.status_code} server error. Waiting {wait_s}s...")
-                        time.sleep(wait_s)
-                        continue
-                    response.raise_for_status()
-                    break
-                except requests.exceptions.RequestException as e:
-                    if attempt == 3:
-                        raise
-                    wait_s = (attempt + 1) * 5
-                    print(f"[JudgeAI][fallback] Network error: {e}. Waiting {wait_s}s...")
-                    time.sleep(wait_s)
-                    
-            if response is None:
-                raise RuntimeError("Failed to get fallback review response after retries")
-            response_data = response.json()
-            
-            try:
-                text_response = response_data["candidates"][0]["content"]["parts"][0]["text"]
-            except (KeyError, IndexError) as parse_err:
-                raise RuntimeError(f"Unexpected fallback response format: {response_data}") from parse_err
-                
-            report = json.loads(_clean_json_output(text_response))
-            s = int(report.get("score", 0) or 0)
-            c = int(report.get("cohesiveness_score", 100) or 0)
-            fs = report.get("failed_segments", [])
-            if s < 85 or c < 75 or (isinstance(fs, list) and len(fs) > 0):
-                report["status"] = "REJECTED"
-            print(f"Judge AI Review complete via fallback. Status: {report.get('status')} (Score: {report.get('score')}/100)")
-            return report
-            
         finally:
             # Clean up the file in Gemini storage
             if file_name:
