@@ -155,13 +155,18 @@ def main():
         
         print("[Phase 4] Fetching B-roll media...")
         from pipeline.phase7_assemble import get_wav_duration
+        import threading
+        from concurrent.futures import ThreadPoolExecutor
+
         tts_durations = [get_wav_duration(f) for f in audio_files] if audio_files else []
         used_urls = set()
-        broll_files = []
+        urls_lock = threading.Lock()
+        broll_files = [None] * len(script["segments"])
         channel_niche = topic.get("niche") or os.environ.get("CHANNEL_NICHE") or "general"
-        print(f"[Phase 4] Using channel niche priority: '{channel_niche}'")
-        for i, seg in enumerate(script["segments"]):
-            dur = tts_durations[i] if tts_durations else 6.0
+        print(f"[Phase 4] Using channel niche priority: '{channel_niche}' (parallel 3x worker pool)")
+
+        def _fetch_segment_broll(idx, seg):
+            dur = tts_durations[idx] if tts_durations else 6.0
             seg_query = (
                 seg.get("broll_query")
                 or (seg.get("broll_queries")[0] if seg.get("broll_queries") else "")
@@ -170,18 +175,28 @@ def main():
                 or seg.get("narration", "")
             )
             seg_narration = seg.get("narration") or seg.get("text") or ""
+            with urls_lock:
+                snapshot_used = set(used_urls)
             bpath = phase4.fetch_broll(
                 seg_query,
                 args.format,
-                i,
+                idx,
                 duration=dur,
                 narration=seg_narration,
                 alt_queries=seg.get("broll_queries"),
-                used_urls=used_urls,
+                used_urls=snapshot_used,
                 channel=channel_niche,
                 topic=topic.get("topic", "")
             )
-            broll_files.append(bpath)
+            with urls_lock:
+                used_urls.update(snapshot_used)
+            return idx, bpath
+
+        with ThreadPoolExecutor(max_workers=min(3, len(script["segments"]))) as executor:
+            futures = [executor.submit(_fetch_segment_broll, i, seg) for i, seg in enumerate(script["segments"])]
+            for fut in futures:
+                idx, bpath = fut.result()
+                broll_files[idx] = bpath
             
         print("[Phase 5] Generating captions with word-level timing...")
         # Pass args.format to customize resolution/style
@@ -232,24 +247,21 @@ def main():
                 review_result = judge.review_video(final_video, review_metadata)
             except Exception as judge_err:
                 ok, health_reason = _video_health_ok(final_video)
-                if not ok:
-                    raise
-                print(f"[Judge AI] System error: {judge_err}")
-                print(f"[Judge AI] {health_reason}. Saving system-fallback pass so publish can continue.")
+                print(f"[Judge AI] System error during review: {judge_err}")
                 review_result = {
-                    "score": 91,
-                    "status": "PASSED",
-                    "reason": f"Judge API unavailable; {health_reason}. Script, captions, assembly, and upload assets completed.",
-                    "cohesiveness_score": 91,
-                    "hook_score": 91,
-                    "retention_score": 91,
-                    "failed_segments": [],
-                    "issues": ["Judge API unavailable during generation"],
+                    "score": 50,
+                    "status": "REJECTED",
+                    "reason": f"Judge AI review error: {judge_err}. Basic health: {health_reason}.",
+                    "cohesiveness_score": 50,
+                    "hook_score": 50,
+                    "retention_score": 50,
+                    "failed_segments": list(range(len(script.get("segments", [])))),
+                    "issues": [f"Judge review system error: {judge_err}"],
                     "system_fallback": True,
                 }
                 with open("output/judge_report.json", "w") as rf:
                     json.dump(review_result, rf, indent=2)
-                break
+                sys.exit(1)
             
             status = review_result.get("status", "PASSED")
             score = review_result.get("score", 100)
@@ -276,18 +288,11 @@ def main():
                 
             print(f"[Judge AI] Video REJECTED. Failed segments: {failed_segs}")
             if attempt == max_attempts:
-                if os.environ.get("ALLOW_JUDGE_FALLBACK", "1") == "1":
-                    print("[Judge AI] Reached max review attempts. ALLOW_JUDGE_FALLBACK=1 is active. Overriding rejection and proceeding to publish.")
-                    review_result["status"] = "PASSED"
-                    review_result["score"] = max(70, score)
-                    with open("output/judge_report.json", "w") as rf:
-                        json.dump(review_result, rf, indent=2)
-                    break
-                else:
-                    print("[Judge AI] Reached max review attempts. Refusing to publish rejected video.")
-                    with open("output/judge_report.json", "w") as rf:
-                        json.dump(review_result, rf, indent=2)
-                    sys.exit(1)
+                print(f"[Judge AI] Reached max review attempts ({max_attempts}). Video failed quality threshold. Halting publish.")
+                review_result["status"] = "REJECTED"
+                with open("output/judge_report.json", "w") as rf:
+                    json.dump(review_result, rf, indent=2)
+                sys.exit(1)
                 
             print(f"[Judge AI] Re-fetching B-roll for failed segments {failed_segs}...")
             for idx in failed_segs:

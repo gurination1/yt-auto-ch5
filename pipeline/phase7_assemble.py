@@ -303,10 +303,12 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
             )
             
         cmd = [
-            "ffmpeg", "-y", "-stream_loop", "-1", "-i", broll_path,
-            "-ss", f"{ss_offset:.3f}", "-t", f"{duration:.3f}",
+            "ffmpeg", "-y",
+            "-ss", f"{ss_offset:.3f}",
+            "-stream_loop", "-1", "-i", broll_path,
+            "-t", f"{duration:.3f}",
             "-vf", vf_chain,
-            "-r", "30", "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p", "-an", norm_path
+            "-r", "30", "-c:v", "libx264", "-preset", "faster", "-pix_fmt", "yuv420p", "-an", norm_path
         ]
         try:
             subprocess.run(cmd, check=True, capture_output=True)
@@ -314,10 +316,12 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
             err_msg = e.stderr.decode("utf-8", errors="ignore") if e.stderr else str(e)
             print(f"[Assemble] Warning: Advanced motion filter failed on segment {i} ({err_msg[:200]}). Falling back to safe scale...")
             safe_cmd = [
-                "ffmpeg", "-y", "-stream_loop", "-1", "-i", broll_path,
-                "-ss", f"{ss_offset:.3f}", "-t", f"{duration:.3f}",
+                "ffmpeg", "-y",
+                "-ss", f"{ss_offset:.3f}",
+                "-stream_loop", "-1", "-i", broll_path,
+                "-t", f"{duration:.3f}",
                 "-vf", f"scale=trunc({w}/2)*2:trunc({h}/2)*2:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1",
-                "-r", "30", "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p", "-an", norm_path
+                "-r", "30", "-c:v", "libx264", "-preset", "faster", "-pix_fmt", "yuv420p", "-an", norm_path
             ]
             subprocess.run(safe_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
@@ -335,10 +339,12 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
             shift_offsets = [ss_offset + skip_start, ss_offset + 4.0, max(0.0, total_dur * 0.5)]
             for shift_sec in shift_offsets:
                 cmd_shift = [
-                    "ffmpeg", "-y", "-stream_loop", "-1", "-i", broll_path,
-                    "-ss", f"{shift_sec:.3f}", "-t", f"{duration:.3f}",
+                    "ffmpeg", "-y",
+                    "-ss", f"{shift_sec:.3f}",
+                    "-stream_loop", "-1", "-i", broll_path,
+                    "-t", f"{duration:.3f}",
                     "-vf", vf_chain,
-                    "-r", "30", "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p", "-an", norm_path
+                    "-r", "30", "-c:v", "libx264", "-preset", "faster", "-pix_fmt", "yuv420p", "-an", norm_path
                 ]
                 subprocess.run(cmd_shift, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 res_shift_chk = subprocess.run(cmd_chk, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True, errors="ignore")
@@ -411,23 +417,8 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
         boundary_times.append(cumulative)
     sfx_track_path = create_sfx_track(boundary_times, total_tts_duration, topic=script.get("topic", ""))
 
-    # Step 4: Add karaoke captions to video
-    print("Step 4: Adding captions...")
-    assembled_capped_path = "output/assembled_capped.mp4"
-    cmd = [
-        "ffmpeg", "-y", "-i", assembled_video_path,
-        "-vf", f"ass='{captions_ass}'",
-        "-c:v", "libx264", "-preset", "superfast", "-crf", "18", "-pix_fmt", "yuv420p",
-        assembled_capped_path
-    ]
-    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    # Step 5: Clean cinematic finishing pass (clean passthrough, zero text slop or strobe boxes)
-    print("Step 5: Clean video finishing pass...")
-    assembled_flashed_path = assembled_capped_path
-
-    # Step 6: Final mix: video + TTS + music + SFX
-    print("Step 6: Final audio mix with SFX…")
+    # Step 4: Final composite render (single-pass: burning subtitles + audio ducking mix)
+    print("Step 4: Final single-pass composite render (captions + audio ducking)...")
     final_output_path = f"output/final_{format_type}.mp4"
 
     niche_clean = (script.get("channel") or os.environ.get("CHANNEL_NICHE") or "science").lower()
@@ -444,7 +435,10 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
     comment = meta.get("comment", "Autonomous Shorts Fleet")
     vid_title = script.get("title", script.get("topic", "Autonomous Short"))
 
+    escaped_ass = captions_ass.replace("\\", "/").replace(":", "\\:").replace("'", "\\'")
+
     filter_complex = (
+        f"[0:v]ass='{escaped_ass}'[v_final];"
         f"[1:a]highpass=f=80,volume=2.0,asplit=2[tts1][tts2];"
         f"[2:a]volume={duck['music_vol']},aloop=loop=-1:size=2147483647[music_loop];"
         f"[3:a]volume={duck['sfx_vol']}[sfx];"
@@ -456,14 +450,14 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
 
     cmd = [
         "ffmpeg", "-y",
-        "-i", assembled_flashed_path,
+        "-i", assembled_video_path,
         "-i", tts_combined_path,
         "-i", music_path,
         "-i", sfx_track_path,
         "-filter_complex", filter_complex,
-        "-map", "0:v",
+        "-map", "[v_final]",
         "-map", "[audio_final]",
-        "-c:v", "copy",
+        "-c:v", "libx264", "-preset", "faster", "-crf", "18", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
         "-metadata", f"title={vid_title}",
         "-metadata", f"artist={artist}",
