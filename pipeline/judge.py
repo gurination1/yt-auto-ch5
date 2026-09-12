@@ -42,6 +42,26 @@ def upload_file_to_gemini(filepath: str, api_key: str) -> dict:
     file_size = os.path.getsize(filepath)
     filename = os.path.basename(filepath)
     
+    upload_path = filepath
+    temp_proxy = None
+    if file_size > 18 * 1024 * 1024:
+        temp_proxy = filepath.replace(".mp4", "_review_proxy.mp4")
+        try:
+            print(f"[JudgeAI] Video size ({file_size / (1024*1024):.1f} MB) exceeds 18MB. Encoding lightweight review proxy...")
+            import subprocess
+            subprocess.run([
+                "ffmpeg", "-y", "-i", filepath,
+                "-vf", "scale=-2:720", "-c:v", "libx264", "-crf", "28", "-preset", "ultrafast",
+                "-c:a", "aac", "-b:a", "64k", temp_proxy
+            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=45)
+            if os.path.exists(temp_proxy) and os.path.getsize(temp_proxy) > 1000:
+                upload_path = temp_proxy
+                file_size = os.path.getsize(upload_path)
+                filename = os.path.basename(upload_path)
+        except Exception as e:
+            print(f"[JudgeAI] Proxy encoding warning: {e}. Falling back to original file.")
+            temp_proxy = None
+
     print(f"Uploading file '{filename}' ({file_size / (1024*1024):.2f} MB) to Gemini Files API...")
     
     url = f"https://generativelanguage.googleapis.com/upload/v1beta/files?uploadType=media&key={api_key}"
@@ -52,34 +72,42 @@ def upload_file_to_gemini(filepath: str, api_key: str) -> dict:
         "X-Goog-Upload-Header-Content-Type": mime_type,
     }
     
-    for attempt in range(2):
-        try:
-            with open(filepath, "rb") as f:
-                response = requests.post(url, headers=headers, data=f, timeout=45)
-            if response.status_code == 429:
-                from pipeline.gemini import _is_daily_quota_exhausted
-                if _is_daily_quota_exhausted(response):
-                    print("[JudgeAI] Upload call daily quota exhausted. Rotating immediately.")
-                    raise requests.exceptions.HTTPError("Daily quota exhausted during upload", response=response)
-                wait_s = (attempt + 1) * 5
-                print(f"[JudgeAI] Upload 429 rate limit. Retrying in {wait_s}s...")
-                time.sleep(wait_s)
-                continue
-            if response.status_code in (500, 502, 503, 504):
-                wait_s = (attempt + 1) * 5
-                print(f"[JudgeAI] Upload {response.status_code} server error. Retrying in {wait_s}s...")
-                time.sleep(wait_s)
-                continue
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            if attempt == 3:
+    try:
+        for attempt in range(2):
+            try:
+                with open(upload_path, "rb") as f:
+                    response = requests.post(url, headers=headers, data=f, timeout=45)
+                if response.status_code == 403:
+                    print(f"[JudgeAI] Upload returned 403 Forbidden. Rotating key immediately.")
+                    raise requests.exceptions.HTTPError("403 Forbidden during upload", response=response)
+                if response.status_code == 429:
+                    from pipeline.gemini import _is_daily_quota_exhausted
+                    if _is_daily_quota_exhausted(response):
+                        print("[JudgeAI] Upload call daily quota exhausted. Rotating immediately.")
+                        raise requests.exceptions.HTTPError("Daily quota exhausted during upload", response=response)
+                    wait_s = (attempt + 1) * 5
+                    print(f"[JudgeAI] Upload 429 rate limit. Retrying in {wait_s}s...")
+                    time.sleep(wait_s)
+                    continue
+                if response.status_code in (500, 502, 503, 504):
+                    wait_s = (attempt + 1) * 5
+                    print(f"[JudgeAI] Upload {response.status_code} server error. Retrying in {wait_s}s...")
+                    time.sleep(wait_s)
+                    continue
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.HTTPError:
                 raise
-            wait_s = (attempt + 1) * 5
-            print(f"[JudgeAI] Upload network error: {e}. Retrying in {wait_s}s...")
-            time.sleep(wait_s)
-            
-    raise RuntimeError("Failed to upload video file after retries.")
+            except requests.exceptions.RequestException as e:
+                wait_s = (attempt + 1) * 5
+                print(f"[JudgeAI] Upload network error: {e}. Retrying in {wait_s}s...")
+                time.sleep(wait_s)
+                
+        raise RuntimeError("Failed to upload video file after retries.")
+    finally:
+        if temp_proxy and os.path.exists(temp_proxy):
+            try: os.remove(temp_proxy)
+            except Exception: pass
 
 
 def wait_for_file_active(file_name: str, api_key: str, max_timeout_seconds: int = 180) -> bool:
