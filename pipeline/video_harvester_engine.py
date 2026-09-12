@@ -212,10 +212,15 @@ class MultiPlatformVideoHarvester:
     # 4. NASA Open Media
     def search_nasa(self, query: str, limit: int = 4) -> List[HarvesterCandidate]:
         candidates = []
+        space_words = ["space", "nasa", "planet", "galaxy", "telescope", "orbit", "astronomy", "cosmos", "rocket", "satellite", "mars", "moon", "solar", "interstellar", "nebula", "black hole", "supernova", "asteroid", "comet", "exoplanet", "spacecraft", "astronaut", "esa", "jwst", "hubble", "pulsar", "quasar"]
+        if not any(w in (query or "").lower() for w in space_words):
+            return []
         try:
             clean_q = re.sub(r"[^\w\s-]", " ", query or "")
             words = [w for w in clean_q.split() if w.lower() not in {"the", "a", "an", "and", "or", "to", "in", "of", "for", "with", "on", "at", "by", "from", "4k", "hd", "real", "footage", "clip"}]
-            target_q = " ".join(words[:4]).strip() or "space exploration"
+            target_q = " ".join(words[:4]).strip()
+            if not target_q:
+                return []
             search_url = f"https://images-api.nasa.gov/search?q={urllib.parse.quote(target_q)}&media_type=video"
             data = self._http_get_json(search_url)
             items = data.get("collection", {}).get("items", [])
@@ -340,7 +345,7 @@ class MultiPlatformVideoHarvester:
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # 1. Unblocked high-authority open archives (Priority 1)
             tasks.append(executor.submit(self.search_wikimedia_videos, profile.anchor_entity, 6))
-            if profile.entity_category in ["space", "astronomy", "physics_science", "engineering"]:
+            if profile.entity_category in ["space", "astronomy"]:
                 tasks.append(executor.submit(self.search_nasa, profile.anchor_entity, 4))
             if profile.entity_category in ["archival_history", "historical_anomaly", "military_tech", "engineering", "physics_science"]:
                 tasks.append(executor.submit(self.search_archive, profile.anchor_entity, 4))

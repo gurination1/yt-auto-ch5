@@ -217,12 +217,32 @@ from pipeline.config import PEXELS_API_KEY, PIXABAY_API_KEY, COVERR_API_KEY, NAS
 
 
 
+SPACE_KEYWORDS = {
+    "space", "nasa", "planet", "planetary", "galaxy", "galaxies", "telescope",
+    "orbit", "orbital", "astronomy", "astrophysics", "cosmos", "cosmic", "rocket", "rockets",
+    "satellite", "satellites", "mars", "moon", "lunar", "solar system", "interstellar",
+    "nebula", "black hole", "supernova", "asteroid", "comet", "exoplanet", "exoplanets",
+    "spacecraft", "astronaut", "astronauts", "esa", "jwst", "hubble", "pulsar", "quasar",
+    "deep space", "space station", "iss", "artemis", "apollo", "voyager",
+    "cosmology", "meteorite", "meteor", "alien planet", "milky way", "spacex", "propulsion",
+    "reentry", "launch vehicle", "booster", "constellation", "orbital mechanics"
+}
+
+
+def is_space_topic(query: str = "", topic: str = "", channel: str = "") -> bool:
+    """Returns True ONLY if query, topic, or channel is genuinely related to space/astronomy."""
+    if channel in ["space", "astronomy", "astrophysics"]:
+        return True
+    combined = f"{query or ''} {topic or ''}".lower()
+    return any(re.search(r'\b' + re.escape(w) + r'\b', combined) for w in SPACE_KEYWORDS)
+
+
 def _nasa_params(query: str, media_type: str, page_size: int) -> dict:
     clean_q = re.sub(r"[^\w\s-]", " ", query or "")
     words = [w for w in clean_q.split() if w.lower() not in {"the", "a", "an", "and", "or", "to", "in", "of", "for", "with", "on", "at", "by", "from", "4k", "hd", "real", "footage", "clip"}]
     clean_q = " ".join(words[:4]).strip()
     return {
-        "q": clean_q or "space exploration",
+        "q": clean_q,
         "media_type": media_type,
         "page_size": page_size,
     }
@@ -517,7 +537,9 @@ def _pixabay_candidates(query: str, n: int = 4) -> list[dict]:
         return []
 
 
-def _nasa_candidates(query: str, n: int = 3) -> list[dict]:
+def _nasa_candidates(query: str, n: int = 3, topic: str = "", channel: str = "") -> list[dict]:
+    if not is_space_topic(query=query, topic=topic, channel=channel):
+        return []
     try:
         r = requests.get(
             "https://images-api.nasa.gov/search",
@@ -589,8 +611,10 @@ def _nasa_candidates(query: str, n: int = 3) -> list[dict]:
         return []
 
 
-def _nasa_video_candidate(query: str) -> dict | None:
-    cands = _nasa_candidates(query, n=1)
+def _nasa_video_candidate(query: str, topic: str = "", channel: str = "") -> dict | None:
+    if not is_space_topic(query=query, topic=topic, channel=channel):
+        return None
+    cands = _nasa_candidates(query, n=1, topic=topic, channel=channel)
     return cands[0] if cands else None
 
 
@@ -668,8 +692,10 @@ def _wikimedia_video_candidate(query: str) -> dict | None:
 
 # ── Source 4: NASA Image & Video Library (no key — public domain) ─────────────
 
-def _nasa_image(query: str) -> str | None:
+def _nasa_image(query: str, topic: str = "", channel: str = "") -> str | None:
     """Fetches a real NASA image for science/space topics. Completely free, no key."""
+    if not is_space_topic(query=query, topic=topic, channel=channel):
+        return None
     try:
         r = requests.get(
             "https://images-api.nasa.gov/search",
@@ -1031,8 +1057,10 @@ def _archive_candidates(query: str, n: int = 3) -> list[dict]:
     return candidates
 
 
-def _nasa_video(query: str) -> str | None:
+def _nasa_video(query: str, topic: str = "", channel: str = "") -> str | None:
     """Fetches a real NASA video for science/space topics. Completely free, no key."""
+    if not is_space_topic(query=query, topic=topic, channel=channel):
+        return None
     try:
         r = requests.get(
             "https://images-api.nasa.gov/search",
@@ -1924,11 +1952,7 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0, topic
 
     # Detect domain context from topic, query, and channel
     combined_context = f"{topic} {query} {channel}".lower()
-    is_space = any(w in combined_context for w in [
-        "space", "planet", "neptune", "jupiter", "mars", "saturn", "uranus", "venus", "mercury",
-        "pluto", "astronomy", "astrophysics", "cosmos", "cosmic", "galaxy", "nebula", "black hole",
-        "supernova", "telescope", "nasa", "esa", "orbit", "exoplanet", "asteroid", "comet"
-    ])
+    is_space = is_space_topic(query=query, topic=topic, channel=channel)
     is_nature = any(w in combined_context for w in [
         "ocean", "deep sea", "underwater", "marine", "shark", "whale", "fish", "snailfish", "coelacanth",
         "hydrothermal", "abyss", "trench", "coral", "species", "wildlife", "animal", "biology"
@@ -1937,6 +1961,11 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0, topic
         "ancient", "roman", "greek", "medieval", "archaeology", "ruins", "pharaoh", "pyramid",
         "empire", "emperor", "gladiator", "antiquity", "century bc"
     ])
+
+    # Disqualify NASA footage completely if the topic is not space
+    cand_src = (item.get("source") or "").lower()
+    if cand_src == "nasa" and not is_space:
+        return -300.0
 
     # HARD DOMAIN NEGATIVE DISQUALIFIERS (Instant disqualification -200.0)
     if is_space:
@@ -2424,8 +2453,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         return True
 
     os.makedirs("output", exist_ok=True)
-    is_space_or_sci = channel in ["space", "astrophysics", "astronomy", "science", "engineering"] or any(w in (query or "").lower() for w in ["space", "nasa", "planet", "galaxy", "telescope", "orbit", "astronomy", "cosmos", "rocket", "physics", "engine", "cern", "accelerator"])
-    is_space_topic = is_space_or_sci
+    is_space_active = is_space_topic(query=query, topic=topic, channel=channel)
+    is_space_topic_flag = is_space_active
 
     # Return cached clip if already valid
     if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
@@ -2504,9 +2533,9 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     CHANNEL_SOURCE_PRIORITY = {
         "mystery":     ["wikimedia", "archive", "youtube", "pexels", "pixabay"],
         "nature":      ["wikimedia", "archive", "youtube", "pexels", "pixabay"],
-        "science":     ["wikimedia", "nasa", "archive", "youtube", "pexels", "pixabay"],
+        "science":     (["nasa"] if is_space_active else []) + ["wikimedia", "archive", "youtube", "pexels", "pixabay"],
         "space":       ["nasa", "wikimedia", "archive", "youtube", "pexels", "pixabay"],
-        "engineering": ["wikimedia", "nasa", "archive", "dvids", "youtube", "pexels", "pixabay"],
+        "engineering": (["nasa"] if is_space_active else []) + ["wikimedia", "archive", "dvids", "youtube", "pexels", "pixabay"],
         "business":    ["archive", "wikimedia", "youtube", "pexels", "pixabay"],
         "military":    ["dvids", "archive", "wikimedia", "youtube", "pexels"],
         "general":     ["wikimedia", "archive", "youtube", "pexels", "pixabay"],
@@ -2519,9 +2548,9 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             elif source == "youtube":
                 return _youtube_candidates(q, n=5)
             elif source == "nasa":
-                if not NASA_BROLL_ENABLED:
+                if not NASA_BROLL_ENABLED or not is_space_active:
                     return []
-                return _nasa_candidates(q, n=3)
+                return _nasa_candidates(q, n=3, topic=topic, channel=channel)
             elif source == "wikimedia":
                 return _wikimedia_candidates(q, n=3)
             elif source == "dvids":
@@ -2654,7 +2683,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
     # Round-robin interleave from distinct platforms to guarantee multi-source coverage
     interleaved_candidates = []
-    source_priority_order = ["nasa", "wikimedia", "archive", "dvids", "reddit", "youtube", "pexels", "pixabay", "coverr"]
+    source_priority_order = (["nasa"] if is_space_active else []) + ["wikimedia", "archive", "dvids", "reddit", "youtube", "pexels", "pixabay", "coverr"]
     for sp in source_priority_order:
         if sp in platform_buckets and platform_buckets[sp]:
             interleaved_candidates.append(platform_buckets[sp].pop(0))
@@ -2796,12 +2825,11 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         ("Archive video (fallback)", lambda: _archive_video(clean_fallback, used_urls=used_urls)),
     ]
     
-    # NASA for space, physics, engineering, astronomy
-    is_space_or_sci = channel in ["space", "astrophysics", "astronomy", "science", "engineering"] or any(w in query.lower() for w in ["space", "nasa", "planet", "galaxy", "telescope", "orbit", "astronomy", "cosmos", "rocket", "physics", "engine", "cern", "accelerator"])
-    if is_space_or_sci and NASA_BROLL_ENABLED:
+    # NASA strictly for space, astronomy, planetary topics (never terrestrial quantum, materials, biology, civil engineering)
+    if is_space_active and NASA_BROLL_ENABLED:
         other_videos.extend([
-            ("NASA video (main)", lambda: _nasa_video(sanitized_q or clean_fallback)),
-            ("NASA video (fallback)", lambda: _nasa_video(clean_fallback)),
+            ("NASA video (main)", lambda: _nasa_video(sanitized_q or clean_fallback, topic=topic, channel=channel)),
+            ("NASA video (fallback)", lambda: _nasa_video(clean_fallback, topic=topic, channel=channel)),
         ])
 
     # DVIDS for military/defense topics
@@ -3099,8 +3127,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     print(f"[B-roll] Segment {segment_index}: trying authentic institutional archival photographs…")
 
     # High-authority NASA image if space topic
-    if NASA_BROLL_ENABLED and is_space_topic:
-        nasa_img_url = _nasa_image(sanitized_q or query)
+    if NASA_BROLL_ENABLED and is_space_topic_flag:
+        nasa_img_url = _nasa_image(sanitized_q or query, topic=topic, channel=channel)
         if nasa_img_url and (used_urls is None or nasa_img_url not in used_urls):
             try:
                 r_n = requests.get(nasa_img_url, timeout=20, headers={"User-Agent": "yt-auto/2.0"})
