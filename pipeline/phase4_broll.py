@@ -578,13 +578,13 @@ def _wikimedia_candidates(query: str, n: int = 5) -> list[dict]:
                 "generator": "search",
                 "gsrsearch": f"{st} filetype:video",
                 "gsrnamespace": "6",
-                "gsrlimit": str(n * 2),
+                "gsrlimit": str(max(15, n * 4)),
                 "prop": "imageinfo",
-                "iiprop": "url|mime|size",
+                "iiprop": "url|mime|size|dimensions",
                 "iiurlwidth": "640",
                 "format": "json",
             }
-            r = requests.get(url, params=params, headers=headers, timeout=12)
+            r = requests.get(url, params=params, headers=headers, timeout=10)
             if r.status_code == 200:
                 pages = r.json().get("query", {}).get("pages", {})
                 for pid, pdata in pages.items():
@@ -592,6 +592,11 @@ def _wikimedia_candidates(query: str, n: int = 5) -> list[dict]:
                     ii = pdata.get("imageinfo", [{}])[0]
                     v_url = ii.get("url")
                     t_url = ii.get("thumburl") or v_url
+                    w_res = int(ii.get("width") or 0)
+                    h_res = int(ii.get("height") or 0)
+                    # Filter out sub-720p blurry uploads (e.g. 240p / 360p)
+                    if w_res > 0 and h_res > 0 and max(w_res, h_res) < 720:
+                        continue
                     if v_url and v_url not in seen:
                         seen.add(v_url)
                         candidates.append({
@@ -599,6 +604,8 @@ def _wikimedia_candidates(query: str, n: int = 5) -> list[dict]:
                             "thumb_url": t_url,
                             "source": "Wikimedia",
                             "title": title,
+                            "width": max(w_res, h_res),
+                            "height": min(w_res, h_res),
                         })
                         if len(candidates) >= n:
                             break
@@ -857,12 +864,18 @@ def _openverse_image(query: str) -> str | None:
         print(f"[B-roll] Openverse image search failed for '{clean_q}': {e}")
         return None
 
+_ARCHIVE_UNAVAILABLE = False
+
 def _archive_candidates(query: str, n: int = 3) -> list[dict]:
+    global _ARCHIVE_UNAVAILABLE
+    if _ARCHIVE_UNAVAILABLE:
+        return []
+
     import urllib.parse
     clean_q = _sanitize_broll_query(query)[:60]
     if not clean_q:
         return []
-    headers = {"User-Agent": "yt-auto/2.0 (https://github.com/mahesajeth-wq/yt-auto; contact@mahesajeth.com)"}
+    headers = {"User-Agent": "yt-auto/2.0 (educational-video-pipeline; contact@gurination.com)"}
     candidates = []
 
     try:
@@ -871,13 +884,16 @@ def _archive_candidates(query: str, n: int = 3) -> list[dict]:
             params={
                 "q": f"({clean_q}) AND mediatype:movies",
                 "fl[]": ["identifier", "title", "downloads"],
-                "sort[]": "downloads desc",
-                "rows": n * 4,
+                "rows": str(n * 3),
                 "output": "json"
             },
             headers=headers,
-            timeout=20
+            timeout=5
         )
+        if r.status_code in (502, 503, 504):
+            _ARCHIVE_UNAVAILABLE = True
+            print(f"[B-roll] Internet Archive 503/502 unavailable. Tripping circuit breaker for run.")
+            return []
         r.raise_for_status()
         docs = r.json().get("response", {}).get("docs", [])
         if not docs:
@@ -889,15 +905,18 @@ def _archive_candidates(query: str, n: int = 3) -> list[dict]:
                     params={
                         "q": f"({short_q}) AND mediatype:movies",
                         "fl[]": ["identifier", "title", "downloads"],
-                        "sort[]": "downloads desc",
-                        "rows": n * 4,
+                        "rows": str(n * 3),
                         "output": "json"
                     },
                     headers=headers,
-                    timeout=20
+                    timeout=5
                 )
                 if r_short.status_code == 200:
                     docs = r_short.json().get("response", {}).get("docs", [])
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+        _ARCHIVE_UNAVAILABLE = True
+        print(f"[B-roll] Internet Archive timed out. Tripping circuit breaker for run.")
+        return []
     except Exception as e:
         print(f"[B-roll] Archive search failed for '{clean_q}': {e}")
         docs = []
@@ -1986,17 +2005,17 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0, topic
         diff = abs(item_dur - target_duration)
         dur_score = max(0.0, 20.0 - 2.0 * diff)
         
-    # High-definition video sources (Pexels, Pixabay, YouTube) prioritized for modern quality
+    # Authentic educational and documentary sources prioritized alongside HD stock
     source_weights = {
+        "nasa": 40.0,
+        "wikimedia": 35.0,
+        "wikipedia": 35.0,
+        "dvids": 35.0,
         "pexels": 35.0,
         "pixabay": 30.0,
         "youtube": 30.0,
-        "nasa": 30.0,
-        "archive": 20.0,
-        "wikimedia": 15.0,
-        "wikipedia": 15.0,
-        "dvids": 15.0,
-        "reddit": 15.0,
+        "archive": 25.0,
+        "reddit": 20.0,
         "coverr": 10.0,
         "klipy": 0.0
     }
@@ -2432,11 +2451,9 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             elif source == "nasa":
                 if not NASA_BROLL_ENABLED:
                     return []
-                cand = _nasa_video_candidate(q)
-                return [cand] if cand else []
+                return _nasa_candidates(q, n=3)
             elif source == "wikimedia":
-                cand = _wikimedia_video_candidate(q)
-                return [cand] if cand else []
+                return _wikimedia_candidates(q, n=3)
             elif source == "dvids":
                 return _dvids_candidates(q, n=3)
             elif source == "coverr":
