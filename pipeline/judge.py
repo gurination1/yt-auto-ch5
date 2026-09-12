@@ -190,7 +190,7 @@ class JudgeClient:
             raise RuntimeError(f"Local video health check failed: {local_err}") from local_err
 
     def _review_video_with_key(self, video_path: str, metadata: dict, api_key: str) -> dict:
-        slot = _shared_pool._keys.index(api_key) + 1
+        slot = _shared_pool._keys.index(api_key) + 1 if api_key in _shared_pool._keys else "DEDICATED"
         file_name = None
         try:
             # 1. Upload video
@@ -218,25 +218,14 @@ Please watch the video and evaluate it against these rubrics:
    - Look out for generic or symbolic placeholders (e.g. a generic man with glasses looking at a screen, generic office workers) that do not directly represent specific scientific/technical/space concepts described in the audio (like 'asteroid wobble', 'planetary defense', 'Bose-Einstein condensate', etc.).
    - STRICT BAN ON IRRELEVANT TERRESTRIAL ANALOGIES: If the video is about Space, Astronomy, Planets, Deep Sea, or Nature, REJECT ANY terrestrial stock footage such as steel mills, factories, foundries, metal smelting, blast furnaces, modern office spaces, traffic, city streets, or beach sunsets. (For example: showing a steel mill foundry when discussing planetary core compression or diamond rain is an UNACCEPTABLE mismatch).
    - STRICT BAN ON ELECTRONICS / WORKBENCH / CAMERA MISMATCHES: If the video is about Nature, Biology, Animals, Extremophiles, or Science, strictly REJECT any footage showing electronics technicians, soldering irons, circuit boards, computer debugging, hardware workshops, camera sensor cleaning, or mechanic tools. (For example: showing a technician soldering or cleaning a camera lens when narration discusses DNA repair or bacterial enzymes is a CRITICAL mismatch).
-   - STRICT BAN ON FANTASY MONSTERS / AI BEASTS: Reject fantasy werewolf/monster creatures, fictional beasts, or cartoon characters when the video is about real biological microorganisms, animals, or natural phenomena.
-   - All visual B-roll clips must visually and contextually represent the core topic entity and narration sentence.
-   - Check if the SAME visual clip is repeated or looped twice in different parts of the video. Repeating the same B-roll clip is a critical quality failure.
-   - If there is any mismatched topic (like a factory or city for space, or electronics/camera cleaning for biology), symbolic placeholder, fantasy beast, or repeated clip, you MUST set status="REJECTED", set score below 75, and list the exact 0-based segment numbers that failed in failed_segments.
-2. **Hook Appeal**: Is the hook in the first 3-5 seconds of the video engaging and curiosity-inducing?
-3. **Subtitles/Captions (CRITICAL)**: Are subtitles present, readable, and synchronized with the narration?
-   - This video uses modern rapid-fire single-word (karaoke) subtitle style. This is EXPECTED and CORRECT.
-   - REJECT if: subtitles are visibly out of sync (words appearing long after they are spoken, or appearing before), if subtitles get "stuck" on one word while narration moves on, or if subtitles disappear mid-video.
-   - REJECT if: the title hook text card at the start of the video (first 1-2 seconds) has text that goes outside the frame boundaries or is cut off on either side. Text must be fully visible and centered.
-   - ACCEPT if: subtitles are single-word style and appear roughly in sync (within 0.5 seconds of spoken word).
-4. **Music & Audio Quality (CRITICAL)**: Is the background music clean, and is it mixed correctly without overpowering the voiceover? Is the voiceover narrator voice 100% uniform and consistent throughout? REJECT if multiple voices, jarring voice shifts, or different voice engines are heard in a single video.
-5. **Zero Black Screens (CRITICAL)**: Verify there are NO black screen sections, black placeholders, or blank dark screens anywhere in the video. If any segment or transition shows a black screen or blank canvas for > 0.8 seconds, you MUST set status="REJECTED", set score below 50, and list the failed segment numbers in issues!
-6. **Loop / Retention**: Is there a thematic transition or rewatch trigger from the final segment back to the first? Note: Segment 5 echoing Segment 1's THEME (not its exact wording) is the desired outcome.
+   - STRICT BAN ON HORROR / MONSTER / DEMON / HALLOWEEN MISMATCHES: Under NO circumstances allow horror-movie monsters, werewolves, alien creatures with claws, Halloween props, or gothic horror CGI when the topic is natural biology, chemistry, warfare tactics, or megaprojects.
+2. **Hook Strength (CRITICAL)**: Does the first 2.5 seconds hook the viewer with high visual pacing and immediate high stakes?
+3. **No Watermarks or Subtitle Glitches**: Ensure no large watermarks (e.g. iStock, Shutterstock) and no double/colliding subtitles.
+4. **No Repeated B-Roll Clips**: Verify that every segment has distinct visual scenes. If any video clip is repeated across multiple segments, fail the repeated segments immediately.
 
-Scoring target: a publishable video should land around 91-94 when it has coherent visuals, readable captions, clean audio, strong hook, and no repeated clips. Reserve 80-90 for technically acceptable but weak videos that should be repaired before publishing.
-
-You MUST return your review ONLY as a raw JSON object with no markdown syntax. The JSON structure must be exactly like this:
+Output strictly valid JSON with this exact schema:
 {{
-  "score": 91, // Overall quality score (0-100)
+  "score": 91, // 0-100 overall viral score. Videos with ANY irrelevant terrestrial stock analogy, hardware/workbench mismatch, horror monster, or repeated clips MUST score <= 70 and fail!
   "status": "PASSED", // "PASSED" if score >= 91 and no critical mismatches/repeated clips, otherwise "REJECTED"
   "reason": "Explain the decision in detail",
   "cohesiveness_score": 91, // 0-100 score for audio-visual-caption matching
@@ -247,56 +236,68 @@ You MUST return your review ONLY as a raw JSON object with no markdown syntax. T
 }}
 """
             
-            # 4. Generate Review Content (Primary: Gemini 2.5 Flash, Fallback: Gemini 2.5 Flash)
-            model_to_use = GEMINI_FLASH
-            url = f"{self.base_url}/models/{model_to_use}:generateContent?key={api_key}"
-            headers = {"Content-Type": "application/json"}
-            payload = {
-                "contents": [
-                    {
-                        "role": "user",
-                        "parts": [
-                            {"fileData": {"mimeType": mime_type, "fileUri": file_uri}},
-                            {"text": rubric}
-                        ]
-                    }
-                ],
-                "generationConfig": {
-                    "temperature": 0.2,
-                    "responseMimeType": "application/json"
-                }
-            }
-            
-            print(f"Sending video to model '{model_to_use}' for analysis...")
+            # 4. Generate Review Content (Primary: Gemini 2.5 Flash, Failover: Flash Latest on 503)
+            models_to_try = [GEMINI_FLASH, "gemini-flash-latest", "gemini-flash-lite-latest"]
             response = None
-            for attempt in range(4):
-                try:
-                    response = requests.post(url, headers=headers, json=payload, timeout=180)
-                    if response.status_code == 429:
-                        from pipeline.gemini import _is_daily_quota_exhausted
-                        if _is_daily_quota_exhausted(response):
-                            print(f"[JudgeAI] Daily quota exhausted on key slot {slot}. Rotating immediately.")
-                            raise requests.exceptions.HTTPError("Daily quota exhausted during review", response=response)
-                        wait_s = (attempt + 1) * 15
-                        print(f"[JudgeAI] Review call 429 rate limit. Waiting {wait_s}s...")
+            model_success = False
+            last_model_err = None
+
+            for model_to_use in models_to_try:
+                url = f"{self.base_url}/models/{model_to_use}:generateContent?key={api_key}"
+                headers = {"Content-Type": "application/json"}
+                payload = {
+                    "contents": [
+                        {
+                            "role": "user",
+                            "parts": [
+                                {"fileData": {"mimeType": mime_type, "fileUri": file_uri}},
+                                {"text": rubric}
+                            ]
+                        }
+                    ],
+                    "generationConfig": {
+                        "temperature": 0.2,
+                        "responseMimeType": "application/json"
+                    }
+                }
+                
+                print(f"Sending video to model '{model_to_use}' for analysis...")
+                for attempt in range(3):
+                    try:
+                        response = requests.post(url, headers=headers, json=payload, timeout=180)
+                        if response.status_code == 429:
+                            from pipeline.gemini import _is_daily_quota_exhausted
+                            if _is_daily_quota_exhausted(response):
+                                print(f"[JudgeAI] Daily quota exhausted on key slot {slot}. Rotating key.")
+                                raise requests.exceptions.HTTPError("Daily quota exhausted during review", response=response)
+                            wait_s = (attempt + 1) * 10
+                            print(f"[JudgeAI] Review call 429 rate limit on '{model_to_use}'. Waiting {wait_s}s...")
+                            time.sleep(wait_s)
+                            continue
+                        if response.status_code in (500, 502, 503, 504):
+                            wait_s = (attempt + 1) * 3
+                            print(f"[JudgeAI] Review call {response.status_code} server error on '{model_to_use}'. Waiting {wait_s}s...")
+                            time.sleep(wait_s)
+                            continue
+                        response.raise_for_status()
+                        model_success = True
+                        break
+                    except requests.exceptions.HTTPError as he:
+                        if "Daily quota exhausted" in str(he):
+                            raise
+                        last_model_err = he
+                    except requests.exceptions.RequestException as e:
+                        last_model_err = e
+                        wait_s = (attempt + 1) * 3
+                        print(f"[JudgeAI] Review call network error on '{model_to_use}': {e}. Waiting {wait_s}s...")
                         time.sleep(wait_s)
-                        continue
-                    if response.status_code in (500, 502, 503, 504):
-                        wait_s = (attempt + 1) * 5
-                        print(f"[JudgeAI] Review call {response.status_code} server error. Waiting {wait_s}s...")
-                        time.sleep(wait_s)
-                        continue
-                    response.raise_for_status()
+
+                if model_success and response is not None:
                     break
-                except requests.exceptions.RequestException as e:
-                    if attempt == 3:
-                        raise
-                    wait_s = (attempt + 1) * 5
-                    print(f"[JudgeAI] Review call network error: {e}. Waiting {wait_s}s...")
-                    time.sleep(wait_s)
-                    
-            if response is None:
-                raise RuntimeError("Failed to get review response after retries")
+                print(f"[JudgeAI] Model '{model_to_use}' unavailable ({last_model_err}). Failing over to next model...")
+
+            if response is None or not model_success:
+                raise RuntimeError(f"Failed to get review response across models: {last_model_err}")
             response_data = response.json()
             
             # Extract and parse response
