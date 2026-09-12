@@ -15,24 +15,48 @@ def _http_status(exc: Exception) -> int:
     return int(getattr(response, "status_code", 0) or 0)
 
 
+_FAILED_JUDGE_KEYS = set()
+_BANNED_KEY_SUFFIXES = ("pFGQ", "0YEw")  # Keys known to return 403 on Google Files API upload
+
+
+def _is_valid_judge_key(k: str) -> bool:
+    if not k:
+        return False
+    if k in _FAILED_JUDGE_KEYS:
+        return False
+    if any(k.endswith(suffix) for suffix in _BANNED_KEY_SUFFIXES):
+        return False
+    return True
+
+
 def _get_judge_key(attempt: int = 0) -> str | None:
+    global _FAILED_JUDGE_KEYS
+    all_keys = []
+
+    # Check dedicated judge env key first if not banned
     judge_env_key = os.environ.get("GEMINI_JUDGE_API_KEY", "").strip()
-    if judge_env_key and attempt == 0:
-        return judge_env_key
-    key = _shared_pool.get_available_key()
-    if key:
-        return key
-    if judge_env_key:
-        return judge_env_key
-    now = time.time()
-    if len(_shared_pool) > 0:
-        earliest_idx = min(range(len(_shared_pool)), key=lambda idx: _shared_pool._cooldowns[idx])
-        wait_time = max(1.0, _shared_pool._cooldowns[earliest_idx] - now)
-        wait_time = min(15.0, wait_time)
-        print(f"[JudgeAI] All Gemini keys on cooldown. Waiting {wait_time:.1f}s for key slot {earliest_idx + 1}...")
-        time.sleep(wait_time)
-        return _shared_pool.get_available_key()
-    return None
+    if _is_valid_judge_key(judge_env_key):
+        all_keys.append(judge_env_key)
+
+    # Gather all valid keys from shared pool
+    if hasattr(_shared_pool, "_keys"):
+        for k in _shared_pool._keys:
+            if _is_valid_judge_key(k) and k not in all_keys:
+                all_keys.append(k)
+
+    # Fallback to single GEMINI_API_KEY
+    single_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if _is_valid_judge_key(single_key) and single_key not in all_keys:
+        all_keys.append(single_key)
+
+    if not all_keys:
+        print("[JudgeAI] Warning: No valid judge keys available for Files API upload!")
+        return None
+
+    chosen_key = all_keys[attempt % len(all_keys)]
+    slot = _shared_pool._keys.index(chosen_key) + 1 if (hasattr(_shared_pool, "_keys") and chosen_key in _shared_pool._keys) else "DEDICATED"
+    print(f"[JudgeAI] Selected key slot {slot} for review attempt {attempt + 1}/{max(3, len(all_keys))}")
+    return chosen_key
 
 def upload_file_to_gemini(filepath: str, api_key: str) -> dict:
     mime_type, _ = mimetypes.guess_type(filepath)
