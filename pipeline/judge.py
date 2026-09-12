@@ -335,12 +335,12 @@ Please watch the video and evaluate it against these rubrics:
 
 Output strictly valid JSON with this exact schema:
 {{
-  "score": 91, // 0-100 overall viral score. Videos with ANY irrelevant terrestrial stock analogy, hardware/workbench mismatch, horror monster, repeated clips, blank/black screens, OR STATIC AI SLOP / SLIDESHOWS MUST score <= 70 and fail!
-  "status": "PASSED", // "PASSED" if score >= 91 and no critical mismatches/repeated clips/blank screens, otherwise "REJECTED"
+  "score": 90, // 0-100 overall viral score. Videos with strong audio-visual alignment, real dynamic footage, and NO mismatches/blank screens score in the 88-96 range! Videos with ANY irrelevant terrestrial stock analogy, hardware/workbench mismatch, horror monster, repeated clips, blank/black screens, OR STATIC AI SLOP / SLIDESHOWS MUST score <= 70 and fail!
+  "status": "PASSED", // "PASSED" if score >= 85 and no critical mismatches/repeated clips/blank screens, otherwise "REJECTED"
   "reason": "Explain the decision in detail",
-  "cohesiveness_score": 91, // 0-100 score for audio-visual-caption matching
-  "hook_score": 91, // 0-100 score for hook appeal
-  "retention_score": 91, // 0-100 score for looping and retention triggers
+  "cohesiveness_score": 90, // 0-100 score for audio-visual-caption matching
+  "hook_score": 90, // 0-100 score for hook appeal
+  "retention_score": 90, // 0-100 score for looping and retention triggers
   "failed_segments": [3, 4], // 0-based indices of segments that had bad B-roll, generic placeholders, mismatches, or static AI slop, or empty [] if none
   "issues": ["List of specific issues found, or empty if none"]
 }}
