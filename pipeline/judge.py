@@ -222,16 +222,21 @@ Please watch the video and evaluate it against these rubrics:
 2. **Hook Strength (CRITICAL)**: Does the first 2.5 seconds hook the viewer with high visual pacing and immediate high stakes?
 3. **No Watermarks or Subtitle Glitches**: Ensure no large watermarks (e.g. iStock, Shutterstock) and no double/colliding subtitles.
 4. **No Repeated B-Roll Clips**: Verify that every segment has distinct visual scenes. If any video clip is repeated across multiple segments, fail the repeated segments immediately.
+5. **STRICT BAN ON STATIC AI IMAGES / POLLINATIONS SLOP (CRITICAL)**:
+   - YouTube Shorts must be REAL, DYNAMIC MOTION VIDEO.
+   - REJECT ANY video where segments consist of static 2D AI illustrations, static artwork, fantasy mandala drawings, glowing circular blobs, or still photos with slow Ken Burns pan.
+   - If 2 or more segments contain static AI images rather than real dynamic motion footage, you MUST set status="REJECTED", score <= 68, cohesiveness_score <= 50, and flag those segments in failed_segments!
+   - Under NO circumstances excuse static AI images as "abstract biological animations" or "creative visuals" — they are static AI slop and MUST BE REJECTED.
 
 Output strictly valid JSON with this exact schema:
 {{
-  "score": 91, // 0-100 overall viral score. Videos with ANY irrelevant terrestrial stock analogy, hardware/workbench mismatch, horror monster, or repeated clips MUST score <= 70 and fail!
+  "score": 91, // 0-100 overall viral score. Videos with ANY irrelevant terrestrial stock analogy, hardware/workbench mismatch, horror monster, repeated clips, OR STATIC AI SLOP / SLIDESHOWS MUST score <= 70 and fail!
   "status": "PASSED", // "PASSED" if score >= 91 and no critical mismatches/repeated clips, otherwise "REJECTED"
   "reason": "Explain the decision in detail",
   "cohesiveness_score": 91, // 0-100 score for audio-visual-caption matching
   "hook_score": 91, // 0-100 score for hook appeal
   "retention_score": 91, // 0-100 score for looping and retention triggers
-  "failed_segments": [3, 4], // 0-based indices of segments that had bad B-roll, generic placeholders, or mismatches, or empty [] if none
+  "failed_segments": [3, 4], // 0-based indices of segments that had bad B-roll, generic placeholders, mismatches, or static AI slop, or empty [] if none
   "issues": ["List of specific issues found, or empty if none"]
 }}
 """

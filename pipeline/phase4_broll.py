@@ -2887,7 +2887,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                             except Exception:
                                 pass
         else:
-            print(f"[B-roll] Segment {segment_index}: Vision match strictly rejected all downloaded video candidates. Proceeding to authentic topic stills / Pollinations Flux synthesis.")
+            print(f"[B-roll] Segment {segment_index}: Initial candidates rejected by Vision Match. Executing Stage 2 second-chance broad video harvest...")
             for r in downloaded_results:
                 for p in [r["temp_v"], r["temp_f"]]:
                     if os.path.exists(p):
@@ -2895,6 +2895,111 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                             os.remove(p)
                         except Exception:
                             pass
+
+            # Stage 2 Broad Video Harvest across YouTube CC, Pexels, Pixabay
+            broad_queries = []
+            if alt_queries:
+                for aq in alt_queries:
+                    saq = _sanitize_broll_query(aq)
+                    if saq and saq not in broad_queries:
+                        broad_queries.append(saq)
+
+            core_nouns_broad = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in {"4k", "1080p", "footage", "real", "authentic", "video", "science", "nature", "biology", "discovery"}]
+            anchor_word = core_nouns_broad[0] if core_nouns_broad else ""
+
+            niche_broad_templates = {
+                "nature": [
+                    f"{anchor_word} wildlife macro 4k" if anchor_word else "",
+                    "nature wildlife animal documentary 4k",
+                    "laboratory microscope biology 4k",
+                    "wild reptile animal macro 4k",
+                    "ocean deep sea creature 4k"
+                ],
+                "science": [
+                    f"{anchor_word} laboratory 4k" if anchor_word else "",
+                    "science laboratory experiment 4k",
+                    "microscope laboratory optical 4k",
+                    "physics laser equipment cleanroom 4k",
+                    "deep space galaxy telescope 4k"
+                ],
+                "engineering": [
+                    f"{anchor_word} machine 4k" if anchor_word else "",
+                    "heavy industrial machinery construction 4k",
+                    "engineering factory manufacturing 4k",
+                    "mechanical gears mechanism 4k"
+                ],
+                "history": [
+                    f"{anchor_word} ancient 4k" if anchor_word else "",
+                    "historical battle armor museum 4k",
+                    "ancient ruins archaeological excavation 4k",
+                    "medieval fortress siege weapons 4k"
+                ],
+                "business": [
+                    f"{anchor_word} cargo 4k" if anchor_word else "",
+                    "container cargo ship harbor port 4k",
+                    "global logistics warehouse automation 4k",
+                    "industrial semiconductor cleanroom 4k"
+                ]
+            }
+            templates = niche_broad_templates.get(channel, niche_broad_templates.get("science", []))
+            for t in templates:
+                if t and t.strip() and t.strip() not in broad_queries:
+                    broad_queries.append(t.strip())
+
+            stage2_results = []
+            for bq in broad_queries[:3]:
+                s2_cands = []
+                try: s2_cands.extend(_youtube_candidates(bq, n=3))
+                except Exception: pass
+                try: s2_cands.extend(_pexels_candidates(bq, orientation, n=3))
+                except Exception: pass
+                try: s2_cands.extend(_pixabay_candidates(bq, n=2))
+                except Exception: pass
+
+                fresh_s2 = [c for c in s2_cands if used_urls is None or c.get("video_url") not in used_urls]
+                for cand in fresh_s2[:2]:
+                    t_vid = f"output/broll_s2_{segment_index}_{len(stage2_results)}.mp4"
+                    t_frm = f"output/broll_s2_{segment_index}_{len(stage2_results)}.jpg"
+                    if _download_video_robust(cand["video_url"], t_vid, segment_index, candidate_info=cand):
+                        if _extract_collage_to_file(t_vid, t_frm):
+                            try:
+                                with open(t_frm, "rb") as ff:
+                                    f_data = ff.read()
+                                stage2_results.append({
+                                    "temp_v": t_vid,
+                                    "temp_f": t_frm,
+                                    "frame_data": f_data,
+                                    "label": cand.get("source", "stage2"),
+                                    "video_url": cand["video_url"]
+                                })
+                            except Exception:
+                                pass
+                if len(stage2_results) >= 3:
+                    break
+
+            if stage2_results:
+                print(f"[B-roll] Stage 2: Ranking {len(stage2_results)} second-chance broad video candidates...")
+                s2_thumbs = [r["frame_data"] for r in stage2_results]
+                s2_best_idx, s2_match = vision_rank_broll(s2_thumbs, narration, query, topic=topic)
+                if s2_match is True and s2_best_idx is not None and 0 <= s2_best_idx < len(stage2_results):
+                    s2_winner = stage2_results[s2_best_idx]
+                    print(f"[B-roll] Stage 2 WINNER chosen! Source: {s2_winner['label']}. Using real motion video!")
+                    _image_to_ken_burns_video(s2_winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
+                    if used_urls is not None:
+                        used_urls.add(s2_winner["video_url"])
+                        used_urls.add(_candidate_fingerprint(s2_winner))
+                    for r in stage2_results:
+                        for p in [r["temp_v"], r["temp_f"]]:
+                            if os.path.exists(p):
+                                try: os.remove(p)
+                                except Exception: pass
+                    return out_path
+                else:
+                    for r in stage2_results:
+                        for p in [r["temp_v"], r["temp_f"]]:
+                            if os.path.exists(p):
+                                try: os.remove(p)
+                                except Exception: pass
 
     # Ensure stale video credit files are strictly wiped before any image fallback
     stale_credit_f = f"output/broll_{segment_index}_credit.json"
@@ -2904,8 +3009,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         except Exception:
             pass
 
-    # ── Fallback 2: authentic topic imagery or Pollinations 4K synthesis ─────────────
-    print(f"[B-roll] Segment {segment_index}: trying authentic archival image sources and 4K scene synthesis…")
+    # ── Fallback 2: Authentic Institutional Documentary Imagery (NASA, Wikipedia, Wikimedia) ──
+    print(f"[B-roll] Segment {segment_index}: trying authentic institutional archival photographs…")
 
     # High-authority NASA image if space topic
     if NASA_BROLL_ENABLED and is_space_topic:
@@ -2937,36 +3042,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             except Exception: pass
         return out_path
 
-    # Fallback 3: Unique Pollinations 4K Photorealistic Scene tailored to exact segment narration
-    pollin_query = f"{topic} {narration or query}".strip() if topic else (narration or query)
-    banned_metaphors = [
-        "conan the bacterium", "conan the barbarian", "conan", "frankenstein", "godzilla",
-        "monster", "beast", "werewolf", "tiny warriors", "antidote factory", "secret weapon",
-        "magic bullet", "superhero", "zombie", "alien invader", "vampire"
-    ]
-    sanitized_pollin = pollin_query
-    for b in banned_metaphors:
-        sanitized_pollin = re.sub(r'\b' + re.escape(b) + r'\b', '', sanitized_pollin, flags=re.IGNORECASE)
-    if channel in ["nature", "science"]:
-        sanitized_pollin = re.sub(r'\bbugs?\b', 'microorganisms', sanitized_pollin, flags=re.IGNORECASE)
-    sanitized_pollin = re.sub(r'\s+', ' ', sanitized_pollin).strip()
-
-    if channel == "nature":
-        clean_prompt = f"4k cinematic authentic national geographic macro photography or electron micrograph of {sanitized_pollin[:90]}, biological specimen, wild nature, scientific documentary, hyperrealistic, 8k, highly detailed, photorealistic, no text, no watermark, no slides, no humans"
-    elif channel == "science":
-        clean_prompt = f"4k cinematic scientific photography or scanning electron micrograph of {sanitized_pollin[:90]}, laboratory apparatus, physics, hyperrealistic, 8k, photorealistic, no text, no watermark, no slides, no humans"
-    else:
-        clean_prompt = f"4k cinematic documentary footage of {sanitized_pollin[:90]}, photorealistic, 8k, detailed, national geographic photography, no text, no watermark, no slides"
-
-    print(f"[B-roll] Segment {segment_index}: Generating unique Pollinations AI 4K documentary visual...")
-    if _pollinations_image(clean_prompt, img_path, w, h):
-        print(f"[B-roll] Segment {segment_index}: 4K documentary scene synthesized! Applying Ken Burns motion…")
-        _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
-        if os.path.exists(stale_credit_f):
-            try: os.remove(stale_credit_f)
-            except Exception: pass
-        return out_path
-
+    # Additional Wikimedia / Wikipedia / Openverse authentic images
     img_sources = []
     queries_for_images = [sanitized_q, clean_fallback, query]
     if topic:
@@ -3000,7 +3076,46 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
             return out_path
         except Exception as e:
-            print(f"[B-roll] Image source failed: {e}. Trying procedural plate…")
+            print(f"[B-roll] Image source failed: {e}. Trying fallback…")
+
+    # ── Fallback 3: Single-Use Pollinations Photorealistic Scene (MAX 1 PER VIDEO) ─────
+    pollin_tracker = "output/pollinations_count.txt"
+    used_pollin = 0
+    if os.path.exists(pollin_tracker):
+        try:
+            with open(pollin_tracker, "r") as pf:
+                used_pollin = int(pf.read().strip() or "0")
+        except Exception:
+            used_pollin = 0
+
+    if used_pollin < 1:
+        pollin_query = f"{topic} {narration or query}".strip() if topic else (narration or query)
+        banned_metaphors = [
+            "conan the bacterium", "conan the barbarian", "conan", "frankenstein", "godzilla",
+            "monster", "beast", "werewolf", "tiny warriors", "antidote factory", "secret weapon",
+            "magic bullet", "superhero", "zombie", "alien invader", "vampire"
+        ]
+        sanitized_pollin = pollin_query
+        for b in banned_metaphors:
+            sanitized_pollin = re.sub(r'\b' + re.escape(b) + r'\b', '', sanitized_pollin, flags=re.IGNORECASE)
+        if channel in ["nature", "science"]:
+            sanitized_pollin = re.sub(r'\bbugs?\b', 'microorganisms', sanitized_pollin, flags=re.IGNORECASE)
+        sanitized_pollin = re.sub(r'\s+', ' ', sanitized_pollin).strip()
+
+        clean_prompt = f"National Geographic authentic high-resolution documentary macro photograph of real physical {sanitized_pollin[:80]}, natural daylight, sharp macro lens, real world photographic realism, no CGI, no 3D render, no abstract shapes, no mandala, no cartoon, no glowing fantasy blobs, no text"
+
+        print(f"[B-roll] Segment {segment_index}: Generating single-use Pollinations AI documentary photograph...")
+        if _pollinations_image(clean_prompt, img_path, w, h):
+            print(f"[B-roll] Segment {segment_index}: Documentary scene synthesized. Applying Ken Burns motion…")
+            with open(pollin_tracker, "w") as pf:
+                pf.write(str(used_pollin + 1))
+            _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+            if os.path.exists(stale_credit_f):
+                try: os.remove(stale_credit_f)
+                except Exception: pass
+            return out_path
+    else:
+        print(f"[B-roll] Segment {segment_index}: Pollinations quota reached for this video ({used_pollin}/1). Banning further static AI images.")
 
     # ── Fallback 4: Text-free Cinematic Background Plate with Ken Burns ───
     print(f"[B-roll] Segment {segment_index}: Generating clean cinematic background plate...")

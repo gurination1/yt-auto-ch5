@@ -91,12 +91,13 @@ def vision_rank_broll(
         f"Note: Some candidate images may be a horizontal collage showing 3 sequential frames from the same video.\n\n"
         f"SCORING RULES — read carefully:\n"
         f"   - FANTASY / AI SLOP / CGI: ZERO-SCORE REJECT ANY fantasy CGI art, cloaked figures/warlocks/wizards walking in mist, fantasy demons, apocalyptic dark clouds, anime, or video game graphics.\n"
+        f"   - STATIC AI IMAGES / POLLINATIONS SLOP: ZERO-SCORE REJECT static 2D drawings, AI-generated synthetic paintings, floating mandalas, or still illustrations. REAL VIDEO MOTION IS MANDATORY.\n"
         f"   - 2D CARTOONS & DOODLES: ZERO-SCORE REJECT ANY 2D cartoon animation, smiling/crying animated blobs/emojis, children's educational drawings, or comic doodles.\n"
         f"   - TOYS, PLASTIC MODELS & PROPS: ZERO-SCORE REJECT plastic toys, desk globes wrapped in bags, miniature dioramas, doll figures, or handmade fake props.\n"
         f"   - STATIONARY 3D STOCK RENDERS & ABSTRACT SHAPES: ZERO-SCORE REJECT completely stationary 3D rendered pill bottles, abstract 3D floating rings/text, or generic spinning DNA helices floating in dark void.\n"
         f"   - GENERIC WALLS & ROOMS: ZERO-SCORE REJECT plain beige/white/gray walls, empty apartment/office rooms, plain ceilings, or blurry indoor backgrounds.\n"
         f"   - GENERIC PEOPLE & PHONES: ZERO-SCORE REJECT back-of-head or over-the-shoulder shots of unidentified people looking around, generic hands holding smartphones/tablets, or staged actors with electronics.\n"
-        f"   - SYMBOLIC ANALOGIES FOR BIOLOGY / SCIENCE: ZERO-SCORE REJECT cartoon mice/superheroes used as analogies for biological processes or antidote production, generic whole animals (e.g. green tree snake) when narration describes microscopic blood/molecules/antibodies/venom breakdown, and generic outer-space planets when narration describes Earth's mantle or core.\n"
+        f"   - CARTOON & FANTASY ANALOGIES: ZERO-SCORE REJECT cartoon characters, superheroes, or fantasy monsters used as analogies for biology or physics. However, REAL authentic contextual footage (e.g. real live animals/reptiles in nature, authentic laboratory apparatus, optical microscopes, petri dishes, cellular microscopy, liquid pipettes, or cleanroom scientists) SHOULD BE ACCEPTED (scores 75-95) as valid documentary B-roll!\n"
         f"   - UNRELATED TERRESTRIAL ANALOGIES: If video topic is SPACE, ASTRONOMY, or PLANETS, ZERO-SCORE REJECT ANY terrestrial Earth scenes, factories, foundries, metal smelting, blast furnaces, industrial machinery, modern city streets, cars, beaches, sunsets, or modern offices.\n"
         f"   - UNRELATED INDUSTRIAL/OFFICE SCENES: If video topic is NATURE, WILDLIFE, or DEEP SEA, ZERO-SCORE REJECT modern offices, factory floors, city traffic, or commercial electronics.\n"
         f"   - ANY candidate showing cosplayers, LARP, amateur costume roleplay, Comic-Con footage, plastic props/armor, or amateur fantasy reenactments.\n"
@@ -116,14 +117,14 @@ def vision_rank_broll(
         f"   - 85-100: exact physical subject or highly specific real-world match (authentic archival clip, real scientific apparatus, documentary specimen, or precise 3D engineering render)\n"
         f"   - 75-84: strong contextual/thematic physical or documentary match of the main subject\n"
         f"   - 0-74: generic stock filler, symbolic placeholder, talking heads, blank wall, cartoon analogy, or unrelated topic (REJECT)\n"
-        f"4. Set match_found=false whenever the best candidate scores below 75 or triggers any ban rule.\n\n"
+        f"4. Set match_found=false whenever the best candidate scores below 70 or triggers any ban rule.\n\n"
         f"Return ONLY valid JSON (no markdown):\n"
         f'{{"best_index": <int or null>, '
         f'"match_found": <bool>, '
         f'"confidence": <0-100 int>, '
         f'"candidate_scores": [<0-100 int for each candidate>], '
         f'"reject_reason": \"<why rejected, or empty string if accepted>\"}}\n\n'
-        f"Set match_found=true only if confidence >= 75 and ban rules are completely clear."
+        f"Set match_found=true only if confidence >= 70 and ban rules are completely clear."
     )
 
     parts = [{"text": prompt_text}]
@@ -180,12 +181,14 @@ def vision_rank_broll(
         if reason:
             print(f"[VisionMatch] Note: {reason} (confidence={confidence})")
 
-        # Find highest scoring candidate with score >= 75 from candidate_scores list
+        # Find highest scoring candidate with score >= 70 from candidate_scores list
         best_candidate_idx = None
         highest_score = 0
-        if isinstance(scores, list) and len(scores) == len(thumbnails):
+        if isinstance(scores, list) and len(scores) > 0:
             for s_idx, score in enumerate(scores):
-                if isinstance(score, (int, float)) and score >= 75 and score > highest_score:
+                if s_idx >= len(thumbnails):
+                    break
+                if isinstance(score, (int, float)) and score >= 70 and score > highest_score:
                     highest_score = score
                     best_candidate_idx = s_idx
 
@@ -195,13 +198,13 @@ def vision_rank_broll(
             return best_candidate_idx, True
 
         # Check model's best_index if confidence is valid
-        if found and isinstance(idx, int) and 0 <= idx < len(thumbnails) and confidence >= 75:
+        if found and isinstance(idx, int) and 0 <= idx < len(thumbnails) and confidence >= 70:
             quality = "flawless" if confidence >= 85 else "strong"
             print(f"[VisionMatch] Accepted {quality} index {idx} (confidence={confidence})")
             return idx, True
 
-        # ABSOLUTE REJECTION: Do NOT force Candidate 0 if all candidates score < 75
-        print(f"[VisionMatch] All candidate scores below 75 (scores={scores}). Strictly rejecting batch to force authentic archival/synthesis fallback.")
+        # ABSOLUTE REJECTION: Do NOT force Candidate 0 if all candidates score < 70
+        print(f"[VisionMatch] All candidate scores below 70 (scores={scores}). Strictly rejecting batch to force authentic archival/synthesis fallback.")
         return None, False
 
     except Exception as e:
