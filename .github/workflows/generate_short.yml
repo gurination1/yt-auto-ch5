@@ -66,6 +66,8 @@ jobs:
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt && pip install -U --pre "yt-dlp[default]"
+          curl -fsSL https://deno.land/install.sh | sh -s -- -y
+          echo "/root/.deno/bin" >> 
 
       - name: Install and Start Cloudflare WARP (Bypass Cloud IP blocks for authentic documentary downloads)
         run: |

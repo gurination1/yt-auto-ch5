@@ -67,10 +67,29 @@ def _validate_and_normalize_image(img_path: str) -> bool:
                 pass
         return False
 
-def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = None, topic: str = "") -> bool:
+def _verify_image_file_with_vision(img_path: str, narration: str, query: str = "", topic: str = "") -> tuple[bool, str]:
+    """
+    Validates a still image against narration and topic using Gemini Vision.
+    Strictly catches corporate office buildings, sea creatures when discussing
+    chips/physics, solar panels, irrelevant street scenes, portraits, etc.
+    """
+    if not narration or not os.path.exists(img_path) or os.path.getsize(img_path) < 1000:
+        return True, "No narration or file missing"
+    if os.environ.get("BYPASS_VISION_MATCH") == "1":
+        return True, "Vision match bypassed"
+    try:
+        with open(img_path, "rb") as f:
+            img_bytes = f.read()
+        from pipeline.vision_match import verify_video_frames
+        return verify_video_frames([img_bytes], narration=narration, query=query, topic=topic)
+    except Exception as e:
+        print(f"[B-roll] Image vision check exception: {e}")
+        return True, "Vision exception - allowing candidate"
+
+def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = None, topic: str = "", narration: str = "") -> bool:
     """
     Fetches official high-resolution authentic photograph/micrograph of entity from Wikipedia/Wikimedia.
-    Enforces strict topic/query relevance, rejects 2D diagrams/charts/flags, and prevents duplicate reuse.
+    Enforces strict topic/query relevance, rejects 2D diagrams/charts/flags, office buildings, and prevents duplicate reuse.
     """
     try:
         STOPLIST = {
@@ -96,6 +115,11 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
 
         headers = {"User-Agent": "yt-auto-fleet/2.0 (educational-video-pipeline; mailto:contact@gurination.com)"}
 
+        IRRELEVANT_PATTERNS = [
+            "headquarters", "corporate_office", "office_building", "campus", "exterior",
+            "statue", "monument", "bust_of", "portrait_of", "tomb", "gravesite"
+        ]
+        q_top_lower = f"{query} {topic}".lower()
 
         def _is_valid_image(url: str, title: str = "") -> bool:
             if not url or not url.startswith("http"):
@@ -106,6 +130,9 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
             title_lower = title.lower()
             if any(p in url_lower or p in title_lower for p in BANNED_IMAGE_PATTERNS):
                 return False
+            if any(p in title_lower or p in url_lower for p in IRRELEVANT_PATTERNS):
+                if not any(k in q_top_lower for k in ["headquarters", "building", "statue", "monument", "portrait", "architecture"]):
+                    return False
             if title_lower:
                 t_words = set(re.sub(r'[^a-zA-Z0-9\s]', ' ', title_lower).split())
                 if not (t_words & anchor_words):
@@ -132,6 +159,14 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
                                 with open(img_path, "wb") as f:
                                     f.write(r_img.content)
                                 if _validate_and_normalize_image(img_path):
+                                    if narration:
+                                        is_v, v_reason = _verify_image_file_with_vision(img_path, narration=narration, query=query, topic=topic)
+                                        if not is_v:
+                                            print(f"[B-roll] Wikipedia candidate '{p_title}' rejected by vision check: {v_reason}")
+                                            if os.path.exists(img_path):
+                                                try: os.remove(img_path)
+                                                except Exception: pass
+                                            continue
                                     if used_urls is not None:
                                         used_urls.add(thumb)
                                     print(f"[B-roll] Fetched official Wikipedia HD photo for '{p_title}'.")
@@ -153,6 +188,14 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
                             with open(img_path, "wb") as f:
                                 f.write(r_img.content)
                             if _validate_and_normalize_image(img_path):
+                                if narration:
+                                    is_v, v_reason = _verify_image_file_with_vision(img_path, narration=narration, query=query, topic=topic)
+                                    if not is_v:
+                                        print(f"[B-roll] Wikipedia candidate '{p_title}' rejected by vision check: {v_reason}")
+                                        if os.path.exists(img_path):
+                                            try: os.remove(img_path)
+                                            except Exception: pass
+                                        continue
                                 if used_urls is not None:
                                     used_urls.add(thumb)
                                 print(f"[B-roll] Fetched search-matched Wikipedia HD photo for '{p_title}'.")
@@ -179,6 +222,14 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
                             with open(img_path, "wb") as f:
                                 f.write(r_img.content)
                             if _validate_and_normalize_image(img_path):
+                                if narration:
+                                    is_v, v_reason = _verify_image_file_with_vision(img_path, narration=narration, query=query, topic=topic)
+                                    if not is_v:
+                                        print(f"[B-roll] Commons candidate '{f_title}' rejected by vision check: {v_reason}")
+                                        if os.path.exists(img_path):
+                                            try: os.remove(img_path)
+                                            except Exception: pass
+                                        continue
                                 if used_urls is not None:
                                     used_urls.add(thumb)
                                 print(f"[B-roll] Fetched authentic Commons archive photo for '{f_title}'.")
@@ -801,6 +852,11 @@ def _wikimedia_image(query: str, used_urls: set[str] | None = None) -> str | Non
                     r_short = requests.get(url, params=params, headers=headers, timeout=12)
                     if r_short.status_code == 200:
                         pages = r_short.json().get("query", {}).get("pages", {})
+            q_words = set(re.sub(r'[^a-zA-Z0-9\s]', ' ', clean_q.lower()).split())
+            COMM_IRRELEVANT = [
+                "headquarters", "corporate_office", "office_building", "campus", "exterior",
+                "statue", "monument", "bust_of", "portrait_of", "tomb", "gravesite"
+            ]
             for pid, pdata in pages.items():
                 ii_list = pdata.get("imageinfo", [])
                 if ii_list:
@@ -811,6 +867,13 @@ def _wikimedia_image(query: str, used_urls: set[str] | None = None) -> str | Non
                         thumb = ii.get("thumburl") or ii.get("url")
                         if any(p in title or (thumb and p in thumb.lower()) for p in BANNED_IMAGE_PATTERNS):
                             continue
+                        if any(p in title or (thumb and p in thumb.lower()) for p in COMM_IRRELEVANT):
+                            if not any(k in clean_q.lower() for k in ["headquarters", "building", "statue", "monument", "portrait"]):
+                                continue
+                        if q_words:
+                            t_words = set(re.sub(r'[^a-zA-Z0-9\s]', ' ', title).split())
+                            if not (t_words & q_words):
+                                continue
                         if thumb and (used_urls is None or thumb not in used_urls):
                             return thumb
     except Exception as e:
@@ -1453,16 +1516,18 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
             except Exception:
                 pass
 
+            js_args = ["--js-runtimes", "node"]
             client_options = [
-                "android_creator,android",
-                "android",
-                "tv_embedded",
-                "web"
+                "android_vr,web",
+                "android_vr",
+                "ios,web",
+                "web",
+                "android"
             ]
 
             for client_str in client_options:
                 target_end = int(15 + slice_dur + 2)
-                cmd_dl_section = ytdlp_bin_cmd + proxy_args + [
+                cmd_dl_section = ytdlp_bin_cmd + proxy_args + js_args + [
                     "--extractor-args", f"youtube:player_client={client_str}",
                     "--format", "bestvideo[height>=720][ext=mp4]+bestaudio[ext=m4a]/22/137/136/best[height>=720]/best",
                     "--download-sections", f"*15-{target_end}",
@@ -1475,7 +1540,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 try:
                     res_dl = subprocess.run(cmd_dl_section, capture_output=True, text=True, timeout=25)
                     if not (os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000):
-                        cmd_dl_full = ytdlp_bin_cmd + proxy_args + [
+                        cmd_dl_full = ytdlp_bin_cmd + proxy_args + js_args + [
                             "--extractor-args", f"youtube:player_client={client_str}",
                             "--format", "22/137/136/bestvideo[height>=720][ext=mp4]+bestaudio/best[height>=720]/best",
                             "--no-check-certificates",
@@ -3147,8 +3212,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             except Exception as e:
                 print(f"[B-roll] NASA image fetch failed: {e}")
 
-    # Direct official Wikipedia / Wikimedia Commons HD photograph with strict title validation
-    if _wikipedia_hd_image(sanitized_q or topic or query, img_path, used_urls=used_urls, topic=topic):
+    # Direct official Wikipedia / Wikimedia Commons HD photograph with strict title validation and vision check
+    if _wikipedia_hd_image(sanitized_q or topic or query, img_path, used_urls=used_urls, topic=topic, narration=narration):
         print(f"[B-roll] Segment {segment_index}: official Wikipedia/Wikimedia HD archival photo secured. Applying Ken Burns 2.5D…")
         _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
         if os.path.exists(stale_credit_f):
@@ -3156,7 +3221,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             except Exception: pass
         return out_path
 
-    # Additional Wikimedia / Wikipedia / Openverse authentic images
+    # Additional Wikimedia / Wikipedia / Openverse authentic images with vision filtering
     img_sources = []
     queries_for_images = [sanitized_q, clean_fallback, query]
     if topic:
@@ -3169,31 +3234,36 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
         img_sources.append((_wikipedia_image, q_candidate))
         img_sources.append((_openverse_image, q_candidate))
 
-    img_url = None
     for img_fn, q in img_sources:
         try:
             candidate_img = img_fn(q, used_urls=used_urls) if 'used_urls' in img_fn.__code__.co_varnames else img_fn(q)
         except Exception:
             candidate_img = img_fn(q)
         if candidate_img and (used_urls is None or candidate_img not in used_urls):
-            img_url = candidate_img
-            if used_urls is not None:
-                used_urls.add(img_url)
-            break
-
-    if img_url:
-        try:
-            r = requests.get(img_url, timeout=30, headers={"User-Agent": "yt-auto-bot/2.0 (https://github.com/mahesajeth-wq/yt-auto; contact@mahesajeth.com)"})
-            r.raise_for_status()
-            with open(img_path, "wb") as f:
-                f.write(r.content)
-            if not _validate_and_normalize_image(img_path):
-                raise ValueError("Downloaded image validation failed")
-            print(f"[B-roll] Segment {segment_index}: authentic image downloaded ({img_url[:60]}...). Applying Ken Burns…")
-            _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
-            return out_path
-        except Exception as e:
-            print(f"[B-roll] Image source failed: {e}. Trying fallback…")
+            try:
+                r = requests.get(candidate_img, timeout=25, headers={"User-Agent": "yt-auto-bot/2.0 (https://github.com/mahesajeth-wq/yt-auto; contact@mahesajeth.com)"})
+                if r.status_code == 200 and len(r.content) > 10_000:
+                    with open(img_path, "wb") as f:
+                        f.write(r.content)
+                    if _validate_and_normalize_image(img_path):
+                        if narration:
+                            is_v, v_reason = _verify_image_file_with_vision(img_path, narration=narration, query=query, topic=topic)
+                            if not is_v:
+                                print(f"[B-roll] Archival image candidate ({candidate_img[:60]}...) rejected by vision check: {v_reason}")
+                                if os.path.exists(img_path):
+                                    try: os.remove(img_path)
+                                    except Exception: pass
+                                continue
+                        if used_urls is not None:
+                            used_urls.add(candidate_img)
+                        print(f"[B-roll] Segment {segment_index}: authentic image downloaded ({candidate_img[:60]}...). Applying Ken Burns…")
+                        _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+                        if os.path.exists(stale_credit_f):
+                            try: os.remove(stale_credit_f)
+                            except Exception: pass
+                        return out_path
+            except Exception as e:
+                print(f"[B-roll] Image candidate ({candidate_img[:60]}...) failed: {e}")
 
     # ── Fallback 3: Single-Use Pollinations Photorealistic Scene ─────
     pollin_tracker = "output/pollinations_count.txt"
@@ -3246,13 +3316,22 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                     if r.status_code == 200 and len(r.content) > 10_000:
                         with open(img_path, "wb") as f: f.write(r.content)
                         if _validate_and_normalize_image(img_path):
-                            if used_urls is not None: used_urls.add(extra_wiki)
-                            print(f"[B-roll] Segment {segment_index}: Secured additional authentic Wikimedia Commons photo. Applying Ken Burns…")
-                            _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
-                            if os.path.exists(stale_credit_f):
-                                try: os.remove(stale_credit_f)
-                                except Exception: pass
-                            return out_path
+                            if narration:
+                                is_v, v_reason = _verify_image_file_with_vision(img_path, narration=narration, query=query, topic=topic)
+                                if not is_v:
+                                    print(f"[B-roll] Additional Wikimedia photo rejected by vision check: {v_reason}")
+                                    if os.path.exists(img_path):
+                                        try: os.remove(img_path)
+                                        except Exception: pass
+                                    extra_wiki = None
+                            if extra_wiki:
+                                if used_urls is not None: used_urls.add(extra_wiki)
+                                print(f"[B-roll] Segment {segment_index}: Secured additional authentic Wikimedia Commons photo. Applying Ken Burns…")
+                                _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+                                if os.path.exists(stale_credit_f):
+                                    try: os.remove(stale_credit_f)
+                                    except Exception: pass
+                                return out_path
                 except Exception as e_w:
                     print(f"[B-roll] Additional Wikimedia fetch failed: {e_w}")
 

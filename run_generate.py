@@ -311,7 +311,10 @@ def main():
                 dur = tts_durations[idx] if tts_durations else 6.0
                 
                 # Delete existing failed broll files to ensure a fresh clip is sourced
-                for f_old in [f"output/broll_{idx}.mp4", f"output/broll_{idx}.jpg", f"output/broll_{idx}_normalized.mp4"]:
+                for f_old in [
+                    f"output/broll_{idx}.mp4", f"output/broll_{idx}.jpg", f"output/broll_{idx}_normalized.mp4",
+                    f"output/broll_{idx}_credit.json", f"output/broll_{idx}_winner.json", f"output/broll_{idx}_temp.mp4"
+                ]:
                     if os.path.exists(f_old):
                         try:
                             os.remove(f_old)
