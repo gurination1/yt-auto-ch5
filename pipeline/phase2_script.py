@@ -100,6 +100,9 @@ Narration Style Requirements (CRITICAL - MAXIMUM VIRALITY & SIMPLICITY):
 4. MANDATORY STARTLING UNKNOWN FACT (THE REVEAL):
    - Every single script MUST reveal at least ONE specific, counterintuitive, jaw-dropping secret that 99% of people DO NOT KNOW.
    - NEVER deflate the hook with a wet blanket or say "actually it didn't happen". Deliver an astonishing, verified truth.
+4b. MANDATORY CONCRETE NAMED ENTITIES (ZERO ABSTRACT GENERALITIES):
+   - You MUST name the exact real-world detector, instrument, mine, organism, cartel, or megaproject (e.g. "The LUX-ZEPLIN detector 1 mile deep", "De Beers", "The Challenger Deep amphipod", "The Herrenknecht TBM", "ASML").
+   - ABSOLUTELY FORBIDDEN: Vague filler phrases like "a detector deep underground", "scientists believe", "an underground facility", "a mysterious machine", "a massive company", "an animal". Concrete names anchor credibility and multiply viewer retention!
 5. ZERO TOPIC REPETITION:
    - Introduce the subject in Segment 1. In subsequent segments, refer to it naturally ("this metal", "the ancient weapon", "the creature", "this machine"). NEVER repeat the full topic string.
 6. SEAMLESS INFINITE LOOP CLOSING (SEGMENT {segment_count} MANDATE):

@@ -473,7 +473,7 @@ class GeminiClient:
             payload["tools"] = [{"google_search": {}}]
 
         models_to_try = [model_name]
-        for m in [GEMINI_FLASH, GEMINI_FLASH_BACKUP, "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest"]:
+        for m in [GEMINI_FLASH, GEMINI_FLASH_BACKUP, "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"]:
             if m and m not in models_to_try:
                 models_to_try.append(m)
 

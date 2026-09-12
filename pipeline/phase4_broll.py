@@ -1436,7 +1436,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 target_end = int(15 + slice_dur + 2)
                 cmd_dl_section = ytdlp_bin_cmd + proxy_args + [
                     "--extractor-args", f"youtube:player_client={client_str}",
-                    "--format", "18/22/136/137/best[ext=mp4]/best",
+                    "--format", "bestvideo[height>=720][ext=mp4]+bestaudio[ext=m4a]/22/137/136/best[height>=720]/best",
                     "--download-sections", f"*15-{target_end}",
                     "--force-keyframes-at-cuts",
                     "--no-check-certificates",
@@ -1449,7 +1449,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                     if not (os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000):
                         cmd_dl_full = ytdlp_bin_cmd + proxy_args + [
                             "--extractor-args", f"youtube:player_client={client_str}",
-                            "--format", "18/22/136/137/best[ext=mp4]/best",
+                            "--format", "22/137/136/bestvideo[height>=720][ext=mp4]+bestaudio/best[height>=720]/best",
                             "--no-check-certificates",
                             "--socket-timeout", "15",
                             "-o", temp_full,
@@ -2909,12 +2909,11 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     if downloaded_results:
         print(f"[B-roll] Segment {segment_index}: Ranking {len(downloaded_results)} downloaded candidates in batch...")
         thumbs = [r["frame_data"] for r in downloaded_results]
-        best_idx, match_found = vision_rank_broll(thumbs, narration, query, topic=topic)
-        
-        if match_found is True and best_idx is not None and 0 <= best_idx < len(downloaded_results):
-            winner = downloaded_results[best_idx]
-            winner_idx = best_idx
-            print(f"[B-roll] Parallel winner chosen! Source: {winner['label']} (Index: {best_idx})")
+        if (match_found is True or match_found is None) and len(downloaded_results) > 0:
+            winner_idx = best_idx if (match_found is True and best_idx is not None and 0 <= best_idx < len(downloaded_results)) else 0
+            winner = downloaded_results[winner_idx]
+            status_desc = f"Index: {winner_idx}" if match_found is True else "Heuristic candidate 0 (Vision API offline)"
+            print(f"[B-roll] Parallel winner chosen! Source: {winner['label']} ({status_desc})")
             
             # Run the video through Ken Burns normalization
             print(f"[B-roll] Winner video. Running video normalization...")
