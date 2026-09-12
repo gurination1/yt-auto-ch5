@@ -98,12 +98,14 @@ def generate_captions(audio_files: List[str], script: Dict[str, Any], format_typ
 
     ass_events = []
     time_offset = 0.0
+    prev_event_end = 0.0
 
     model = None
     try:
         from faster_whisper import WhisperModel
         print("Loading faster-whisper 'base' model on CPU...")
-        model = WhisperModel("base", device="cpu", compute_type="int8", cpu_threads=1, num_workers=1)
+        cpu_cores = min(4, max(2, os.cpu_count() or 2))
+        model = WhisperModel("base", device="cpu", compute_type="int8", cpu_threads=cpu_cores, num_workers=1)
     except Exception as model_err:
         print(f"Warning: Could not load faster-whisper model ({model_err}). Will use rule-based timing.")
 
@@ -144,7 +146,7 @@ def generate_captions(audio_files: List[str], script: Dict[str, Any], format_typ
         if model is not None:
             try:
                 print(f"Transcribing TTS file: {audio_path}...")
-                segments_out, info = model.transcribe(audio_path, word_timestamps=True)
+                segments_out, info = model.transcribe(audio_path, word_timestamps=True, beam_size=1)
                 whisper_words = []
                 for whisper_seg in segments_out:
                     if whisper_seg.words:
@@ -186,10 +188,9 @@ def generate_captions(audio_files: List[str], script: Dict[str, Any], format_typ
 
         for chunk in chunks:
             for act_idx, act_word in enumerate(chunk):
-                start_t = act_word["start"]
-                end_t = act_word["end"]
-                if end_t <= start_t:
-                    end_t = start_t + 0.25
+                start_t = max(act_word["start"], prev_event_end)
+                end_t = max(act_word["end"], start_t + 0.18)
+                prev_event_end = end_t
 
                 dur_ms = int((end_t - start_t) * 1000)
                 pop_ms = min(60, max(25, int(dur_ms * 0.35)))

@@ -79,18 +79,22 @@ def main():
                 with open(report_path, "w") as rf:
                     json.dump(report, rf, indent=2)
             except Exception as judge_err:
-                print(f"Warning: Judge AI review encountered an error: {judge_err}.")
-                print("Proceeding with upload (fallback due to Judge AI system error)...")
-                report = {"status": "PASSED", "score": 91, "reason": "Bypassed due to Judge API error"}
+                print(f"Error: Judge AI review encountered an error: {judge_err}.")
+                print("Blocking upload to prevent unverified video publishing.")
+                report = {"status": "REJECTED", "score": 50, "reason": f"Bypassed due to Judge API error: {judge_err}"}
                 
         status = report.get("status", "REJECTED")
-        score = report.get("score", 0)
+        score = int(report.get("score", 0) or 0)
+        cohesiveness = int(report.get("cohesiveness_score", 100) or 0)
+        failed_segs = report.get("failed_segments", [])
         reason = report.get("reason", "No reason provided")
         issues = report.get("issues", [])
         
-        if status != "PASSED":
+        if status != "PASSED" or score < 85 or cohesiveness < 75 or (isinstance(failed_segs, list) and len(failed_segs) > 0):
             print("\n🛑 VIDEO REJECTED BY JUDGE AI!")
-            print(f"Score: {score}/100")
+            print(f"Score: {score}/100 | Cohesiveness: {cohesiveness}/100 | Status: {status}")
+            if failed_segs:
+                print(f"Failed Segments: {failed_segs}")
             print(f"Reason: {reason}")
             if issues:
                 print("Issues:")
@@ -99,7 +103,7 @@ def main():
             print("\nFix the issues and regenerate the video before publishing.")
             sys.exit(1)
         else:
-            print(f"\n✅ Video PASSED Judge AI review! (Score: {score}/100)")
+            print(f"\n✅ Video PASSED Judge AI review! (Score: {score}/100 | Cohesiveness: {cohesiveness}/100)")
             print(f"Judge Comments: {reason}\n")
     else:
         print("\n⚠️ Bypassing Judge AI check as requested.")
