@@ -53,9 +53,20 @@ def _get_judge_key(attempt: int = 0) -> str | None:
         print("[JudgeAI] Warning: No valid judge keys available for Files API upload!")
         return None
 
-    chosen_key = all_keys[attempt % len(all_keys)]
+    # Prioritize keys that are not on active cooldown
+    healthy_keys = []
+    now = time.time()
+    for k in all_keys:
+        if hasattr(_shared_pool, "_keys") and k in _shared_pool._keys:
+            idx = _shared_pool._keys.index(k)
+            if hasattr(_shared_pool, "_cooldowns") and _shared_pool._cooldowns[idx] > now:
+                continue
+        healthy_keys.append(k)
+
+    pool_to_use = healthy_keys if healthy_keys else all_keys
+    chosen_key = pool_to_use[attempt % len(pool_to_use)]
     slot = _shared_pool._keys.index(chosen_key) + 1 if (hasattr(_shared_pool, "_keys") and chosen_key in _shared_pool._keys) else "DEDICATED"
-    print(f"[JudgeAI] Selected key slot {slot} for review attempt {attempt + 1}/{max(3, len(all_keys))}")
+    print(f"[JudgeAI] Selected key slot {slot} for review attempt {attempt + 1}/{len(pool_to_use)}")
     return chosen_key
 
 def upload_file_to_gemini(filepath: str, api_key: str) -> dict:
@@ -195,11 +206,12 @@ class JudgeClient:
         
     def review_video(self, video_path: str, metadata: dict) -> dict:
         last_error: Exception | None = None
-        max_attempts = min(3, len(_shared_pool))
+        pool_len = len(_shared_pool) if hasattr(_shared_pool, "_keys") else 5
+        max_attempts = min(10, pool_len)
         start_ts = time.time()
         for attempt in range(max_attempts):
-            if time.time() - start_ts > 90:
-                print("[JudgeAI] Hard timeout (90s) reached. Raising exception to trigger local health fallback.")
+            if time.time() - start_ts > 150:
+                print("[JudgeAI] Hard timeout (150s) reached. Raising exception to trigger local health fallback.")
                 break
             api_key = _get_judge_key(attempt)
             if not api_key:
@@ -214,6 +226,7 @@ class JudgeClient:
                 last_error = exc
                 status = _http_status(exc)
                 print(f"[JudgeAI] Key slot {slot} failed during review (status {status or 'unknown'}): {exc}")
+                _FAILED_JUDGE_KEYS.add(api_key)
                 if api_key in _shared_pool._keys:
                     _shared_pool.mark_failed(api_key, status or 429, transient=False)
         print(f"[Judge AI] Gemini Files API review skipped or quota exhausted ({last_error}). Running local video health checks...")
