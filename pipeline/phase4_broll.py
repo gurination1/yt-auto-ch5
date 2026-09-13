@@ -117,7 +117,9 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
 
         IRRELEVANT_PATTERNS = [
             "headquarters", "corporate_office", "office_building", "campus", "exterior",
-            "statue", "monument", "bust_of", "portrait_of", "tomb", "gravesite"
+            "statue", "monument", "bust_of", "portrait_of", "tomb", "gravesite",
+            "portrait", "bust", "quadrangle", "colonnade", "hallway", "corridor",
+            "library_building", "university_hall", "sepia", "carte_de_visite"
         ]
         q_top_lower = f"{query} {topic}".lower()
 
@@ -131,7 +133,7 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
             if any(p in url_lower or p in title_lower for p in BANNED_IMAGE_PATTERNS):
                 return False
             if any(p in title_lower or p in url_lower for p in IRRELEVANT_PATTERNS):
-                if not any(k in q_top_lower for k in ["headquarters", "building", "statue", "monument", "portrait", "architecture"]):
+                if not any(k in q_top_lower for k in ["headquarters", "building", "statue", "monument", "portrait", "architecture", "biography"]):
                     return False
             if title_lower:
                 t_words = set(re.sub(r'[^a-zA-Z0-9\s]', ' ', title_lower).split())
@@ -1529,7 +1531,8 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 target_end = int(15 + slice_dur + 2)
                 cmd_dl_section = ytdlp_bin_cmd + proxy_args + js_args + [
                     "--extractor-args", f"youtube:player_client={client_str}",
-                    "--format", "bestvideo[height>=720][ext=mp4]+bestaudio[ext=m4a]/22/137/136/best[height>=720]/best",
+                    "--format", "bestvideo[height>=720]+bestaudio/best[height>=720]/bestvideo+bestaudio/best",
+                    "--merge-output-format", "mp4",
                     "--download-sections", f"*15-{target_end}",
                     "--force-keyframes-at-cuts",
                     "--no-check-certificates",
@@ -1542,7 +1545,8 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                     if not (os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000):
                         cmd_dl_full = ytdlp_bin_cmd + proxy_args + js_args + [
                             "--extractor-args", f"youtube:player_client={client_str}",
-                            "--format", "22/137/136/bestvideo[height>=720][ext=mp4]+bestaudio/best[height>=720]/best",
+                            "--format", "bestvideo[height>=720]+bestaudio/best[height>=720]/bestvideo+bestaudio/best",
+                            "--merge-output-format", "mp4",
                             "--no-check-certificates",
                             "--socket-timeout", "15",
                             "-o", temp_full,
