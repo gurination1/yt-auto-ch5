@@ -83,9 +83,10 @@
     "Costco's Silent Hot Dog Combo Shift: The $1.50 Loss Leader's 40-Year Secret Twist",
     "South America's 'Lithium OPEC' Emerges: Four Nations Plot Global Market Control",
     "The Razor-and-Blades Business Model of Jet Engines: Why Airlines Get the Blades Free, But Pay for Every Cut",
-    "De Beers Diamond Monopoly Cracking Under Lab-Grown Pressure"
+    "De Beers Diamond Monopoly Cracking Under Lab-Grown Pressure",
+    "ASML's Remote Kill Switch in Taiwan Foundries"
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 16,
-  "call_count": 202
+  "subcluster_idx": 1,
+  "fallback_idx": 17,
+  "call_count": 203
 }
