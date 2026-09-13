@@ -1823,36 +1823,7 @@ def _pil_placeholder(query: str, w: int, h: int, img_path: str):
     img = Image.fromarray(arr)
     draw = ImageDraw.Draw(img)
 
-    # 2. Subtle geometric framing lines (15% opacity aesthetic, zero text)
-    reticle_color = (38, 48, 62)
-    accent_color = (55, 75, 105)
-
-    # Center crosshairs
-    cx_i, cy_i = int(cx), int(cy)
-    draw.line([(cx_i - 40, cy_i), (cx_i - 10, cy_i)], fill=reticle_color, width=1)
-    draw.line([(cx_i + 10, cy_i), (cx_i + 40, cy_i)], fill=reticle_color, width=1)
-    draw.line([(cx_i, cy_i - 40), (cx_i, cy_i - 10)], fill=reticle_color, width=1)
-    draw.line([(cx_i, cy_i + 10), (cx_i, cy_i + 40)], fill=reticle_color, width=1)
-
-    # Center subtle ring
-    draw.ellipse([(cx_i - 70, cy_i - 70), (cx_i + 70, cy_i + 70)], outline=reticle_color, width=1)
-
-    # Corner registration marks
-    margin = int(min(w, h) * 0.08)
-    c_len = int(min(w, h) * 0.04)
-    # Top-left
-    draw.line([(margin, margin), (margin + c_len, margin)], fill=accent_color, width=2)
-    draw.line([(margin, margin), (margin, margin + c_len)], fill=accent_color, width=2)
-    # Top-right
-    draw.line([(w - margin, margin), (w - margin - c_len, margin)], fill=accent_color, width=2)
-    draw.line([(w - margin, margin), (w - margin, margin + c_len)], fill=accent_color, width=2)
-    # Bottom-left
-    draw.line([(margin, h - margin), (margin + c_len, h - margin)], fill=accent_color, width=2)
-    draw.line([(margin, h - margin), (margin, h - margin - c_len)], fill=accent_color, width=2)
-    # Bottom-right
-    draw.line([(w - margin, h - margin), (w - margin - c_len, h - margin)], fill=accent_color, width=2)
-    draw.line([(w - margin, h - margin), (w - margin, h - margin - c_len)], fill=accent_color, width=2)
-
+    # Clean text-free, reticle-free atmospheric photographic backdrop
     img.save(img_path, "JPEG", quality=90)
 
 
@@ -3297,14 +3268,24 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
         print(f"[B-roll] Segment {segment_index}: Generating Pollinations AI documentary photograph...")
         if _pollinations_image(clean_prompt, img_path, w, h):
-            print(f"[B-roll] Segment {segment_index}: Documentary scene synthesized. Applying Ken Burns motion…")
-            with open(pollin_tracker, "w") as pf:
-                pf.write(str(used_pollin + 1))
-            _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
-            if os.path.exists(stale_credit_f):
-                try: os.remove(stale_credit_f)
-                except Exception: pass
-            return out_path
+            is_v = True
+            v_reason = ""
+            if narration:
+                is_v, v_reason = _verify_image_file_with_vision(img_path, narration=narration, query=query, topic=topic)
+            if not is_v:
+                print(f"[B-roll] Synthesized Pollinations image REJECTED by vision check: {v_reason}")
+                if os.path.exists(img_path):
+                    try: os.remove(img_path)
+                    except Exception: pass
+            else:
+                print(f"[B-roll] Segment {segment_index}: Documentary scene synthesized and verified. Applying Ken Burns motion…")
+                with open(pollin_tracker, "w") as pf:
+                    pf.write(str(used_pollin + 1))
+                _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+                if os.path.exists(stale_credit_f):
+                    try: os.remove(stale_credit_f)
+                    except Exception: pass
+                return out_path
     else:
         print(f"[B-roll] Segment {segment_index}: Pollinations quota reached for this video ({used_pollin}/2).")
 
@@ -3339,21 +3320,48 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                 except Exception as e_w:
                     print(f"[B-roll] Additional Wikimedia fetch failed: {e_w}")
 
-    # Synthesize authentic documentary visual plate via Pollinations (Zero Black Screens Allowed)
-    clean_subj = f"{topic} {query}".strip()[:70]
-    pollin_prompt = f"National Geographic authentic high-resolution documentary photograph of {clean_subj}, natural daylight, 8k, photorealistic, no text, no slides, no crosshairs, no cartoon"
-    print(f"[B-roll] Segment {segment_index}: Synthesizing authentic documentary visual plate via Pollinations...")
-    if _pollinations_image(pollin_prompt, img_path, w, h):
-        print(f"[B-roll] Segment {segment_index}: Synthesized visual plate. Applying Ken Burns…")
-        _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
-        if os.path.exists(stale_credit_f):
-            try: os.remove(stale_credit_f)
-            except Exception: pass
-        return out_path
+    # Synthesize authentic documentary visual plate via Pollinations ONLY if within quota
+    if used_pollin < 2:
+        clean_subj = f"{topic} {query}".strip()[:70]
+        pollin_prompt = f"National Geographic authentic high-resolution documentary photograph of {clean_subj}, natural daylight, 8k, photorealistic, no text, no slides, no crosshairs, no cartoon"
+        print(f"[B-roll] Segment {segment_index}: Synthesizing authentic documentary visual plate via Pollinations...")
+        if _pollinations_image(pollin_prompt, img_path, w, h):
+            is_v = True
+            v_reason = ""
+            if narration:
+                is_v, v_reason = _verify_image_file_with_vision(img_path, narration=narration, query=query, topic=topic)
+            if not is_v:
+                print(f"[B-roll] Synthesized Pollinations image REJECTED by vision check: {v_reason}")
+                if os.path.exists(img_path):
+                    try: os.remove(img_path)
+                    except Exception: pass
+            else:
+                print(f"[B-roll] Segment {segment_index}: Synthesized visual plate verified. Applying Ken Burns…")
+                with open(pollin_tracker, "w") as pf:
+                    pf.write(str(used_pollin + 1))
+                _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+                if os.path.exists(stale_credit_f):
+                    try: os.remove(stale_credit_f)
+                    except Exception: pass
+                return out_path
 
-    # Last Resort: Reuse previous authentic segment frame with opposing camera dynamic
+    # Last Resort: Reuse previous authentic segment video or frame with opposing camera dynamic
     for prev_idx in range(segment_index):
+        prev_vid = f"output/broll_{prev_idx}.mp4"
         prev_img = f"output/broll_{prev_idx}.jpg"
+        
+        # If previous segment had an authentic video, extract a frame from it
+        if os.path.exists(prev_vid) and os.path.getsize(prev_vid) > 20_000:
+            cmd = f"ffmpeg -y -ss 1.5 -i '{prev_vid}' -vframes 1 -q:v 2 '{img_path}'"
+            subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if os.path.exists(img_path) and os.path.getsize(img_path) > 10_000:
+                print(f"[B-roll] Segment {segment_index}: Extracted authentic frame from video {prev_idx}. Applying dynamic Ken Burns...")
+                _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+                if os.path.exists(stale_credit_f):
+                    try: os.remove(stale_credit_f)
+                    except Exception: pass
+                return out_path
+
         if os.path.exists(prev_img) and os.path.getsize(prev_img) > 10_000:
             import shutil
             shutil.copy(prev_img, img_path)
