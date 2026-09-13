@@ -38,7 +38,7 @@ def _load_keys() -> list[str]:
     if multi:
         keys.extend(k.strip() for k in multi.split(",") if k.strip())
     single = os.environ.get("GEMINI_API_KEY", "").strip()
-    if single and not keys:
+    if single and single not in keys:
         keys.append(single)
     return list(dict.fromkeys(keys))
 

@@ -163,9 +163,15 @@ class _KeyPool:
             self._statuses[idx] = "disabled"
             cooldown_duration = 315360000.0  # 10 years
             self._cooldowns[idx] = now + cooldown_duration
+        elif not transient:
+            # Daily quota exhausted on this key
+            self._failures[idx] += 1
+            self._statuses[idx] = "daily_exhausted"
+            reset_time = _get_next_daily_reset_time()
+            cooldown_duration = max(60.0, reset_time - now)
+            self._cooldowns[idx] = reset_time
         else:
-            # 429 rate limit or 5xx server error is model-specific and temporary.
-            # Never mark key permanently daily_exhausted across all models.
+            # 429 rate limit (RPM) or 5xx server error is temporary
             self._failures[idx] += 1
             self._statuses[idx] = "active"
             cooldown_duration = 15.0 if status_code == 429 else 5.0
@@ -309,8 +315,9 @@ def _post_with_rotation(
                     except Exception:
                         print(f"[GeminiClient] 429 on slot {slot}: raw={resp.text[:200]}")
 
-                    print(f"[GeminiClient] 429 on slot {slot} for model. Rotating to next key...")
-                    _shared_pool.mark_failed(key, 429, transient=True)
+                    is_daily = _is_daily_exhaustion(resp)
+                    print(f"[GeminiClient] 429 on slot {slot} for model (daily_exhausted={is_daily}). Rotating to next key...")
+                    _shared_pool.mark_failed(key, 429, transient=not is_daily)
                     break  # Break inner loop to rotate key
                             
                 elif resp.status_code in (500, 502, 503, 504):

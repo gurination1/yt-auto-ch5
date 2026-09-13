@@ -96,8 +96,11 @@ def vision_rank_broll(
         f"   - TOYS, PLASTIC MODELS & PROPS: ZERO-SCORE REJECT plastic toys, desk globes wrapped in bags, miniature dioramas, doll figures, or handmade fake props.\n"
         f"   - STATIONARY 3D STOCK RENDERS & ABSTRACT SHAPES: ZERO-SCORE REJECT completely stationary 3D rendered pill bottles, abstract 3D floating rings/text, or generic spinning DNA helices floating in dark void.\n"
         f"   - GENERIC WALLS & ROOMS: ZERO-SCORE REJECT plain beige/white/gray walls, empty apartment/office rooms, plain ceilings, or blurry indoor backgrounds.\n"
-        f"   - GENERIC PEOPLE & PHONES: ZERO-SCORE REJECT back-of-head or over-the-shoulder shots of unidentified people looking around, generic hands holding smartphones/tablets, or staged actors with electronics.\n"
-        f"   - CARTOON & FANTASY ANALOGIES: ZERO-SCORE REJECT cartoon characters, superheroes, or fantasy monsters used as analogies for biology or physics. However, REAL authentic contextual footage (e.g. real live animals/reptiles in nature, authentic laboratory apparatus, optical microscopes, petri dishes, cellular microscopy, liquid pipettes, or cleanroom scientists) SHOULD BE ACCEPTED (scores 75-95) as valid documentary B-roll!\n"
+        f"   - CARTOON & FANTASY ANALOGIES: ZERO-SCORE REJECT cartoon characters, superheroes, or fantasy monsters used as analogies for biology or physics.\n"
+        f"   - STRICT ORGANISM & PHYSICAL ENTITY IDENTITY (SCORE 0 REJECT):\n"
+        f"     If the topic or narration specifies a distinct organism, animal, machine, or artifact (e.g. beetle, shark, octopus, owl, ant, tunnel boring machine, submarine, trebuchet), ANY candidate showing a completely different organism or entity (e.g. showing a fly, dragonfly, grasshopper, fish, bird, or human worker when topic is a beetle) MUST BE GIVEN SCORE 0 (STRICT REJECT).\n"
+        f"     Showing a frog catching a FLY when the narration is about a BEETLE escaping is an absolute fatal failure -> SCORE 0.\n"
+        f"     Showing empty scenery, landscape, or pond with NO focal organism -> SCORE 0.\n"
         f"   - REAL-WORLD APPARATUS, LABS & MACHINES: ACCEPT authentic contextual documentary footage (e.g. quantum computers, cryogenic dilution refrigerators, cleanroom laboratories, optical lasers, vacuum chambers, oscilloscopes, supercomputers, observatories, geological formations, natural habitats, construction machinery) as HIGH-VALUE VALID MATCHES (scores 80-95)! Do not reject real-world laboratory or engineering apparatus simply because theoretical concepts are microscopic or invisible!\n"
         f"   - UNRELATED TERRESTRIAL ANALOGIES: If video topic is SPACE, ASTRONOMY, or PLANETS, ZERO-SCORE REJECT ANY terrestrial Earth scenes, factories, foundries, metal smelting, blast furnaces, industrial machinery, modern city streets, cars, beaches, sunsets, or modern offices.\n"
         f"   - UNRELATED INDUSTRIAL/OFFICE SCENES: If video topic is NATURE, WILDLIFE, or DEEP SEA, ZERO-SCORE REJECT modern offices, factory floors, city traffic, or commercial electronics.\n"
@@ -258,9 +261,11 @@ def verify_video_frames(
         f"12. REAL-WORLD APPARATUS & CONTEXTUAL LAB FOOTAGE: DO NOT reject real-world scientific apparatus, laboratories, cleanrooms, oscilloscopes, lasers, microscopes, machinery, or specimens simply because theoretical/abstract concepts (e.g. quantum energy, relativity, dark matter) are invisible! High-tech laboratory apparatus, machinery, engineering setups, natural habitats, and documentary field footage ARE HIGH-VALUE VALID MATCHES (Score 80-95).\n"
         f"13. ELECTRONICS & WORKBENCHES: Only reject soldering irons and loose consumer circuit boards when the topic is strictly pure biology, wildlife, or ancient history. If the topic is PHYSICS, COMPUTING, ENGINEERING, TELECOMMUNICATIONS, or ADVANCED TECH, electronics, cleanroom equipment, and quantum apparatus ARE HIGHLY RELEVANT AND ACCEPTABLE (Score 85-95).\n"
         f"14. CAMERA & MECHANICAL REPAIR: Reject camera sensor cleaning, lens disassembly, watch repair, or mechanic tools when topic is biology/nature/science.\n"
-        f"15. FANTASY BEASTS & MONSTERS: Reject werewolves, minotaurs, mythical monsters, or CGI beast creatures when topic is scientific or biological organisms.\n\n"
+        f"15. FANTASY BEASTS & MONSTERS: Reject werewolves, minotaurs, mythical monsters, or CGI beast creatures when topic is scientific or biological organisms.\n"
+        f"16. STRICT ORGANISM & PHYSICAL SUBJECT IDENTITY (MANDATORY REJECT -> is_valid=false):\n"
+        f"    If the topic or narration describes a specific creature, organism, or machine (e.g. water beetle, shark, ant, turbine, tunnel boring machine), the frames MUST actually depict that specific creature, machine, or direct physical mechanism. Reject immediately (is_valid=false) if frames show a different organism (e.g. fly, grasshopper, dragonfly when searching for beetle) or generic scenery/landscape without the focal creature.\n\n"
         f"ACCEPTABLE (Return is_valid=true):\n"
-        f"Authentic documentary footage, archival footage, natural landscapes, machinery, scientific apparatus, specimens, space imagery, or relevant historical footage.\n\n"
+        f"Authentic documentary footage, archival footage, machinery, scientific apparatus, specimens, space imagery, or relevant historical footage that directly depicts the subject or mechanism described in the narration.\n\n"
         f"Return ONLY valid JSON (no markdown):\n"
         f'{{"is_valid": <bool>, "confidence": <0-100 int>, "reject_reason": "<brief explanation if rejected, else empty string>"}}'
     )
@@ -301,8 +306,8 @@ def verify_video_frames(
             continue
 
     if resp is None or resp.status_code != 200:
-        print(f"[VisionMatch] Vision API unavailable (status={getattr(resp, 'status_code', 'none')}). Falling back to heuristic checks.")
-        return True, "Vision API unavailable - passed heuristic checks"
+        print(f"[VisionMatch] Vision API unavailable (status={getattr(resp, 'status_code', 'none')}). Rejecting unverified candidate to protect video quality.")
+        return False, "Vision API unavailable - rejected unverified candidate to prevent slop"
 
     try:
         raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"]

@@ -165,12 +165,14 @@ def main():
             print(f"[Publish] Warning: Could not append footage credits: {fc_err}")
 
     # --- DECOUPLED PLATFORM UPLOADS ---
-    print("\n🚀 Starting platform uploads...")
-    
-    if os.environ.get("DISABLE_YT_UPLOAD") == "1":
-        print("\n⏸️ DISABLE_YT_UPLOAD=1 is set. Skipping direct YouTube upload to allow manual video verification.")
-        print("✅ Pre-upload verification & video generation complete. Video artifact saved successfully!")
+    publish_env = os.environ.get("PUBLISH_ENABLED", "true").strip().lower()
+    if publish_env in ("false", "0", "no") or os.environ.get("DISABLE_YT_UPLOAD") == "1":
+        print("\n🛑 PUBLISH_ENABLED is 'false'. Running in 100% ISOLATED CLOUD TEST MODE.")
+        print("✅ Strict black-screen verification and Judge AI evaluation completed successfully.")
+        print("✅ Final video and frames saved to GitHub Actions artifacts. Zero public uploads.")
         sys.exit(0)
+
+    print("\n🚀 Starting platform uploads...")
     
     published_results = {
         "title": metadata.get("title"),

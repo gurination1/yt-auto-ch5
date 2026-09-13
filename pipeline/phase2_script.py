@@ -137,10 +137,13 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
       * NEVER include words: "animation", "simulation", "concept", "visualization", "fantasy", "cgi", "cartoon", "illustration", "3d model", "futuristic", "diagram".
       * NEVER use biological organisms (plants, seedlings, flowers, fungi, trees, animals), waterfalls, rivers, or weather as metaphors or analogies for physical science (time dilation, speed, gravity, black holes, semiconductors, or quantum states).
     - REQUIRED: Every segment MUST specify the CONCRETE, OBSERVABLE physical entity being discussed:
-      * If narration says "These tiny warriors smash venom apart" -> broll_query MUST BE: "rattlesnake blood antibodies microscope" or "antivenom protein reaction lab".
-      * If narration says "quantum leaps happening all around us" -> broll_query MUST BE: "quantum laser cryostat optical table" or "silicon wafer cleanroom photolithography".
-      * If narration says "weird spots inside Earth" -> broll_query MUST BE: "earth mantle core boundary seismic scan" or "geological high pressure diamond anvil".
-      * If narration says "supply chain choke point" -> broll_query MUST BE: "container cargo ship suez canal" or "malacca strait bulk carrier tanker".
+      * ULTRA-COMPACT 2-4 WORD RULE: Search engines (YouTube/Wikimedia) fail on long sentences! broll_query MUST BE 2 TO 4 WORDS MAXIMUM!
+      * If topic is a specific animal/organism, broll_query MUST contain its exact scientific binomial or common name: e.g. "Regimbartia attenuata" or "water beetle frog".
+      * If narration says "These tiny warriors smash venom apart" -> broll_query MUST BE: "rattlesnake antivenom lab" or "antivenom protein reaction".
+      * If narration says "quantum leaps happening all around us" -> broll_query MUST BE: "quantum laser cryostat" or "silicon wafer cleanroom".
+      * If narration says "weird spots inside Earth" -> broll_query MUST BE: "earth mantle core" or "diamond anvil cell".
+      * If narration says "supply chain choke point" -> broll_query MUST BE: "container cargo ship" or "suez canal tanker".
+      * NEVER append "4k", "1080p", "real footage", "cinematic", "documentary" to broll_query or broll_queries.
 
 You MUST return your response ONLY as a raw JSON object with no markdown syntax. The JSON structure MUST be exactly like this:
 {{
@@ -155,22 +158,22 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
     {{
       "id": 1,
       "narration": "opening shocking hook statement - 10 words or less, bold present-tense declaration, NO rhetorical question",
-      "broll_query": "specific physical documentary subject 4k",
-      "broll_queries": ["specific physical documentary subject 4k", "optical macro close up 4k", "authentic institutional archive 4k"],
+      "broll_query": "primary entity name (2-3 words, NO buzzwords)",
+      "broll_queries": ["exact entity scientific or common name (2-3 words)", "subject action triplet (2-3 words)"],
       "duration_target": 6
     }},
     {{
       "id": 2,
       "narration": "Mind-bending real fact that delivers on the hook - 10 words or less",
-      "broll_query": "specific physical mechanism real footage 4k",
-      "broll_queries": ["specific physical mechanism real footage 4k", "laboratory physical experiment 4k"],
+      "broll_query": "physical mechanism entity (2-3 words, NO buzzwords)",
+      "broll_queries": ["exact physical mechanism (2-3 words)", "apparatus or specimen (2-3 words)"],
       "duration_target": 6
     }},
     {{
       "id": {segment_count},
       "narration": "A complete, punchy final payoff sentence that seamlessly loops back into the opening hook line. Complete sentence ending with a period. NO link in bio, NO subscribe.",
-      "broll_query": "macro physical evidence documentary 4k",
-      "broll_queries": ["macro physical evidence documentary 4k", "field expedition real footage 4k"],
+      "broll_query": "physical evidence entity (2-3 words, NO buzzwords)",
+      "broll_queries": ["observable evidence entity (2-3 words)", "habitat or field specimen (2-3 words)"],
       "duration_target": 6
     }}
   ],

@@ -1318,11 +1318,22 @@ def _reddit_candidates(query: str, n: int = 4, channel: str = "general") -> list
     return candidates
 
 
-def _youtube_candidates(query: str, n: int = 5) -> list[dict]:
+def _clean_query_terms(query: str) -> str:
+    """Strip all buzzwords, resolutions, and narrative fluff for search recall."""
+    fluff = {
+        "4k", "1080p", "720p", "hd", "uhd", "footage", "real", "authentic",
+        "cinematic", "documentary", "b-roll", "broll", "video", "clip", "clips",
+        "macro", "close", "up", "closeup", "slow", "motion", "slowmotion", "research"
+    }
+    words = [w for w in re.sub(r'[^a-zA-Z0-9\s-]', ' ', query).split() if w.lower() not in fluff and len(w) > 2]
+    return " ".join(words)
+
+
+def _youtube_candidates(query: str, n: int = 5, topic: str = "", narration: str = "") -> list[dict]:
     """
-    Search YouTube for matchable B-roll clips using broad ytsearch query.
+    Search YouTube for matchable B-roll clips using clean, high-intent 2-4 word entity queries.
     Captures uploader channel handle for on-screen Fair Use attribution.
-    Prioritizes modern high-definition (4K/1080p) footage and filters out low-resolution archives.
+    Filters out conflicting organisms and irrelevant tourism/scenery vlogs.
     """
     import yt_dlp
     import urllib.parse
@@ -1330,13 +1341,48 @@ def _youtube_candidates(query: str, n: int = 5) -> list[dict]:
     
     candidates = []
     seen_urls = set()
-    search_queries = [
-        f"{query} real footage 4k",
-        f"{query} 1080p documentary",
-        f"{query} cinematic b-roll 4k",
-        f"{query} authentic footage",
-        query
-    ]
+    
+    # Extract potential scientific Latin binomials (e.g., "Regimbartia attenuata")
+    combined_ctx = f"{topic} {query} {narration}"
+    latin_matches = re.findall(r'\b[A-Z][a-z]{3,}\s+[a-z]{3,}\b', combined_ctx)
+    
+    clean_q = _clean_query_terms(query)
+    clean_words = clean_q.split()
+    
+    search_queries = []
+    
+    # Priority 1: Exact Latin scientific species name if found (highest recall for scientific discoveries!)
+    for lm in latin_matches:
+        if lm not in search_queries:
+            search_queries.append(lm)
+            
+    # Priority 2: Clean 2-4 word query as-is
+    if 2 <= len(clean_words) <= 4 and clean_q not in search_queries:
+        search_queries.append(clean_q)
+    elif len(clean_words) > 4:
+        # Take first 2-3 subject words
+        q_head = " ".join(clean_words[:3])
+        if q_head not in search_queries:
+            search_queries.append(q_head)
+        # S-V-O anchor pair (first word + last word)
+        q_pair = f"{clean_words[0]} {clean_words[-1]}"
+        if q_pair not in search_queries:
+            search_queries.append(q_pair)
+            
+    # Priority 3: Clean topic keywords
+    if topic:
+        clean_top = _clean_query_terms(topic)
+        top_words = clean_top.split()
+        if 2 <= len(top_words) <= 4 and clean_top not in search_queries:
+            search_queries.append(clean_top)
+        elif len(top_words) > 4:
+            t_head = " ".join(top_words[:3])
+            if t_head not in search_queries:
+                search_queries.append(t_head)
+
+    # Priority 4: Fallback to raw query if nothing yet
+    if not search_queries:
+        search_queries.append(clean_q or query)
     
     ydl_opts = {
         'quiet': True,
@@ -1371,8 +1417,23 @@ def _youtube_candidates(query: str, n: int = 5) -> list[dict]:
                     if duration_secs > 0.0 and (duration_secs < 10.0 or duration_secs > 1800.0):
                         continue
                     
-                    # Filter out lecture/classroom/blackboard/explainer/text-heavy titles unless explicitly requested
                     title_lower = title.lower()
+                    
+                    # Pre-download negative filtering:
+                    # 1. Reject conflicting prey/creature titles when searching for an insect/beetle
+                    if any(w in combined_ctx.lower() for w in ["beetle", "attenuata", "coleoptera"]):
+                        conflicting = ["frog vs fly", "eats fly", "eating fly", "eats dragonfly", "eating dragonfly", "frog eating grasshopper", "frog vs wasp"]
+                        if any(cf in title_lower for cf in conflicting):
+                            print(f"[B-roll] Skipping conflicting prey YouTube candidate: '{title}'")
+                            continue
+                            
+                    # 2. Reject scenery / travel / postcard titles
+                    scenery_words = ["postcard from", "walking tour", "travel vlog", "vacation in", "relaxing pond sound", "ambient pond"]
+                    if any(sw in title_lower for sw in scenery_words):
+                        print(f"[B-roll] Skipping scenery/ambient YouTube candidate: '{title}'")
+                        continue
+                    
+                    # Filter out lecture/classroom/blackboard/explainer/text-heavy titles unless explicitly requested
                     bad_title_keywords = [
                         "lecture", "classroom", "blackboard", "chalkboard", "whiteboard", "tutorial", "course",
                         "teacher", "presentation", "lesson", "slides", "powerpoint",
@@ -2093,6 +2154,24 @@ def _score_candidate(item: dict, query: str, target_duration: float = 8.0, topic
             elif is_space and not any(sw in text_lower for sw in ["space", "planet", "nasa", "orbit", "astronomy", "galaxy", "telescope"]):
                 return -150.0
 
+        # Latin binomial species matching bonus (e.g. Regimbartia attenuata)
+        latin_matches = re.findall(r'\b[A-Z][a-z]{3,}\s+[a-z]{3,}\b', topic)
+        if latin_matches:
+            for lm in latin_matches:
+                parts = lm.lower().split()
+                if len(parts) >= 2:
+                    genus, species = parts[0], parts[1]
+                    if genus in text_lower or species in text_lower:
+                        overlap_score += 150.0  # Decisive bonus for exact species discovery match!
+
+    # Negative disqualification for conflicting organisms or generic tourist scenery
+    if is_nature:
+        if any(w in (topic + " " + query).lower() for w in ["beetle", "attenuata", "coleoptera"]):
+            if any(cf in text_lower for cf in ["frog vs fly", "eating fly", "eats fly", "dragonfly", "eating grasshopper", "wasp"]):
+                return -300.0  # Instant disqualification on wrong organism
+        if any(sc in text_lower for sc in ["postcard from", "walking tour", "travel vlog", "vacation in", "relaxing pond sound", "ambient pond"]):
+            return -300.0  # Instant disqualification on scenic filler without subject
+
     # Negative penalty for watermarked previews, timecode overlays, vlogs, podcasts, reactions
     bad_keywords = [
         "stock footage", "preview", "watermark", "shutterstock", "getty", "pond5", 
@@ -2587,7 +2666,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             if source == "reddit":
                 return _reddit_candidates(q, n=4, channel=channel)
             elif source == "youtube":
-                return _youtube_candidates(q, n=5)
+                return _youtube_candidates(q, n=5, topic=topic, narration=narration)
             elif source == "nasa":
                 if not NASA_BROLL_ENABLED or not is_space_active:
                     return []
@@ -3148,19 +3227,26 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             print(f"[B-roll] Stage 2: Ranking {len(stage2_results)} second-chance broad video candidates...")
             s2_thumbs = [r["frame_data"] for r in stage2_results]
             s2_best_idx, s2_match = vision_rank_broll(s2_thumbs, narration, query, topic=topic)
-            chosen_s2_idx = s2_best_idx if (s2_match is True and s2_best_idx is not None and 0 <= s2_best_idx < len(stage2_results)) else 0
-            s2_winner = stage2_results[chosen_s2_idx]
-            print(f"[B-roll] Stage 2 WINNER chosen! Source: {s2_winner['label']}. Using real motion video!")
-            _image_to_ken_burns_video(s2_winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
-            if used_urls is not None:
-                used_urls.add(s2_winner["video_url"])
-                used_urls.add(_candidate_fingerprint(s2_winner))
-            for r in stage2_results:
-                for p in [r["temp_v"], r["temp_f"]]:
-                    if os.path.exists(p):
-                        try: os.remove(p)
-                        except Exception: pass
-            return out_path
+            if s2_match is True and s2_best_idx is not None and 0 <= s2_best_idx < len(stage2_results):
+                s2_winner = stage2_results[s2_best_idx]
+                print(f"[B-roll] Stage 2 WINNER chosen! Source: {s2_winner['label']}. Using real motion video!")
+                _image_to_ken_burns_video(s2_winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
+                if used_urls is not None:
+                    used_urls.add(s2_winner["video_url"])
+                    used_urls.add(_candidate_fingerprint(s2_winner))
+                for r in stage2_results:
+                    for p in [r["temp_v"], r["temp_f"]]:
+                        if os.path.exists(p):
+                            try: os.remove(p)
+                            except Exception: pass
+                return out_path
+            else:
+                print(f"[B-roll] Stage 2 candidates rejected by vision gatekeeper. Proceeding to authentic institutional photography.")
+                for r in stage2_results:
+                    for p in [r["temp_v"], r["temp_f"]]:
+                        if os.path.exists(p):
+                            try: os.remove(p)
+                            except Exception: pass
 
     # Ensure stale video credit files are strictly wiped before any image fallback
     stale_credit_f = f"output/broll_{segment_index}_credit.json"

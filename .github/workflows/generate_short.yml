@@ -3,6 +3,11 @@ name: Generate Short Video
 # Native GitHub Actions automated scheduling (100% cloud-hosted on GHA)
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish video publicly to platforms (true/false)'
+        required: false
+        default: 'false'
   schedule:
     - cron: '0 3 * * *'    # 03:00 UTC / 08:30 IST (Ch5 Short #1)
     - cron: '30 10 * * *'  # 10:30 UTC / 16:00 IST (Ch5 Short #2)
@@ -105,8 +110,10 @@ jobs:
           python run_generate.py --format short
 
       - name: Publish to 5 Platforms (YouTube, Dailymotion, Rumble, Meta, Threads)
+        if: github.event.inputs.publish == 'true' || (github.event_name == 'schedule' && github.event.inputs.publish != 'false')
         timeout-minutes: 30
         env:
+          PUBLISH_ENABLED:      ${{ github.event.inputs.publish || (github.event_name == 'schedule' && 'true' || 'false') }}
           YT_CLIENT_ID:         ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET:     ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN:     ${{ secrets.YT_REFRESH_TOKEN }}
@@ -141,6 +148,7 @@ jobs:
             output/judge_report.json
             output/topic.json
             output/script.json
+            output/*.jpg
           retention-days: 7
 
 
