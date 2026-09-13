@@ -444,10 +444,31 @@ def surgical_repair_and_reverify(
                 _apply_donor_frame_fallback(seg_idx, script, out_path, w, h, dur, channel, topic=topic)
 
         # 3. Surgical Re-Assembly
-        print("\n[Surgical Edition] Re-assembling video timeline with newly spliced clips...")
-        broll_files = [f"output/broll_{i}.mp4" for i in range(num_segs)]
-        audio_files = [f"output/tts_{i}.wav" for i in range(num_segs)]
+        broll_files = []
+        for i in range(num_segs):
+            cand_b = None
+            for cand in [f"output/broll_{i}.mp4", f"output/broll_{i}.jpg", f"output/broll_{i}_normalized.mp4"]:
+                if os.path.exists(cand):
+                    cand_b = cand
+                    break
+            broll_files.append(cand_b or f"output/broll_{i}.mp4")
+
+        audio_files = []
+        for i in range(num_segs):
+            seg_id = segments[i].get("id", i + 1)
+            cand_a = None
+            for cand in [f"output/tts_segment_{seg_id}.wav", f"output/tts_{i}.wav", f"output/tts_{seg_id}.wav"]:
+                if os.path.exists(cand):
+                    cand_a = cand
+                    break
+            audio_files.append(cand_a or f"output/tts_segment_{seg_id}.wav")
+
         captions_ass = "output/captions.ass"
+        if not os.path.exists(captions_ass):
+            for cand in ["output/subtitles.ass", "output/captions.srt"]:
+                if os.path.exists(cand):
+                    captions_ass = cand
+                    break
         music_path = "output/music.mp3"
         if not os.path.exists(music_path):
             for candidate_music in ["output/music.wav", "output/background_music.mp3"]:

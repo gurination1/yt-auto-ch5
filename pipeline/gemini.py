@@ -258,6 +258,7 @@ def _is_daily_quota_exhausted(resp: requests.Response) -> bool:
         pass
     return False
 
+_is_daily_exhaustion = _is_daily_quota_exhausted
 
 def _post_with_rotation(
     url_template: str, payload: dict, timeout: int = 120, quick: bool = False

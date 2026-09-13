@@ -265,40 +265,44 @@ def assemble_video(broll_files: list[str], tts_files: list[str], captions_ass: s
         motion_idx = _rnd.randint(0, 4)
         grain_filter = "noise=alls=8:allf=t"
         
-        # Base scale-crop to cover full bleed with 1.20x scale (crops edge watermarks/subs)
+        # Base scale-crop: for vertical Shorts (h > w), scale by 1.30x and shift vertical crop
+        # slightly upward (-110px) to ensure bottom subtitles/tickers are 100% cropped out of the frame.
+        scale_mul = 1.30 if (h > w) else 1.15
+        up_shift = 110 if (h > w) else 0
+
         if motion_idx == 0:
             # 1. Dynamic Push-in Zoom (scale-crop zoom with subtle upward drift)
             vf_chain = (
-                f"scale=trunc({w}*1.22/2)*2:trunc({h}*1.22/2)*2:force_original_aspect_ratio=increase,"
-                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 + (t-{duration}/2)*22))':'max(0, min(in_h-out_h, (in_h-out_h)/2 + (t-{duration}/2)*22))',"
+                f"scale=trunc({w}*{scale_mul}/2)*2:trunc({h}*{scale_mul}/2)*2:force_original_aspect_ratio=increase,"
+                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 + (t-{duration}/2)*22))':'max(0, min(in_h-out_h, (in_h-out_h)/2 - {up_shift} + (t-{duration}/2)*20))',"
                 f"{color_curves},unsharp=5:5:0.8:5:5:0.4,{grain_filter},vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         elif motion_idx == 1:
             # 2. Dynamic Panning Upward
             vf_chain = (
-                f"scale=trunc({w}*1.20/2)*2:trunc({h}*1.20/2)*2:force_original_aspect_ratio=increase,"
-                f"crop={w}:{h}:'(in_w-out_w)/2':'max(0, min(in_h-out_h, (in_h-out_h)/2 + (t-{duration}/2)*26))',"
+                f"scale=trunc({w}*{scale_mul}/2)*2:trunc({h}*{scale_mul}/2)*2:force_original_aspect_ratio=increase,"
+                f"crop={w}:{h}:'(in_w-out_w)/2':'max(0, min(in_h-out_h, (in_h-out_h)/2 - {up_shift} + (t-{duration}/2)*22))',"
                 f"{color_curves},unsharp=5:5:0.8:5:5:0.4,{grain_filter},vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         elif motion_idx == 2:
-            # 3. Dynamic Panning Downward
+            # 3. Dynamic Panning Downward Drift
             vf_chain = (
-                f"scale=trunc({w}*1.20/2)*2:trunc({h}*1.20/2)*2:force_original_aspect_ratio=increase,"
-                f"crop={w}:{h}:'(in_w-out_w)/2':'max(0, min(in_h-out_h, (in_h-out_h)/2 - (t-{duration}/2)*26))',"
+                f"scale=trunc({w}*{scale_mul}/2)*2:trunc({h}*{scale_mul}/2)*2:force_original_aspect_ratio=increase,"
+                f"crop={w}:{h}:'(in_w-out_w)/2':'max(0, min(in_h-out_h, (in_h-out_h)/2 - {up_shift} - (t-{duration}/2)*16))',"
                 f"{color_curves},unsharp=5:5:0.8:5:5:0.4,{grain_filter},vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         elif motion_idx == 3:
             # 4. Dynamic Panning Right
             vf_chain = (
-                f"scale=trunc({w}*1.20/2)*2:trunc({h}*1.20/2)*2:force_original_aspect_ratio=increase,"
-                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 + (t-{duration}/2)*26))':'(in_h-out_h)/2',"
+                f"scale=trunc({w}*{scale_mul}/2)*2:trunc({h}*{scale_mul}/2)*2:force_original_aspect_ratio=increase,"
+                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 + (t-{duration}/2)*24))':'max(0, min(in_h-out_h, (in_h-out_h)/2 - {up_shift}))',"
                 f"{color_curves},unsharp=5:5:0.8:5:5:0.4,{grain_filter},vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
         else:
             # 5. Dynamic Panning Left
             vf_chain = (
-                f"scale=trunc({w}*1.20/2)*2:trunc({h}*1.20/2)*2:force_original_aspect_ratio=increase,"
-                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 - (t-{duration}/2)*26))':'(in_h-out_h)/2',"
+                f"scale=trunc({w}*{scale_mul}/2)*2:trunc({h}*{scale_mul}/2)*2:force_original_aspect_ratio=increase,"
+                f"crop={w}:{h}:'max(0, min(in_w-out_w, (in_w-out_w)/2 - (t-{duration}/2)*24))':'max(0, min(in_h-out_h, (in_h-out_h)/2 - {up_shift}))',"
                 f"{color_curves},unsharp=5:5:0.8:5:5:0.4,{grain_filter},vignette=angle={vignette_angle},setsar=1" + drawtext_chain
             )
             

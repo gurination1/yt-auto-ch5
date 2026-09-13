@@ -438,8 +438,7 @@ def main():
         with open(metadata_path, "w") as f:
             json.dump(metadata, f, indent=2)
             
-        # Cleanup intermediate files in output/ to save space
-        print("Cleaning up intermediate files...")
+        # Extract 1 representative review frame per segment for inspection
         keep_files = [
             os.path.basename(final_video),
             os.path.basename(thumbnail),
@@ -449,6 +448,24 @@ def main():
             "judge_report.json",
             "footage_credits.json"
         ]
+        try:
+            cum_time = 0.0
+            for idx_seg in range(len(script.get("segments", []))):
+                seg_dur = tts_durations[idx_seg] if idx_seg < len(tts_durations) else (28.0 / len(script["segments"]))
+                sample_time = cum_time + (seg_dur * 0.5)
+                cum_time += seg_dur
+                frame_out = f"output/frame_seg_{idx_seg}.jpg"
+                subprocess.run(
+                    ["ffmpeg", "-y", "-ss", f"{sample_time:.2f}", "-i", final_video, "-vframes", "1", "-q:v", "2", frame_out],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10
+                )
+                if os.path.exists(frame_out):
+                    keep_files.append(os.path.basename(frame_out))
+        except Exception as f_err:
+            print(f"[Generate] Warning: Review frame extraction: {f_err}")
+
+        # Cleanup intermediate files in output/ to save space
+        print("Cleaning up intermediate files...")
         for f in os.listdir("output"):
             if f not in keep_files:
                 path = os.path.join("output", f)
