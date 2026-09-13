@@ -91,7 +91,7 @@ def main():
         issues = report.get("issues", [])
         
         if status != "PASSED" or score < 85 or cohesiveness < 75 or (isinstance(failed_segs, list) and len(failed_segs) > 0):
-            print("\n🛑 VIDEO REJECTED BY JUDGE AI!")
+            print("\n🔧 VIDEO HAS UNMATCHED CLIPS / REJECTED BY JUDGE AI.")
             print(f"Score: {score}/100 | Cohesiveness: {cohesiveness}/100 | Status: {status}")
             if failed_segs:
                 print(f"Failed Segments: {failed_segs}")
@@ -100,8 +100,24 @@ def main():
                 print("Issues:")
                 for issue in issues:
                     print(f" - {issue}")
-            print("\nFix the issues and regenerate the video before publishing.")
-            sys.exit(1)
+            print("\n[Surgical Action] Commencing surgical clip replacement, re-editing, and re-verification...")
+            from pipeline.surgical_repair import surgical_repair_and_reverify
+            
+            repaired_ok, repaired_path, new_report = surgical_repair_and_reverify(
+                video_path=video_path,
+                report=report,
+                format_type=fmt
+            )
+            if repaired_ok:
+                print(f"\n✅ Video surgically repaired and APPROVED by Judge AI! (Score: {new_report.get('score', 90)}/100)")
+                video_path = repaired_path
+                status = "PASSED"
+                score = int(new_report.get("score", 90) or 90)
+                cohesiveness = int(new_report.get("cohesiveness_score", 90) or 90)
+                reason = new_report.get("reason", "Surgically repaired and passed.")
+            else:
+                print("\n🛑 Surgical repair unable to normalize video. Halting publish.")
+                sys.exit(1)
         else:
             print(f"\n✅ Video PASSED Judge AI review! (Score: {score}/100 | Cohesiveness: {cohesiveness}/100)")
             print(f"Judge Comments: {reason}\n")

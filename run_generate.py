@@ -293,13 +293,30 @@ def main():
                 print("[Judge AI] No failed segments returned. Repairing all segments once.")
                 failed_segs = list(range(len(script["segments"])))
                 
-            print(f"[Judge AI] Video REJECTED. Failed segments: {failed_segs}")
             if attempt == max_attempts:
-                print(f"[Judge AI] Reached max review attempts ({max_attempts}). Video failed quality threshold. Halting publish.")
-                review_result["status"] = "REJECTED"
-                with open("output/judge_report.json", "w") as rf:
-                    json.dump(review_result, rf, indent=2)
-                sys.exit(1)
+                print(f"\n[Judge AI] Review loop reached max attempts ({max_attempts}). Invoking advanced Surgical Action & Re-edition Engine...")
+                from pipeline.surgical_repair import surgical_repair_and_reverify
+                repaired_ok, repaired_path, new_report = surgical_repair_and_reverify(
+                    video_path=final_video,
+                    report=review_result,
+                    script=script,
+                    format_type=args.format,
+                    topic=topic.get("topic", ""),
+                    channel=channel_niche
+                )
+                if repaired_ok:
+                    print("[Surgical Action] Video successfully self-healed, re-assembled, and approved!")
+                    final_video = repaired_path
+                    review_result = new_report
+                    with open("output/judge_report.json", "w") as rf:
+                        json.dump(review_result, rf, indent=2)
+                    break
+                else:
+                    print("[Surgical Action] Surgical repair unable to normalize video. Halting publish.")
+                    review_result["status"] = "REJECTED"
+                    with open("output/judge_report.json", "w") as rf:
+                        json.dump(review_result, rf, indent=2)
+                    sys.exit(1)
                 
             print(f"[Judge AI] Re-fetching B-roll for failed segments {failed_segs}...")
             for idx in failed_segs:
