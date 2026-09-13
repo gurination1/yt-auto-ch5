@@ -22,7 +22,7 @@ jobs:
     env:
       PYTHONUNBUFFERED: "1"
       CHANNEL_NICHE: "business"
-      BROLL_SEGMENT_BUDGET_SECONDS: "120"
+      BROLL_SEGMENT_BUDGET_SECONDS: "240"
       JUDGE_MAX_ATTEMPTS: "3"
 
     steps:
@@ -156,4 +156,5 @@ jobs:
           git add thumbnail_state.json 2>/dev/null || true
           git add cache_music/ 2>/dev/null || true
           git diff --staged --quiet || git commit -m "chore: update pipeline state [skip ci]"
-          git push || true
+          git pull --rebase origin master 2>/dev/null || git pull --rebase origin main 2>/dev/null || true
+          git push origin master 2>/dev/null || git push origin main 2>/dev/null || true

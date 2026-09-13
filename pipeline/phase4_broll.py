@@ -2460,7 +2460,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     out_path    = f"output/broll_{segment_index}.mp4"
     img_path    = f"output/broll_{segment_index}.jpg"
     w, h        = (1080, 1920) if format_type == "short" else (1920, 1080)
-    budget_default = "180" if format_type == "short" else "240"
+    budget_default = "240" if format_type == "short" else "300"
     budget_seconds = int(os.environ.get("BROLL_SEGMENT_BUDGET_SECONDS", budget_default))
     deadline = time.monotonic() + budget_seconds
 
@@ -2627,10 +2627,10 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     seen_gathering = set()
     source_counts = {src: 0 for src in sources}
 
-    remaining_budget = max(1.0, deadline - time.monotonic())
-    timeout = min(45, int(remaining_budget * 0.5))
-    if timeout < 1:
-        timeout = 1
+    # Guarantee minimum 25s gathering timeout and refresh deadline so downstream download/inspection has budget
+    deadline = max(deadline, time.monotonic() + 120)
+    remaining_budget = max(25.0, deadline - time.monotonic())
+    timeout = max(25, min(45, int(remaining_budget * 0.5)))
 
     print(f"[B-roll] Segment {segment_index}: starting parallel candidate gathering with timeout={timeout}s for sources: {sources}...")
 
@@ -2782,7 +2782,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                 # Order candidates prioritizing best_idx, then remaining valid candidates (try up to 3)
                 ordered_indices = [best_idx] + [i for i in range(len(valid_candidates)) if i != best_idx]
                 for try_idx in ordered_indices[:3]:
-                    if budget_exceeded():
+                    # Never abort the winning candidate chosen by Vision! Only enforce budget on subsequent fallbacks
+                    if try_idx != best_idx and budget_exceeded():
                         break
                     chosen = valid_candidates[try_idx]
                     print(f"[B-roll] Trying candidate {try_idx} ({chosen.get('source', 'Unknown')}): {chosen['video_url'][:60]}...")
@@ -2824,7 +2825,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                     high_quality_cands = []
 
                 for try_idx, chosen in enumerate(high_quality_cands[:3]):
-                    if budget_exceeded():
+                    if try_idx > 0 and budget_exceeded():
                         break
                     print(f"[B-roll] Trying heuristic candidate {try_idx} ({chosen.get('source', 'Unknown')}, score={chosen.get('_score', 0.0):.1f}): {chosen['video_url'][:60]}...")
                     temp_video_path = f"output/temp_video_{segment_index}.mp4"
@@ -2854,7 +2855,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                 print(f"[B-roll] Segment {segment_index}: Thumbnail vision check found no match on promotional thumbnails. Directly inspecting video frames of top candidates...")
                 sorted_cands = sorted(valid_candidates, key=lambda c: c.get("_score", 0.0), reverse=True)
                 for try_idx, chosen in enumerate(sorted_cands[:3]):
-                    if budget_exceeded():
+                    if try_idx > 0 and budget_exceeded():
                         break
                     print(f"[B-roll] Directly inspecting candidate {try_idx} ({chosen.get('source', 'Unknown')}): {chosen['video_url'][:60]}...")
                     temp_video_path = f"output/temp_video_{segment_index}.mp4"
@@ -2923,7 +2924,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     candidates_to_download = []
     seen_urls = set()
     for label, fetch_url_fn in other_videos:
-        if budget_exceeded():
+        if candidates_to_download and budget_exceeded():
             break
         try:
             video_url = fetch_url_fn()

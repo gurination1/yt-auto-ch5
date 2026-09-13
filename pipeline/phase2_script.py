@@ -103,8 +103,10 @@ Narration Style Requirements (CRITICAL - MAXIMUM VIRALITY & SIMPLICITY):
 4b. MANDATORY CONCRETE NAMED ENTITIES (ZERO ABSTRACT GENERALITIES):
    - You MUST name the exact real-world detector, instrument, mine, organism, cartel, or megaproject (e.g. "The LUX-ZEPLIN detector 1 mile deep", "De Beers", "The Challenger Deep amphipod", "The Herrenknecht TBM", "ASML").
    - ABSOLUTELY FORBIDDEN: Vague filler phrases like "a detector deep underground", "scientists believe", "an underground facility", "a mysterious machine", "a massive company", "an animal". Concrete names anchor credibility and multiply viewer retention!
-5. ZERO TOPIC REPETITION:
-   - Introduce the subject in Segment 1. In subsequent segments, refer to it naturally ("this metal", "the ancient weapon", "the creature", "this machine"). NEVER repeat the full topic string.
+5. ZERO TITLE / HOOK REPETITION (CRITICAL RETENTION MANDATE):
+   - NEVER start Segment 1 by reading or reciting the video title verbatim. The title is already visible to the viewer. Segment 1 must dive straight into the shocking physical action or visual observation.
+   - Segment 2 and subsequent segments MUST NEVER repeat the opening hook phrase, title words, or introductory sentence from Segment 1. Each segment must reveal completely fresh, advancing facts.
+   - If Segment 1 introduces the entity, refer to it naturally in subsequent segments ("this creature", "the weapon", "this alloy", "this machine"). NEVER repeat the full topic or title string.
 6. SEAMLESS INFINITE LOOP CLOSING (SEGMENT {segment_count} MANDATE):
    - The final segment must be a 100% grammatically complete sentence ending with a period.
    - ABSOLUTELY FORBIDDEN: NEVER say "link in bio", "link in description", "subscribe", "follow", "check bio", or any social media callout in narration. It destroys loop retention.
@@ -588,6 +590,25 @@ Return ONLY a raw JSON object for this segment with the updated "narration" and 
             if not narr_clean.endswith((".", "!", "?")):
                 narr_clean += "."
             seg["narration"] = narr_clean
+
+    # ── Deduplicate Segment Repetition & Title Echoes ────────────────────────
+    for idx_s, seg in enumerate(script.get("segments", [])):
+        narr = seg.get("narration", "")
+        # Check if segment 2+ accidentally repeats segment 1 hook verbatim
+        if idx_s > 0 and len(script.get("segments", [])) > 1:
+            first_narr = script["segments"][0].get("narration", "")
+            first_words = set(re.findall(r'\b[a-zA-Z]{4,}\b', first_narr.lower()))
+            seg_words = re.findall(r'\b[a-zA-Z]{4,}\b', narr.lower())
+            if first_words and seg_words:
+                overlap = [w for w in seg_words if w in first_words]
+                if len(overlap) >= 4 and len(overlap) / len(seg_words) >= 0.5:
+                    print(f"[Phase2 Script] Segment {idx_s+1} repeated opening hook words {overlap}. Cleaning overlap...")
+                    clean_tokens = [w for w in narr.split() if w.lower().strip(".,!?;:-") not in overlap[:3]]
+                    if len(clean_tokens) >= 3:
+                        narr = " ".join(clean_tokens)
+                        if not narr.endswith((".", "!", "?")):
+                            narr += "."
+                        seg["narration"] = narr
 
     # ── Ensure Beacons Link in Description ────────────────────────────────────
     if "description" in script:
