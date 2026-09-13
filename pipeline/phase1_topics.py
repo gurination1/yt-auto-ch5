@@ -183,7 +183,7 @@ Each object must have exactly these fields:
     client = GeminiClient()
     topics_list = []
     try:
-        response_text = client.generate_text(prompt, use_grounding=is_trending, temperature=0.75)
+        response_text = client.generate_text(prompt, use_grounding=False, temperature=0.75)
         parsed = _robust_json_loads(response_text)
         if isinstance(parsed, list) and parsed:
             topics_list = parsed
@@ -214,7 +214,7 @@ Each object must have exactly these fields:
         print(f"[Phase1] Retrying topic generation with stricter boundary enforcement (Attempt {attempts}/2)...")
         retry_prompt = prompt + "\nCRITICAL: The previous candidates were rejected for being off-niche or duplicates. Stay 100% strictly within " + current_subcluster
         try:
-            response_text = client.generate_text(retry_prompt, use_grounding=is_trending, temperature=0.75 + (attempts * 0.05))
+            response_text = client.generate_text(retry_prompt, use_grounding=False, temperature=0.75 + (attempts * 0.05))
             new_list = _robust_json_loads(response_text)
             if isinstance(new_list, list):
                 for item in new_list:

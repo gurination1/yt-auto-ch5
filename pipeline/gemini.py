@@ -104,8 +104,8 @@ class _KeyPool:
                         status = info.get("status", "active")
                         cd_until = float(info.get("cooldown_until", 0.0))
                         
-                        # Auto-recover daily_exhausted keys if cooldown expired
-                        if status == "daily_exhausted" and (cd_until == 0.0 or now >= cd_until):
+                        # Auto-recover daily_exhausted keys on new runs so transient/stale locks never block execution
+                        if status == "daily_exhausted":
                             status = "active"
                             cd_until = 0.0
                             
@@ -484,6 +484,17 @@ class GeminiClient:
                 text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
                 return _clean_json_output(text)
             except Exception as e:
+                # If grounding failed due to free-tier restrictions, strip tools and retry model directly
+                if payload.get("tools"):
+                    print(f"[GeminiClient] Search grounding failed on {m} ({e}). Retrying model without tools...")
+                    payload.pop("tools", None)
+                    payload["generationConfig"]["responseMimeType"] = "application/json"
+                    try:
+                        resp = self._post(url, payload)
+                        text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                        return _clean_json_output(text)
+                    except Exception as e2:
+                        e = e2
                 print(f"[GeminiClient] Model {m} failed: {e}. Trying fallback model...")
                 continue
         raise RuntimeError("All Gemini models exhausted across all key slots.")
