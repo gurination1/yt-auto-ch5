@@ -3,7 +3,7 @@ import json
 import time
 import requests
 import mimetypes
-from pipeline.config import GEMINI_FLASH, GEMINI_API_BASE
+from pipeline.config import GEMINI_FLASH, GEMINI_FLASH_BACKUP, GEMINI_API_BASE
 from pipeline.gemini import _clean_json_output, _shared_pool
 
 
@@ -346,8 +346,14 @@ Output strictly valid JSON with this exact schema:
 }}
 """
             
-            # 4. Generate Review Content (Primary: Gemini 2.5 Flash, Failover: Flash Latest on 503)
-            models_to_try = [GEMINI_FLASH, "gemini-flash-latest", "gemini-flash-lite-latest"]
+            # 4. Generate Review Content (Primary: Gemini 3.5 Flash, Failovers: 3.5 Flash Lite, 3.7 Flash, Flash-Lite Latest, 3.1 Flash Lite)
+            models_to_try = [
+                GEMINI_FLASH,
+                GEMINI_FLASH_BACKUP,
+                "gemini-3.7-flash",
+                "gemini-flash-lite-latest",
+                "gemini-3.1-flash-lite",
+            ]
             response = None
             model_success = False
             last_model_err = None
@@ -378,8 +384,9 @@ Output strictly valid JSON with this exact schema:
                         if response.status_code == 429:
                             from pipeline.gemini import _is_daily_quota_exhausted
                             if _is_daily_quota_exhausted(response):
-                                print(f"[JudgeAI] Daily quota exhausted on key slot {slot}. Rotating key.")
-                                raise requests.exceptions.HTTPError("Daily quota exhausted during review", response=response)
+                                print(f"[JudgeAI] Daily quota for '{model_to_use}' exhausted on key slot {slot}. Trying fallback model...")
+                                last_model_err = f"Daily quota exhausted on {model_to_use}"
+                                break
                             wait_s = (attempt + 1) * 10
                             print(f"[JudgeAI] Review call 429 rate limit on '{model_to_use}'. Waiting {wait_s}s...")
                             time.sleep(wait_s)
@@ -392,10 +399,6 @@ Output strictly valid JSON with this exact schema:
                         response.raise_for_status()
                         model_success = True
                         break
-                    except requests.exceptions.HTTPError as he:
-                        if "Daily quota exhausted" in str(he):
-                            raise
-                        last_model_err = he
                     except requests.exceptions.RequestException as e:
                         last_model_err = e
                         wait_s = (attempt + 1) * 3

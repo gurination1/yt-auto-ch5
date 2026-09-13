@@ -112,7 +112,7 @@ class _KeyPool:
                         self._statuses[idx] = status
                         self._failures[idx] = info.get("failures", 0) if status == "disabled" else 0
                         
-                        if cd_until > now:
+                        if cd_until > now and status == "disabled":
                             self._cooldowns[idx] = cd_until
                         else:
                             self._cooldowns[idx] = 0.0
@@ -142,22 +142,11 @@ class _KeyPool:
                 self._idx = candidate_idx
                 return self._keys[candidate_idx]
         
-        # If all non-disabled keys are daily_exhausted, do not reset endlessly — trigger graceful fallback
-        if all(self._statuses[i] in ("disabled", "daily_exhausted") for i in range(len(self._keys))):
-            print("[KeyPool] All Gemini keys have exhausted daily quota. Returning None to trigger graceful fallback.")
-            return None
-
-        # Fallback: if keys are only on short transient rate limit cooldown, wait 5s and reset
-        print("[KeyPool] All non-disabled keys on cooldown. Waiting 5s for rate limit window to expire & resetting key pool...")
-        time.sleep(5)
+        # If all non-disabled keys are temporarily on cooldown, reset active keys and pick next
         for i in range(len(self._keys)):
             if self._statuses[i] == "active":
                 self._cooldowns[i] = 0.0
                 self._failures[i] = 0
-        self._save_state()
-
-        for i in range(len(self._keys)):
-            if self._statuses[i] == "active":
                 self._idx = i
                 return self._keys[i]
         return None
@@ -168,30 +157,22 @@ class _KeyPool:
         idx = self._keys.index(key)
         
         now = time.time()
-        if not transient:
-            if status_code in (400, 403):
-                # Permanent credential or project denied error. Block for 10 years.
-                self._failures[idx] = max(4, self._failures[idx] + 1)
-                self._statuses[idx] = "disabled"
-                cooldown_duration = 315360000.0  # 10 years
-                self._cooldowns[idx] = now + cooldown_duration
-            else:
-                # Permanent daily quota exhaustion (429).
-                # Reset automatically at Midnight PT (08:00 UTC).
-                self._failures[idx] = max(4, self._failures[idx] + 1)
-                self._statuses[idx] = "daily_exhausted"
-                reset_time = _get_next_daily_reset_time()
-                cooldown_duration = reset_time - now
-                self._cooldowns[idx] = reset_time
+        if status_code in (400, 403):
+            # Permanent credential or project denied error. Block for 10 years.
+            self._failures[idx] = max(4, self._failures[idx] + 1)
+            self._statuses[idx] = "disabled"
+            cooldown_duration = 315360000.0  # 10 years
+            self._cooldowns[idx] = now + cooldown_duration
         else:
-            # Transient rate limit (RPM/TPM) or server error -> short backoff, stay active
+            # 429 rate limit or 5xx server error is model-specific and temporary.
+            # Never mark key permanently daily_exhausted across all models.
             self._failures[idx] += 1
             self._statuses[idx] = "active"
-            cooldown_duration = 20.0 if status_code in (429, 0) else 5.0
+            cooldown_duration = 15.0 if status_code == 429 else 5.0
             self._cooldowns[idx] = now + cooldown_duration
 
         slot = idx + 1
-        print(f"[KeyPool] Key slot {slot}/{len(self._keys)} marked failed (status {status_code}, status_label={self._statuses[idx]}, transient={transient}). Cooldown for {cooldown_duration:.0f}s (Until: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(self._cooldowns[idx]))})")
+        print(f"[KeyPool] Key slot {slot}/{len(self._keys)} marked cooldown (status {status_code}, status_label={self._statuses[idx]}, wait={cooldown_duration:.0f}s)")
         self._idx = (idx + 1) % len(self._keys)
         self._save_state()
 
@@ -283,23 +264,20 @@ def _post_with_rotation(
     for attempt in range(max_attempts):
         key = _shared_pool.get_available_key()
         if not key:
-            # All keys are on cooldown! Check if ALL are permanently dead
-            now = time.time()
-            all_permanent = all(
-                _shared_pool._cooldowns[i] > now + 3600
-                for i in range(len(_shared_pool._keys))
-            )
-            if all_permanent:
+            all_disabled = all(s == "disabled" for s in _shared_pool._statuses)
+            if all_disabled:
                 raise RuntimeError(
-                    "Gemini: all keys permanently exhausted (daily quota or disabled). "
-                    "Pipeline cannot proceed. Will auto-recover on next cron slot."
+                    "Gemini: all keys permanently disabled (HTTP 403/invalid credentials). "
+                    "Pipeline cannot proceed."
                 )
-            earliest_idx = min(range(len(_shared_pool)), key=lambda idx: _shared_pool._cooldowns[idx])
-            wait_time = max(1.0, _shared_pool._cooldowns[earliest_idx] - now)
-            wait_time = min(15.0, wait_time)  # cap to 15s max sleep
-            print(f"[GeminiClient] All keys on cooldown. Waiting {wait_time:.1f} s for key slot {earliest_idx+1}...")
-            time.sleep(wait_time)
-            continue
+            # Active keys may have short transient cooldowns. Reset active cooldowns and retry.
+            for i in range(len(_shared_pool._keys)):
+                if _shared_pool._statuses[i] == "active":
+                    _shared_pool._cooldowns[i] = 0.0
+            key = _shared_pool.get_available_key()
+            if not key:
+                time.sleep(2)
+                continue
 
         url = url_template.format(key=key)
         slot = _shared_pool._keys.index(key) + 1
@@ -331,21 +309,9 @@ def _post_with_rotation(
                     except Exception:
                         print(f"[GeminiClient] 429 on slot {slot}: raw={resp.text[:200]}")
 
-                    if _is_daily_quota_exhausted(resp):
-                        print(f"[GeminiClient] 429 rate limit on slot {slot}. Daily quota exhausted, rotating key...")
-                        _shared_pool.mark_failed(key, 429, transient=False)
-                        break  # Break inner loop to rotate key
-                    else:
-                        # RPM limit: retry with backoff or rotate if out of attempts
-                        if k_attempt < same_key_attempts - 1:
-                            wait_s = (k_attempt + 1) * 3
-                            print(f"[GeminiClient] 429 RPM limit on key slot {slot} (attempt {k_attempt+1}/{same_key_attempts}). Waiting {wait_s}s...")
-                            time.sleep(wait_s)
-                            continue
-                        else:
-                            print(f"[GeminiClient] 429 RPM limit persisted on key slot {slot}. Rotating…")
-                            _shared_pool.mark_failed(key, 429, transient=True)
-                            break
+                    print(f"[GeminiClient] 429 on slot {slot} for model. Rotating to next key...")
+                    _shared_pool.mark_failed(key, 429, transient=True)
+                    break  # Break inner loop to rotate key
                             
                 elif resp.status_code in (500, 502, 503, 504):
                     server_error_count += 1
@@ -473,7 +439,7 @@ class GeminiClient:
             payload["tools"] = [{"google_search": {}}]
 
         models_to_try = [model_name]
-        for m in [GEMINI_FLASH, GEMINI_FLASH_BACKUP, "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"]:
+        for m in [GEMINI_FLASH, GEMINI_FLASH_BACKUP, "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-flash-lite-latest", "gemini-3.1-flash-lite", "gemini-3.6-flash"]:
             if m and m not in models_to_try:
                 models_to_try.append(m)
 
