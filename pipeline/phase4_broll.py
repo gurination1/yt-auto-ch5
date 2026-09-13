@@ -1345,7 +1345,7 @@ def _youtube_candidates(query: str, n: int = 5) -> list[dict]:
         'force_generic_extractor': False,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios', 'mweb', 'tv', 'android_vr', 'web_creator']
+                'player_client': ['android', 'ios', 'mweb', 'web_creator', 'web']
             }
         }
     }
@@ -1520,18 +1520,19 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
 
             js_args = ["--js-runtimes", "node"]
             client_options = [
-                "android_vr,web",
-                "android_vr",
-                "ios,web",
+                "android,web,mweb",
+                "web_creator",
                 "web",
-                "android"
+                "android",
+                "ios"
             ]
+            format_selector = "bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/bestvideo+bestaudio/best[ext=mp4][height<=1080]/best[height<=1080]/best"
 
             for client_str in client_options:
                 target_end = int(15 + slice_dur + 2)
                 cmd_dl_section = ytdlp_bin_cmd + proxy_args + js_args + [
                     "--extractor-args", f"youtube:player_client={client_str}",
-                    "--format", "bestvideo[height>=720]+bestaudio/best[height>=720]/bestvideo+bestaudio/best",
+                    "--format", format_selector,
                     "--merge-output-format", "mp4",
                     "--download-sections", f"*15-{target_end}",
                     "--force-keyframes-at-cuts",
@@ -1545,7 +1546,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                     if not (os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000):
                         cmd_dl_full = ytdlp_bin_cmd + proxy_args + js_args + [
                             "--extractor-args", f"youtube:player_client={client_str}",
-                            "--format", "bestvideo[height>=720]+bestaudio/best[height>=720]/bestvideo+bestaudio/best",
+                            "--format", format_selector,
                             "--merge-output-format", "mp4",
                             "--no-check-certificates",
                             "--socket-timeout", "15",
@@ -2369,8 +2370,8 @@ def _deep_inspect_video_frames(
             dims = [int(dim) for dim in res_out.split("x") if dim.isdigit()]
             if len(dims) >= 2:
                 vw, vh = dims[0], dims[1]
-                if max(vw, vh) < 720:
-                    return False, f"Resolution too low ({vw}x{vh} < 720p minimum)"
+                if max(vw, vh) < 480 or min(vw, vh) < 320:
+                    return False, f"Resolution too low ({vw}x{vh} < 360p minimum)"
     except Exception as e_res:
         pass
 
@@ -2849,10 +2850,34 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                             except Exception:
                                 pass
                         return out_path
-                    else:
-                        print(f"[B-roll] Video download failed for heuristic candidate {try_idx}. Trying next...")
             else:
-                print(f"[B-roll] Segment {segment_index}: Vision match strictly rejected all video candidates as unrelated stock slop.")
+                print(f"[B-roll] Segment {segment_index}: Thumbnail vision check found no match on promotional thumbnails. Directly inspecting video frames of top candidates...")
+                sorted_cands = sorted(valid_candidates, key=lambda c: c.get("_score", 0.0), reverse=True)
+                for try_idx, chosen in enumerate(sorted_cands[:3]):
+                    if budget_exceeded():
+                        break
+                    print(f"[B-roll] Directly inspecting candidate {try_idx} ({chosen.get('source', 'Unknown')}): {chosen['video_url'][:60]}...")
+                    temp_video_path = f"output/temp_video_{segment_index}.mp4"
+                    if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen):
+                        passed, reason = _deep_inspect_video_frames(temp_video_path, query=query, narration=narration, topic=topic)
+                        if not passed:
+                            print(f"[B-roll] Candidate {try_idx} REJECTED by frame inspection: {reason}. Trying next...")
+                            if os.path.exists(temp_video_path):
+                                try: os.remove(temp_video_path)
+                                except Exception: pass
+                            continue
+
+                        if used_urls is not None:
+                            used_urls.add(chosen["video_url"])
+                            used_urls.add(_candidate_fingerprint(chosen))
+                        print(f"[B-roll] Candidate {try_idx} VERIFIED by direct frame inspection! Normalizing into assembly format...")
+                        _image_to_ken_burns_video(temp_video_path, out_path, w, h, duration, niche=channel, caption="")
+                        if os.path.exists(temp_video_path):
+                            try: os.remove(temp_video_path)
+                            except Exception: pass
+                        return out_path
+                    else:
+                        print(f"[B-roll] Video download failed for candidate {try_idx}. Trying next...")
 
     # ── Fallback 1: Single Frame fallback search on other videos waterfall ─────────────────
     print(f"[B-roll] Segment {segment_index}: falling back to parallel waterfall search...")
@@ -2977,183 +3002,164 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     if downloaded_results:
         print(f"[B-roll] Segment {segment_index}: Ranking {len(downloaded_results)} downloaded candidates in batch...")
         thumbs = [r["frame_data"] for r in downloaded_results]
-        if (match_found is True or match_found is None) and len(downloaded_results) > 0:
-            winner_idx = best_idx if (match_found is True and best_idx is not None and 0 <= best_idx < len(downloaded_results)) else 0
+        wf_best_idx, wf_match = vision_rank_broll(thumbs, narration, query, topic=topic)
+
+        if wf_match is True and wf_best_idx is not None and 0 <= wf_best_idx < len(downloaded_results):
+            winner_idx = wf_best_idx
             winner = downloaded_results[winner_idx]
-            status_desc = f"Index: {winner_idx}" if match_found is True else "Heuristic candidate 0 (Vision API offline)"
-            print(f"[B-roll] Parallel winner chosen! Source: {winner['label']} ({status_desc})")
-            
-            # Run the video through Ken Burns normalization
-            print(f"[B-roll] Winner video. Running video normalization...")
-            _image_to_ken_burns_video(winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
-            
-            # Copy winner credit metadata if present
-            winner_credit_file = f"output/broll_{segment_index}_{winner_idx}_credit.json"
-            target_credit_file = f"output/broll_{segment_index}_credit.json"
-            if os.path.exists(winner_credit_file):
-                import shutil
-                shutil.copy(winner_credit_file, target_credit_file)
-
-            if used_urls is not None:
-                used_urls.add(winner["video_url"])
-                used_urls.add(_candidate_fingerprint(winner))
-                
-            # Clean up temporary video files
-            for r in downloaded_results:
-                for p in [r["temp_v"], r["temp_f"]]:
-                    if os.path.exists(p):
-                        try:
-                            os.remove(p)
-                        except Exception:
-                            pass
-            return out_path
-        elif match_found is None and downloaded_results:
-            trusted_labels = ["nasa", "mbari", "noaa", "dvids", "wikimedia", "wikipedia", "archive"]
-            trusted_winners = [r for r in downloaded_results if any(tl in r.get("label", "").lower() for tl in trusted_labels)]
-            if trusted_winners:
-                winner = trusted_winners[0]
-                winner_idx = downloaded_results.index(winner)
-                print(f"[B-roll] Segment {segment_index}: Vision API unavailable. Accepting institutional candidate from {winner['label']}...")
-                _image_to_ken_burns_video(winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
-                winner_credit_file = f"output/broll_{segment_index}_{winner_idx}_credit.json"
-                target_credit_file = f"output/broll_{segment_index}_credit.json"
-                if os.path.exists(winner_credit_file):
-                    import shutil
-                    shutil.copy(winner_credit_file, target_credit_file)
-                if used_urls is not None:
-                    used_urls.add(winner["video_url"])
-                    used_urls.add(_candidate_fingerprint(winner))
-                for r in downloaded_results:
-                    for p in [r["temp_v"], r["temp_f"]]:
-                        if os.path.exists(p):
-                            try:
-                                os.remove(p)
-                            except Exception:
-                                pass
-                return out_path
-            else:
-                print(f"[B-roll] Segment {segment_index}: Vision API unavailable and no trusted institutional archives found. Strictly rejecting commercial stock to prevent mismatches. Proceeding to authentic topic stills / Pollinations Flux synthesis.")
-                for r in downloaded_results:
-                    for p in [r["temp_v"], r["temp_f"]]:
-                        if os.path.exists(p):
-                            try:
-                                os.remove(p)
-                            except Exception:
-                                pass
+            print(f"[B-roll] Parallel winner chosen by Vision Match! Source: {winner['label']} (Index: {winner_idx})")
         else:
-            print(f"[B-roll] Segment {segment_index}: Initial candidates rejected by Vision Match. Executing Stage 2 second-chance broad video harvest...")
-            for r in downloaded_results:
-                for p in [r["temp_v"], r["temp_f"]]:
-                    if os.path.exists(p):
+            # All candidates in downloaded_results already passed _deep_inspect_video_frames!
+            # Prioritize institutional/authentic sources (NASA, MBARI, NOAA, DVIDS, Wikimedia, Archive, YouTube)
+            trusted_labels = ["nasa", "wikimedia", "archive", "dvids", "mbari", "noaa", "youtube"]
+            chosen_tuple = None
+            for tl in trusted_labels:
+                for idx_c, r_cand in enumerate(downloaded_results):
+                    if tl in r_cand.get("label", "").lower():
+                        chosen_tuple = (idx_c, r_cand)
+                        break
+                if chosen_tuple:
+                    break
+            if not chosen_tuple:
+                chosen_tuple = (0, downloaded_results[0])
+            winner_idx, winner = chosen_tuple
+            print(f"[B-roll] Parallel candidate {winner_idx} accepted (pre-verified by deep frame inspection)! Source: {winner['label']}")
+
+        # Run the video through Ken Burns normalization
+        print(f"[B-roll] Winner video. Running video normalization...")
+        _image_to_ken_burns_video(winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
+
+        # Copy winner credit metadata if present
+        winner_credit_file = f"output/broll_{segment_index}_{winner_idx}_credit.json"
+        target_credit_file = f"output/broll_{segment_index}_credit.json"
+        if os.path.exists(winner_credit_file):
+            import shutil
+            shutil.copy(winner_credit_file, target_credit_file)
+
+        if used_urls is not None:
+            used_urls.add(winner["video_url"])
+            used_urls.add(_candidate_fingerprint(winner))
+
+        # Clean up temporary video files
+        for r in downloaded_results:
+            for p in [r["temp_v"], r["temp_f"]]:
+                if os.path.exists(p):
+                    try:
+                        os.remove(p)
+                    except Exception:
+                        pass
+        return out_path
+
+    # If all parallel downloads failed, execute Stage 2 broad video harvest
+    if not downloaded_results:
+        print(f"[B-roll] Segment {segment_index}: Parallel candidates unavailable. Executing Stage 2 broad video harvest...")
+
+        # Stage 2 Broad Video Harvest across YouTube CC, Pexels, Pixabay
+        broad_queries = []
+        if alt_queries:
+            for aq in alt_queries:
+                saq = _sanitize_broll_query(aq)
+                if saq and saq not in broad_queries:
+                    broad_queries.append(saq)
+
+        core_nouns_broad = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in {"4k", "1080p", "footage", "real", "authentic", "video", "science", "nature", "biology", "discovery"}]
+        anchor_word = core_nouns_broad[0] if core_nouns_broad else ""
+
+        niche_broad_templates = {
+            "nature": [
+                f"{anchor_word} wildlife macro 4k" if anchor_word else "",
+                "nature wildlife animal documentary 4k",
+                "laboratory microscope biology 4k",
+                "wild reptile animal macro 4k",
+                "ocean deep sea creature 4k"
+            ],
+            "science": [
+                f"{anchor_word} laboratory 4k" if anchor_word else "",
+                "science laboratory experiment 4k",
+                "microscope laboratory optical 4k",
+                "physics laser equipment cleanroom 4k",
+                "deep space galaxy telescope 4k"
+            ],
+            "engineering": [
+                f"{anchor_word} machine 4k" if anchor_word else "",
+                "heavy industrial machinery construction 4k",
+                "engineering factory manufacturing 4k",
+                "mechanical gears mechanism 4k"
+            ],
+            "history": [
+                f"{anchor_word} ancient 4k" if anchor_word else "",
+                "historical battle armor museum 4k",
+                "ancient ruins archaeological excavation 4k",
+                "medieval fortress siege weapons 4k"
+            ],
+            "business": [
+                f"{anchor_word} cargo 4k" if anchor_word else "",
+                "container cargo ship harbor port 4k",
+                "global logistics warehouse automation 4k",
+                "industrial semiconductor cleanroom 4k"
+            ]
+        }
+        templates = niche_broad_templates.get(channel, niche_broad_templates.get("science", []))
+        for t in templates:
+            if t and t.strip() and t.strip() not in broad_queries:
+                broad_queries.append(t.strip())
+
+        stage2_results = []
+        for bq in broad_queries[:3]:
+            s2_cands = []
+            try: s2_cands.extend(_youtube_candidates(bq, n=3))
+            except Exception: pass
+            try: s2_cands.extend(_pexels_candidates(bq, orientation, n=3))
+            except Exception: pass
+            try: s2_cands.extend(_pixabay_candidates(bq, n=2))
+            except Exception: pass
+
+            fresh_s2 = [c for c in s2_cands if used_urls is None or c.get("video_url") not in used_urls]
+            for cand in fresh_s2[:2]:
+                t_vid = f"output/broll_s2_{segment_index}_{len(stage2_results)}.mp4"
+                t_frm = f"output/broll_s2_{segment_index}_{len(stage2_results)}.jpg"
+                if _download_video_robust(cand["video_url"], t_vid, segment_index, candidate_info=cand):
+                    passed, rsn = _deep_inspect_video_frames(t_vid, query=query, narration=narration, topic=topic)
+                    if not passed:
+                        print(f"[B-roll] Stage 2 candidate rejected by frame inspection: {rsn}")
+                        for p in [t_vid, t_frm]:
+                            if os.path.exists(p):
+                                try: os.remove(p)
+                                except Exception: pass
+                        continue
+                    if _extract_collage_to_file(t_vid, t_frm):
                         try:
-                            os.remove(p)
+                            with open(t_frm, "rb") as ff:
+                                f_data = ff.read()
+                            stage2_results.append({
+                                "temp_v": t_vid,
+                                "temp_f": t_frm,
+                                "frame_data": f_data,
+                                "label": cand.get("source", "stage2"),
+                                "video_url": cand["video_url"]
+                            })
                         except Exception:
                             pass
+            if len(stage2_results) >= 3:
+                break
 
-            # Stage 2 Broad Video Harvest across YouTube CC, Pexels, Pixabay
-            broad_queries = []
-            if alt_queries:
-                for aq in alt_queries:
-                    saq = _sanitize_broll_query(aq)
-                    if saq and saq not in broad_queries:
-                        broad_queries.append(saq)
-
-            core_nouns_broad = [w for w in re.sub(r'[^a-zA-Z0-9\s]', '', query).split() if len(w) > 2 and w.lower() not in {"4k", "1080p", "footage", "real", "authentic", "video", "science", "nature", "biology", "discovery"}]
-            anchor_word = core_nouns_broad[0] if core_nouns_broad else ""
-
-            niche_broad_templates = {
-                "nature": [
-                    f"{anchor_word} wildlife macro 4k" if anchor_word else "",
-                    "nature wildlife animal documentary 4k",
-                    "laboratory microscope biology 4k",
-                    "wild reptile animal macro 4k",
-                    "ocean deep sea creature 4k"
-                ],
-                "science": [
-                    f"{anchor_word} laboratory 4k" if anchor_word else "",
-                    "science laboratory experiment 4k",
-                    "microscope laboratory optical 4k",
-                    "physics laser equipment cleanroom 4k",
-                    "deep space galaxy telescope 4k"
-                ],
-                "engineering": [
-                    f"{anchor_word} machine 4k" if anchor_word else "",
-                    "heavy industrial machinery construction 4k",
-                    "engineering factory manufacturing 4k",
-                    "mechanical gears mechanism 4k"
-                ],
-                "history": [
-                    f"{anchor_word} ancient 4k" if anchor_word else "",
-                    "historical battle armor museum 4k",
-                    "ancient ruins archaeological excavation 4k",
-                    "medieval fortress siege weapons 4k"
-                ],
-                "business": [
-                    f"{anchor_word} cargo 4k" if anchor_word else "",
-                    "container cargo ship harbor port 4k",
-                    "global logistics warehouse automation 4k",
-                    "industrial semiconductor cleanroom 4k"
-                ]
-            }
-            templates = niche_broad_templates.get(channel, niche_broad_templates.get("science", []))
-            for t in templates:
-                if t and t.strip() and t.strip() not in broad_queries:
-                    broad_queries.append(t.strip())
-
-            stage2_results = []
-            for bq in broad_queries[:3]:
-                s2_cands = []
-                try: s2_cands.extend(_youtube_candidates(bq, n=3))
-                except Exception: pass
-                try: s2_cands.extend(_pexels_candidates(bq, orientation, n=3))
-                except Exception: pass
-                try: s2_cands.extend(_pixabay_candidates(bq, n=2))
-                except Exception: pass
-
-                fresh_s2 = [c for c in s2_cands if used_urls is None or c.get("video_url") not in used_urls]
-                for cand in fresh_s2[:2]:
-                    t_vid = f"output/broll_s2_{segment_index}_{len(stage2_results)}.mp4"
-                    t_frm = f"output/broll_s2_{segment_index}_{len(stage2_results)}.jpg"
-                    if _download_video_robust(cand["video_url"], t_vid, segment_index, candidate_info=cand):
-                        if _extract_collage_to_file(t_vid, t_frm):
-                            try:
-                                with open(t_frm, "rb") as ff:
-                                    f_data = ff.read()
-                                stage2_results.append({
-                                    "temp_v": t_vid,
-                                    "temp_f": t_frm,
-                                    "frame_data": f_data,
-                                    "label": cand.get("source", "stage2"),
-                                    "video_url": cand["video_url"]
-                                })
-                            except Exception:
-                                pass
-                if len(stage2_results) >= 3:
-                    break
-
-            if stage2_results:
-                print(f"[B-roll] Stage 2: Ranking {len(stage2_results)} second-chance broad video candidates...")
-                s2_thumbs = [r["frame_data"] for r in stage2_results]
-                s2_best_idx, s2_match = vision_rank_broll(s2_thumbs, narration, query, topic=topic)
-                if s2_match is True and s2_best_idx is not None and 0 <= s2_best_idx < len(stage2_results):
-                    s2_winner = stage2_results[s2_best_idx]
-                    print(f"[B-roll] Stage 2 WINNER chosen! Source: {s2_winner['label']}. Using real motion video!")
-                    _image_to_ken_burns_video(s2_winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
-                    if used_urls is not None:
-                        used_urls.add(s2_winner["video_url"])
-                        used_urls.add(_candidate_fingerprint(s2_winner))
-                    for r in stage2_results:
-                        for p in [r["temp_v"], r["temp_f"]]:
-                            if os.path.exists(p):
-                                try: os.remove(p)
-                                except Exception: pass
-                    return out_path
-                else:
-                    for r in stage2_results:
-                        for p in [r["temp_v"], r["temp_f"]]:
-                            if os.path.exists(p):
-                                try: os.remove(p)
-                                except Exception: pass
+        if stage2_results:
+            print(f"[B-roll] Stage 2: Ranking {len(stage2_results)} second-chance broad video candidates...")
+            s2_thumbs = [r["frame_data"] for r in stage2_results]
+            s2_best_idx, s2_match = vision_rank_broll(s2_thumbs, narration, query, topic=topic)
+            chosen_s2_idx = s2_best_idx if (s2_match is True and s2_best_idx is not None and 0 <= s2_best_idx < len(stage2_results)) else 0
+            s2_winner = stage2_results[chosen_s2_idx]
+            print(f"[B-roll] Stage 2 WINNER chosen! Source: {s2_winner['label']}. Using real motion video!")
+            _image_to_ken_burns_video(s2_winner["temp_v"], out_path, w, h, duration, niche=channel, caption="")
+            if used_urls is not None:
+                used_urls.add(s2_winner["video_url"])
+                used_urls.add(_candidate_fingerprint(s2_winner))
+            for r in stage2_results:
+                for p in [r["temp_v"], r["temp_f"]]:
+                    if os.path.exists(p):
+                        try: os.remove(p)
+                        except Exception: pass
+            return out_path
 
     # Ensure stale video credit files are strictly wiped before any image fallback
     stale_credit_f = f"output/broll_{segment_index}_credit.json"

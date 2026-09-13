@@ -365,6 +365,27 @@ def surgical_repair_and_reverify(
                     except Exception as e:
                         print(f"  [Surgical Wikimedia Error]: {e}")
 
+            # Search priority 2.5: Archive.org moving image video
+            if not repaired:
+                for sq in surgical_queries[:2]:
+                    try:
+                        arch_url = _archive_video(sq, used_urls=used_urls)
+                        if arch_url and arch_url not in used_urls:
+                            temp_v = f"output/surgical_temp_arch_{seg_idx}.mp4"
+                            if _download_video_robust(arch_url, temp_v, f"surg_arch_{seg_idx}"):
+                                passed, rsn = _deep_inspect_video_frames(temp_v, query=sq, narration=narration, topic=topic)
+                                if passed:
+                                    print(f"  ✅ [Surgical Archive.org Match] Segment {seg_idx} verified via Archive.org!")
+                                    _image_to_ken_burns_video(temp_v, out_path, w, h, dur, niche=channel)
+                                    used_urls.add(arch_url)
+                                    repaired = True
+                                    if os.path.exists(temp_v):
+                                        try: os.remove(temp_v)
+                                        except Exception: pass
+                                    break
+                    except Exception as e:
+                        print(f"  [Surgical Archive Error]: {e}")
+
             # Search priority 3: Pexels documentary stock
             if not repaired:
                 for sq in surgical_queries[:3]:
@@ -390,6 +411,32 @@ def surgical_repair_and_reverify(
                             break
                     except Exception as e:
                         print(f"  [Surgical Pexels Error]: {e}")
+
+            # Search priority 3.5: Pixabay video candidates
+            if not repaired:
+                for sq in surgical_queries[:2]:
+                    try:
+                        pix_cands = _pixabay_candidates(sq, n=2)
+                        for cand in pix_cands:
+                            v_url = cand.get("video_url")
+                            if not v_url or v_url in used_urls:
+                                continue
+                            temp_v = f"output/surgical_temp_pix_{seg_idx}.mp4"
+                            if _download_video_robust(v_url, temp_v, f"surg_pix_{seg_idx}", candidate_info=cand):
+                                passed, rsn = _deep_inspect_video_frames(temp_v, query=sq, narration=narration, topic=topic)
+                                if passed:
+                                    print(f"  ✅ [Surgical Pixabay Match] Segment {seg_idx} verified via Pixabay!")
+                                    _image_to_ken_burns_video(temp_v, out_path, w, h, dur, niche=channel)
+                                    used_urls.add(v_url)
+                                    repaired = True
+                                    if os.path.exists(temp_v):
+                                        try: os.remove(temp_v)
+                                        except Exception: pass
+                                    break
+                        if repaired:
+                            break
+                    except Exception as e:
+                        print(f"  [Surgical Pixabay Error]: {e}")
 
             # Fail-safe: Authentic intra-video frame donor (guaranteed anti-slop, zero anime)
             if not repaired:
