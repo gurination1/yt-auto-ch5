@@ -87,9 +87,10 @@
     "ASML's Remote Kill Switch in Taiwan Foundries",
     "The Grocery Store Vegetable Misting Trap",
     "The 'Isotopic Branding' War of Madagascar's Vanilla Syndicates",
-    "ETH Zurich's Whey Protein Gold Extraction"
+    "ETH Zurich's Whey Protein Gold Extraction",
+    "The Secret Underground Vault in London Where De Beers Physically Locks Away Tons of Diamonds to Prevent the Price From Crashing to Zero"
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 20,
-  "call_count": 206
+  "subcluster_idx": 0,
+  "fallback_idx": 21,
+  "call_count": 207
 }
