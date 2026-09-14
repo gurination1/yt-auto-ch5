@@ -88,9 +88,10 @@
     "The Grocery Store Vegetable Misting Trap",
     "The 'Isotopic Branding' War of Madagascar's Vanilla Syndicates",
     "ETH Zurich's Whey Protein Gold Extraction",
-    "The Secret Underground Vault in London Where De Beers Physically Locks Away Tons of Diamonds to Prevent the Price From Crashing to Zero"
+    "The Secret Underground Vault in London Where De Beers Physically Locks Away Tons of Diamonds to Prevent the Price From Crashing to Zero",
+    "The Runway-Cracking Logistics of ASML's Newest High-NA Machine"
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 21,
-  "call_count": 207
+  "subcluster_idx": 1,
+  "fallback_idx": 22,
+  "call_count": 208
 }
