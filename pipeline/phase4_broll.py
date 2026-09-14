@@ -1498,7 +1498,15 @@ def _youtube_candidates(query: str, n: int = 5, topic: str = "", narration: str 
     return candidates
 
 
-def _download_video_robust(url: str, out_path: str, segment_index: int, candidate_info: dict | None = None) -> bool:
+def _download_video_robust(
+    url: str,
+    out_path: str,
+    segment_index: int | str,
+    candidate_info: dict | None = None,
+    query: str = "",
+    narration: str = "",
+    topic: str = "",
+) -> bool:
     try:
         os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
         duration_secs = 0.0
@@ -1536,6 +1544,13 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
             try:
                 res_r = subprocess.run(cmd_red, capture_output=True, text=True, timeout=30)
                 if res_r.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
+                    if query or narration:
+                        passed_win, reason_win = _deep_inspect_video_frames(out_path, query=query, narration=narration, topic=topic)
+                        if not passed_win:
+                            print(f"[B-roll] Reddit slice rejected by inspection: {reason_win}")
+                            try: os.remove(out_path)
+                            except Exception: pass
+                            return False
                     print(f"[B-roll] Reddit authentic video slice download SUCCESS!")
                     c_name = candidate_info.get("uploader_name", "Reddit") if candidate_info else "Reddit"
                     c_handle = candidate_info.get("uploader_handle", "r/Reddit") if candidate_info else "r/Reddit"
@@ -1558,7 +1573,7 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
                 print(f"[B-roll] Reddit download exception: {e_red}")
             return False
 
-        # 2. YouTube video download with smart intro skip based on actual probed duration
+        # 2. YouTube video download with multi-window sampling and frame verification
         if is_youtube:
             print(f"[B-roll] Downloading YouTube authentic video slice for segment {segment_index}: {url}...")
             ytdlp_bin_cmd = _get_ytdlp_bin()
@@ -1589,77 +1604,150 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
             ]
             format_selector = "bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/bestvideo+bestaudio/best[ext=mp4][height<=1080]/best[height<=1080]/best"
 
-            for client_str in client_options:
-                target_end = int(15 + slice_dur + 2)
-                cmd_dl_section = ytdlp_bin_cmd + proxy_args + js_args + [
-                    "--extractor-args", f"youtube:player_client={client_str}",
-                    "--format", format_selector,
-                    "--merge-output-format", "mp4",
-                    "--download-sections", f"*15-{target_end}",
-                    "--force-keyframes-at-cuts",
-                    "--no-check-certificates",
-                    "--socket-timeout", "15",
-                    "-o", temp_full,
-                    url
+            if duration_secs >= 60.0:
+                candidate_starts = [
+                    max(15.0, duration_secs * 0.25),
+                    max(25.0, duration_secs * 0.50),
+                    max(35.0, duration_secs * 0.75),
                 ]
-                try:
-                    res_dl = subprocess.run(cmd_dl_section, capture_output=True, text=True, timeout=25)
-                    if not (os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000):
-                        cmd_dl_full = ytdlp_bin_cmd + proxy_args + js_args + [
-                            "--extractor-args", f"youtube:player_client={client_str}",
-                            "--format", format_selector,
-                            "--merge-output-format", "mp4",
-                            "--no-check-certificates",
-                            "--socket-timeout", "15",
-                            "-o", temp_full,
-                            url
-                        ]
-                        res_dl = subprocess.run(cmd_dl_full, capture_output=True, text=True, timeout=40)
-                    if os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000:
-                        # Probe actual duration to skip creator intro, channel stinger, or sponsors
-                        actual_dur = _get_video_duration(temp_full)
-                        if actual_dur >= 60.0:
-                            start_time = max(25.0, min(actual_dur * 0.35, actual_dur - 15.0))
-                        elif actual_dur >= 25.0:
-                            start_time = max(10.0, actual_dur * 0.25)
-                        elif actual_dur >= 10.0:
-                            start_time = max(3.5, actual_dur * 0.15)
-                        else:
-                            start_time = 0.0
+            elif duration_secs >= 25.0:
+                candidate_starts = [
+                    max(8.0, duration_secs * 0.25),
+                    max(14.0, duration_secs * 0.55),
+                ]
+            elif duration_secs >= 10.0:
+                candidate_starts = [
+                    max(3.0, duration_secs * 0.20),
+                    max(6.0, duration_secs * 0.50),
+                ]
+            else:
+                candidate_starts = [15.0, 35.0, 55.0]
 
-                        cmd_cut = [
-                            "ffmpeg", "-y",
-                            "-ss", f"{start_time:.3f}",
-                            "-i", temp_full,
-                            "-t", str(slice_dur),
-                            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20",
-                            "-c:a", "aac",
-                            "-avoid_negative_ts", "make_zero",
-                            out_path
-                        ]
-                        subprocess.run(cmd_cut, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=25)
+            for client_str in client_options:
+                for target_start in candidate_starts:
+                    target_end = int(target_start + slice_dur + 2)
+                    if os.path.exists(temp_full):
                         try: os.remove(temp_full)
                         except Exception: pass
-                        
-                        if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
-                            print(f"[B-roll] YouTube authentic slice cut from t={start_time:.1f}s (skipped intro) with client {client_str}!")
-                            c_name = candidate_info.get("uploader_name", "YouTube") if candidate_info else "YouTube"
-                            c_handle = candidate_info.get("uploader_handle", "@YouTube") if candidate_info else "@YouTube"
-                            credit_data = {
-                                "source": "YouTube",
-                                "uploader_name": str(c_name),
-                                "uploader_handle": str(c_handle),
-                                "channel_url": candidate_info.get("channel_url", "") if candidate_info else "",
-                                "video_url": url,
-                                "title": candidate_info.get("title", "") if candidate_info else ""
-                            }
-                            try:
-                                with open(f"output/broll_{segment_index}_credit.json", "w") as cf:
-                                    json.dump(credit_data, cf, indent=2)
+
+                    cmd_dl_section = ytdlp_bin_cmd + proxy_args + js_args + [
+                        "--extractor-args", f"youtube:player_client={client_str}",
+                        "--format", format_selector,
+                        "--merge-output-format", "mp4",
+                        "--download-sections", f"*{int(target_start)}-{target_end}",
+                        "--force-keyframes-at-cuts",
+                        "--no-check-certificates",
+                        "--socket-timeout", "15",
+                        "-o", temp_full,
+                        url
+                    ]
+                    try:
+                        res_dl = subprocess.run(cmd_dl_section, capture_output=True, text=True, timeout=25)
+                        if os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000:
+                            cmd_cut = [
+                                "ffmpeg", "-y",
+                                "-ss", "0.5",
+                                "-i", temp_full,
+                                "-t", str(slice_dur),
+                                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20",
+                                "-c:a", "aac",
+                                "-avoid_negative_ts", "make_zero",
+                                out_path
+                            ]
+                            subprocess.run(cmd_cut, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=25)
+                            try: os.remove(temp_full)
                             except Exception: pass
-                            return True
-                    else:
-                        print(f"[B-roll] yt-dlp client {client_str} failed: {res_dl.stderr[:150]}")
+
+                            if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
+                                if query or narration:
+                                    passed_win, reason_win = _deep_inspect_video_frames(out_path, query=query, narration=narration, topic=topic)
+                                    if not passed_win:
+                                        print(f"[B-roll] YouTube slice at t={target_start:.1f}s rejected by inspection: {reason_win}. Trying next timestamp window...")
+                                        try: os.remove(out_path)
+                                        except Exception: pass
+                                        continue
+
+                                print(f"[B-roll] YouTube authentic slice cut from t={target_start:.1f}s with client {client_str}!")
+                                c_name = candidate_info.get("uploader_name", "YouTube") if candidate_info else "YouTube"
+                                c_handle = candidate_info.get("uploader_handle", "@YouTube") if candidate_info else "@YouTube"
+                                credit_data = {
+                                    "source": "YouTube",
+                                    "uploader_name": str(c_name),
+                                    "uploader_handle": str(c_handle),
+                                    "channel_url": candidate_info.get("channel_url", "") if candidate_info else "",
+                                    "video_url": url,
+                                    "title": candidate_info.get("title", "") if candidate_info else ""
+                                }
+                                try:
+                                    with open(f"output/broll_{segment_index}_credit.json", "w") as cf:
+                                        json.dump(credit_data, cf, indent=2)
+                                except Exception: pass
+                                return True
+                    except Exception as e_slice:
+                        pass
+
+                # Fallback: full download probe if section download failed
+                try:
+                    cmd_dl_full = ytdlp_bin_cmd + proxy_args + js_args + [
+                        "--extractor-args", f"youtube:player_client={client_str}",
+                        "--format", format_selector,
+                        "--merge-output-format", "mp4",
+                        "--no-check-certificates",
+                        "--socket-timeout", "15",
+                        "-o", temp_full,
+                        url
+                    ]
+                    res_dl = subprocess.run(cmd_dl_full, capture_output=True, text=True, timeout=40)
+                    if os.path.exists(temp_full) and os.path.getsize(temp_full) > 10_000:
+                        actual_dur = _get_video_duration(temp_full)
+                        if actual_dur >= 60.0:
+                            fallback_starts = [max(15.0, actual_dur * 0.25), max(25.0, actual_dur * 0.50), max(35.0, actual_dur * 0.75)]
+                        elif actual_dur >= 25.0:
+                            fallback_starts = [max(8.0, actual_dur * 0.25), max(14.0, actual_dur * 0.55)]
+                        else:
+                            fallback_starts = [0.0]
+
+                        for f_start in fallback_starts:
+                            cmd_cut = [
+                                "ffmpeg", "-y",
+                                "-ss", f"{f_start:.3f}",
+                                "-i", temp_full,
+                                "-t", str(slice_dur),
+                                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20",
+                                "-c:a", "aac",
+                                "-avoid_negative_ts", "make_zero",
+                                out_path
+                            ]
+                            subprocess.run(cmd_cut, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=25)
+                            if os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
+                                if query or narration:
+                                    passed_win, reason_win = _deep_inspect_video_frames(out_path, query=query, narration=narration, topic=topic)
+                                    if not passed_win:
+                                        print(f"[B-roll] YouTube fallback slice at t={f_start:.1f}s rejected: {reason_win}. Trying next slice...")
+                                        try: os.remove(out_path)
+                                        except Exception: pass
+                                        continue
+
+                                print(f"[B-roll] YouTube authentic slice cut from t={f_start:.1f}s (skipped intro) with client {client_str}!")
+                                try: os.remove(temp_full)
+                                except Exception: pass
+                                c_name = candidate_info.get("uploader_name", "YouTube") if candidate_info else "YouTube"
+                                c_handle = candidate_info.get("uploader_handle", "@YouTube") if candidate_info else "@YouTube"
+                                credit_data = {
+                                    "source": "YouTube",
+                                    "uploader_name": str(c_name),
+                                    "uploader_handle": str(c_handle),
+                                    "channel_url": candidate_info.get("channel_url", "") if candidate_info else "",
+                                    "video_url": url,
+                                    "title": candidate_info.get("title", "") if candidate_info else ""
+                                }
+                                try:
+                                    with open(f"output/broll_{segment_index}_credit.json", "w") as cf:
+                                        json.dump(credit_data, cf, indent=2)
+                                except Exception: pass
+                                return True
+                        try: os.remove(temp_full)
+                        except Exception: pass
                 except Exception as e_yt:
                     print(f"[B-roll] YouTube download exception ({client_str}): {e_yt}")
             return False
@@ -1699,27 +1787,38 @@ def _download_video_robust(url: str, out_path: str, segment_index: int, candidat
         if os.path.exists(temp_file) and os.path.getsize(temp_file) > 10_000:
             actual_dur = _get_video_duration(temp_file)
             if actual_dur >= 60.0:
-                stream_start = max(15.0, actual_dur * 0.25)
+                candidate_starts = [max(15.0, actual_dur * 0.25), max(25.0, actual_dur * 0.50), max(35.0, actual_dur * 0.75)]
             elif actual_dur >= 20.0:
-                stream_start = max(5.0, actual_dur * 0.15)
+                candidate_starts = [max(5.0, actual_dur * 0.15), max(10.0, actual_dur * 0.50)]
             else:
-                stream_start = 0.0
+                candidate_starts = [0.0]
 
-            cmd = [
-                "ffmpeg", "-y",
-                "-ss", f"{stream_start:.3f}",
-                "-i", temp_file,
-                "-t", str(slice_dur),
-                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20",
-                "-pix_fmt", "yuv420p", "-an",
-                "-avoid_negative_ts", "make_zero",
-                out_path
-            ]
-            res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=45)
+            for stream_start in candidate_starts:
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-ss", f"{stream_start:.3f}",
+                    "-i", temp_file,
+                    "-t", str(slice_dur),
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20",
+                    "-pix_fmt", "yuv420p", "-an",
+                    "-avoid_negative_ts", "make_zero",
+                    out_path
+                ]
+                res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=45)
+                if res.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 10_000:
+                    if query or narration:
+                        passed_win, reason_win = _deep_inspect_video_frames(out_path, query=query, narration=narration, topic=topic)
+                        if not passed_win:
+                            print(f"[B-roll] Direct stream slice at t={stream_start:.1f}s rejected: {reason_win}. Trying next slice...")
+                            try: os.remove(out_path)
+                            except Exception: pass
+                            continue
+                    break
+
             if os.path.exists(temp_file):
                 try: os.remove(temp_file)
                 except Exception: pass
-            if res.returncode != 0 or not os.path.exists(out_path) or os.path.getsize(out_path) < 10_000:
+            if not os.path.exists(out_path) or os.path.getsize(out_path) < 10_000:
                 return False
 
             # Probe resolution to reject low-res < 720p
@@ -2492,13 +2591,27 @@ def _deep_inspect_video_frames(
             except Exception:
                 return False, f"Frame at t={ts:.2f}s corrupted"
 
-            # 1. Luminance check
+            # 1. Luminance and blank/murky screen checks
             mean_lum = float(np.mean(gray))
             std_lum = float(np.std(gray))
-            if mean_lum < 5.0 and std_lum < 5.0:
+            if mean_lum < 8.0 and std_lum < 8.0:
                 return False, f"Black screen detected at t={ts:.2f}s (mean={mean_lum:.1f}, std={std_lum:.1f})"
-            if mean_lum > 248.0 and std_lum < 10.0:
-                return False, f"Washed out / white screen detected at t={ts:.2f}s"
+
+            # Blank white slide / screen (e.g. tutorial canvas or white void with minor icon)
+            frac_white = float(np.mean(gray > 225))
+            if (mean_lum > 205.0 and std_lum < 35.0) or frac_white > 0.55:
+                return False, f"Blank white screen detected at t={ts:.2f}s (mean={mean_lum:.1f}, std={std_lum:.1f}, frac_white={frac_white:.2f})"
+
+            # Murky low-contrast dark frame (empty dark vegetation/weeds) when wildlife is described
+            combined_text = f"{topic} {narration} {query}".lower()
+            is_wildlife = any(k in combined_text for k in [
+                "rat", "rodent", "beetle", "ant", "snake", "worm", "shark", "squid", "spider", "bird", "fish",
+                "animal", "mammal", "predator", "insect", "frog", "elephant", "hyena", "creature", "organism"
+            ])
+            p10, p90 = float(np.percentile(gray, 10)), float(np.percentile(gray, 90))
+            contrast = p90 - p10
+            if is_wildlife and contrast < 40.0 and mean_lum < 80.0:
+                return False, f"Murky low-contrast empty frame at t={ts:.2f}s (contrast={contrast:.1f}, mean={mean_lum:.1f}) for wildlife topic"
 
             # 2. OCR text & slide check
             if _has_baked_text_ocr(frame_file):
@@ -2867,7 +2980,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                     chosen = valid_candidates[try_idx]
                     print(f"[B-roll] Trying candidate {try_idx} ({chosen.get('source', 'Unknown')}): {chosen['video_url'][:60]}...")
                     temp_video_path = f"output/temp_video_{segment_index}.mp4"
-                    if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen):
+                    if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen, query=query, narration=narration, topic=topic):
                         # Deep frame-by-frame inspection before accepting into video
                         passed, reason = _deep_inspect_video_frames(temp_video_path, query=query, narration=narration, topic=topic)
                         if not passed:
@@ -2908,7 +3021,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                         break
                     print(f"[B-roll] Trying heuristic candidate {try_idx} ({chosen.get('source', 'Unknown')}, score={chosen.get('_score', 0.0):.1f}): {chosen['video_url'][:60]}...")
                     temp_video_path = f"output/temp_video_{segment_index}.mp4"
-                    if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen):
+                    if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen, query=query, narration=narration, topic=topic):
                         passed, reason = _deep_inspect_video_frames(temp_video_path, query=query, narration=narration, topic=topic)
                         if not passed:
                             print(f"[B-roll] Heuristic candidate {try_idx} REJECTED by frame inspection: {reason}. Trying next candidate...")
@@ -2938,7 +3051,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                         break
                     print(f"[B-roll] Directly inspecting candidate {try_idx} ({chosen.get('source', 'Unknown')}): {chosen['video_url'][:60]}...")
                     temp_video_path = f"output/temp_video_{segment_index}.mp4"
-                    if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen):
+                    if _download_video_robust(chosen["video_url"], temp_video_path, segment_index, candidate_info=chosen, query=query, narration=narration, topic=topic):
                         passed, reason = _deep_inspect_video_frames(temp_video_path, query=query, narration=narration, topic=topic)
                         if not passed:
                             print(f"[B-roll] Candidate {try_idx} REJECTED by frame inspection: {reason}. Trying next...")
@@ -3035,7 +3148,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                     pass
         
         print(f"[B-roll] Downloading video from {lbl} in parallel...")
-        if _download_video_robust(vurl, temp_v, f"{segment_index}_{idx}"):
+        if _download_video_robust(vurl, temp_v, f"{segment_index}_{idx}", query=query, narration=narration, topic=topic):
             passed, reason = _deep_inspect_video_frames(temp_v, query=query, narration=narration, topic=topic)
             if not passed:
                 print(f"[B-roll] Skipping candidate '{lbl}' due to frame inspection: {reason}")
@@ -3198,7 +3311,7 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             for cand in fresh_s2[:2]:
                 t_vid = f"output/broll_s2_{segment_index}_{len(stage2_results)}.mp4"
                 t_frm = f"output/broll_s2_{segment_index}_{len(stage2_results)}.jpg"
-                if _download_video_robust(cand["video_url"], t_vid, segment_index, candidate_info=cand):
+                if _download_video_robust(cand["video_url"], t_vid, segment_index, candidate_info=cand, query=query, narration=narration, topic=topic):
                     passed, rsn = _deep_inspect_video_frames(t_vid, query=query, narration=narration, topic=topic)
                     if not passed:
                         print(f"[B-roll] Stage 2 candidate rejected by frame inspection: {rsn}")

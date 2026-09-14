@@ -332,6 +332,13 @@ Please watch the video and evaluate it against these rubrics:
    - You must verify that EVERY segment displays real, visible subject matter (real animals, machinery, historical scenes, or space).
    - If ANY segment of the video is pitch black, nearly black, or displays only an empty plate or crosshairs with subtitles, you MUST IMMEDIATELY REJECT with status="REJECTED", score <= 30, and list the failed segment IDs in failed_segments!
    - Do NOT assume visual content exists based on what is heard in the audio voiceover. If the visuals are blank/black, FAIL THE VIDEO.
+7. **STRICT FOCAL SUBJECT VISIBILITY & ANTI-HALLUCINATION (ZERO TOLERANCE)**:
+   - DO NOT assume visual content exists based on what is heard in the audio voiceover! Inspect the ACTUAL video frames:
+   - If a segment describes a specific focal animal, creature, organism, or machine (e.g. rat, rodent, beetle, squid, worm, ant, snake, elephant, predator, tunnel boring machine), THE ACTUAL CREATURE OR MACHINE MUST BE CLEARLY VISIBLE in the video pixels!
+   - Reject immediately (status="REJECTED", score <= 60, and flag segment index in failed_segments) if the segment only shows empty bushes, dark night-vision background without the animal, a vehicle/jeep without the animal, an empty cage, or distant blurred scenery.
+   - For ancient/medieval history topics, reject modern concrete dams/bridges, electric streetlights, power lines, and modern clothing.
+   - For industrial, engineering, or commodity topics, reject domestic kitchen baking, cake batter, and whisks.
+   - Reject any segment with >60% blank/solid white canvas.
 
 Output strictly valid JSON with this exact schema:
 {{
@@ -346,13 +353,10 @@ Output strictly valid JSON with this exact schema:
 }}
 """
             
-            # 4. Generate Review Content (Primary: Gemini 3.5 Flash, Failovers: 3.5 Flash Lite, 3.7 Flash, Flash-Lite Latest, 3.1 Flash Lite)
+            # 4. Generate Review Content (Production Flash models only)
             models_to_try = [
                 GEMINI_FLASH,
                 GEMINI_FLASH_BACKUP,
-                "gemini-3.7-flash",
-                "gemini-flash-lite-latest",
-                "gemini-3.1-flash-lite",
             ]
             response = None
             model_success = False

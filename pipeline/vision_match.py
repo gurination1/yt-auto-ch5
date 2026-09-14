@@ -16,6 +16,46 @@ def _shrink(img_bytes: bytes, max_dim: int = 768) -> bytes:
     img.save(buf, format="JPEG", quality=80)
     return buf.getvalue()
 
+
+def _heuristic_frame_check(frames: list[bytes], topic: str = "", narration: str = "", query: str = "") -> tuple[bool, str]:
+    """
+    Performs fast local PIL/NumPy heuristic check on frame bytes:
+    - Rejects pure black screens
+    - Rejects blank white slides / tutorial screens
+    - Rejects low-contrast murky frames (e.g. empty dark vegetation/bushes) when wildlife is described
+    """
+    try:
+        import numpy as np
+        combined_text = f"{topic} {narration} {query}".lower()
+        is_wildlife = any(k in combined_text for k in [
+            "rat", "rodent", "beetle", "ant", "snake", "worm", "shark", "squid", "spider", "bird", "fish",
+            "animal", "mammal", "predator", "insect", "frog", "elephant", "hyena", "creature", "organism"
+        ])
+
+        for idx, f_bytes in enumerate(frames):
+            im = Image.open(io.BytesIO(f_bytes)).convert("L")
+            arr = np.array(im)
+            mean_lum = float(arr.mean())
+            std_lum = float(arr.std())
+
+            # 1. Pure black
+            if mean_lum < 8.0 and std_lum < 8.0:
+                return False, f"Heuristic reject: Pure black screen in frame {idx} (mean={mean_lum:.1f})"
+
+            # 2. Blank white screen / slide
+            if (mean_lum > 205.0 and std_lum < 35.0) or float(np.mean(arr > 225)) > 0.55:
+                return False, f"Heuristic reject: Blank white slide/screen in frame {idx} (mean={mean_lum:.1f}, frac_white={np.mean(arr>225):.2f})"
+
+            # 3. Murky low-contrast dark frame (e.g. empty night-vision vegetation) when focal animal described
+            p10, p90 = float(np.percentile(arr, 10)), float(np.percentile(arr, 90))
+            contrast = p90 - p10
+            if is_wildlife and contrast < 40.0 and mean_lum < 80.0:
+                return False, f"Heuristic reject: Murky low-contrast empty frame {idx} (contrast={contrast:.1f}) for wildlife topic"
+
+        return True, "Passed local heuristic sanity check"
+    except Exception as e:
+        return True, f"Heuristic check bypassed ({e})"
+
 def _parse_vision_json(raw: str) -> dict:
     import re
     cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.MULTILINE)
@@ -257,12 +297,26 @@ def verify_video_frames(
         f"14. CAMERA & MECHANICAL REPAIR: Reject camera sensor cleaning, lens disassembly, watch repair, or mechanic tools when topic is biology/nature/science.\n"
         f"15. FANTASY BEASTS & MONSTERS: Reject werewolves, minotaurs, mythical monsters, or CGI beast creatures when topic is scientific or biological organisms.\n"
         f"16. STRICT ORGANISM & PHYSICAL SUBJECT IDENTITY (MANDATORY REJECT -> is_valid=false):\n"
-        f"    If the topic or narration describes a specific creature, organism, or machine (e.g. water beetle, shark, ant, turbine, tunnel boring machine), the frames MUST actually depict that specific creature, machine, or direct physical mechanism. Reject immediately (is_valid=false) if frames show a different organism (e.g. fly, grasshopper, dragonfly when searching for beetle) or generic scenery/landscape without the focal creature.\n\n"
+        f"    If the topic or narration describes a specific creature, organism, or machine (e.g. water beetle, shark, ant, turbine, tunnel boring machine), the frames MUST actually depict that specific creature, machine, or direct physical mechanism. Reject immediately (is_valid=false) if frames show a different organism (e.g. fly, grasshopper, dragonfly when searching for beetle) or generic scenery/landscape without the focal creature.\n"
+        f"17. EMPTY VEGETATION / HABITAT WITHOUT ORGANISM (MANDATORY REJECT -> is_valid=false):\n"
+        f"    If the narration or topic names an animal or organism (e.g. rat, rodent, beetle, squid, worm, ant, snake, elephant, predator), the organism MUST be clearly visible and identifiable! Reject immediately (is_valid=false) if the frame only depicts empty bushes, dark night-vision vegetation without the animal, blurry dirt, a vehicle/jeep without the animal, an empty cage, or distant blurred scenery.\n"
+        f"18. MODERN ANACHRONISMS IN ANCIENT/MEDIEVAL HISTORY (MANDATORY REJECT -> is_valid=false):\n"
+        f"    If the topic or narration describes ancient or medieval history (e.g. Akkad, Rome, Greece, Bronze Age, siege weapons), strictly reject modern concrete dams/bridges, modern asphalt roads, electric streetlights, power lines, modern motor vehicles, and tourists in modern t-shirts/jeans/ballcaps.\n"
+        f"19. DOMESTIC KITCHEN & BAKING (MANDATORY REJECT -> is_valid=false):\n"
+        f"    Reject home cooking, kitchen whisks, mixing bowls, cake batter, measuring cups, and kitchen counters when the topic is industrial engineering, mining, chemistry, or commodity syndicates.\n"
+        f"20. BLANK / SOLID VOID SCREENS (MANDATORY REJECT -> is_valid=false):\n"
+        f"    Reject frames that are >60% solid white, solid gray, or empty presentation slides with minimal icons or text.\n\n"
         f"ACCEPTABLE (Return is_valid=true):\n"
         f"Authentic documentary footage, archival footage, machinery, scientific apparatus, specimens, space imagery, or relevant historical footage that directly depicts the subject or mechanism described in the narration.\n\n"
         f"Return ONLY valid JSON (no markdown):\n"
         f'{{"is_valid": <bool>, "confidence": <0-100 int>, "reject_reason": "<brief explanation if rejected, else empty string>"}}'
     )
+
+    # Fast local pre-check to reject pure black or blank white frames instantly
+    h_ok, h_reason = _heuristic_frame_check(frames, topic=topic, narration=narration, query=query)
+    if not h_ok:
+        print(f"[VisionMatch] Candidate frame pre-check REJECTED: {h_reason}")
+        return False, h_reason
 
     parts = [{"text": prompt_text}]
     for f_bytes in frames:
@@ -294,6 +348,9 @@ def verify_video_frames(
             continue
 
     if resp is None or resp.status_code != 200:
+        if not h_ok:
+            print(f"[VisionMatch] Vision API down & candidate REJECTED by heuristic check: {h_reason}")
+            return False, h_reason
         print(f"[VisionMatch] Vision API unavailable or exhausted (status={getattr(resp, 'status_code', 'none')}). Allowing candidate via heuristic frame verification.")
         return True, "Vision API temporarily unavailable - passed via heuristic frame verification"
 
