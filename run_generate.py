@@ -112,6 +112,7 @@ def main():
         print(f"Configuration Error: {val_err}")
         sys.exit(1)
         
+    pipeline_start_time = time.time()
     # Handle directory clearing if not resuming
     if not args.resume and os.path.exists("output"):
         print("Clearing output/ directory for a fresh run...")
@@ -244,8 +245,8 @@ def main():
         judge_start_time = time.time()
         
         while attempt <= max_attempts:
-            if time.time() - judge_start_time > 720:
-                print(f"\n[Judge AI] Reached 12-minute review loop budget limit. Accepting current version to avoid workflow timeout.")
+            if time.time() - judge_start_time > 720 or time.time() - pipeline_start_time > 2700:
+                print(f"\n[Judge AI] Reached review loop budget limit (or 45m total pipeline limit). Accepting current version to avoid workflow timeout.")
                 break
 
             print(f"\n[Judge AI] Review Attempt {attempt}/{max_attempts} for video: {final_video}...")

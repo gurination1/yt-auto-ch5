@@ -458,6 +458,8 @@ class GeminiClient:
                 text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
                 return _clean_json_output(text)
             except Exception as e:
+                if "all keys exhausted" in str(e).lower():
+                    raise RuntimeError("All Gemini keys exhausted across all slots.") from e
                 # If grounding failed due to free-tier restrictions, strip tools and retry model directly
                 if payload.get("tools"):
                     print(f"[GeminiClient] Search grounding failed on {m} ({e}). Retrying model without tools...")
@@ -469,6 +471,8 @@ class GeminiClient:
                         return _clean_json_output(text)
                     except Exception as e2:
                         e = e2
+                        if "all keys exhausted" in str(e2).lower():
+                            raise RuntimeError("All Gemini keys exhausted across all slots.") from e2
                 print(f"[GeminiClient] Model {m} failed: {e}. Trying fallback model...")
                 continue
         raise RuntimeError("All Gemini models exhausted across all key slots.")

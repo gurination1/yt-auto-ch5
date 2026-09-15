@@ -23,7 +23,7 @@ concurrency:
 jobs:
   generate-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 80
+    timeout-minutes: 85
     env:
       PYTHONUNBUFFERED: "1"
       CHANNEL_NICHE: "business"
@@ -89,7 +89,7 @@ jobs:
           curl -x socks5h://127.0.0.1:40000 -s https://cloudflare.com/cdn-cgi/trace | grep "warp=" || echo "WARP starting..."
 
       - name: Generate Short
-        timeout-minutes: 50
+        timeout-minutes: 70
         env:
           WARP_SOCKS_PROXY:  "socks5h://127.0.0.1:40000"
           GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
