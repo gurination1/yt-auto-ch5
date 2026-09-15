@@ -1077,10 +1077,9 @@ def _archive_candidates(query: str, n: int = 3) -> list[dict]:
         # Strictly reject fiction films, TV dramas, and trailers
         if any(bad in title_lower for bad in ["brighter summer day", "feature film", "drama", "episode", "season", "trailer", "short film"]):
             continue
-        # If keywords exist, check if title or identifier matches any keyword (relaxed for topic relevance)
+        # If keywords exist, enforce that title or identifier matches at least one keyword
         if query_keywords and not (any(kw in title_lower for kw in query_keywords) or any(kw in identifier.lower() for kw in query_keywords)):
-            # If doc is in top 3 results from archive search, permit it unless blacklisted
-            pass
+            continue
         try:
             r_files = requests.get(
                 f"https://archive.org/metadata/{urllib.parse.quote(identifier)}",
@@ -1093,7 +1092,8 @@ def _archive_candidates(query: str, n: int = 3) -> list[dict]:
             video_url = None
             for f in files:
                 name = f.get("name", "")
-                if (name.endswith(".mp4") or name.endswith(".webm") or name.endswith(".mkv") or name.endswith(".avi")) and int(f.get("size") or 0) > 10_000:
+                f_size = int(f.get("size") or 0)
+                if (name.endswith(".mp4") or name.endswith(".webm") or name.endswith(".mkv") or name.endswith(".avi")) and 10_000 < f_size < 40_000_000:
                     video_url = f"https://archive.org/download/{identifier}/{urllib.parse.quote(name)}"
                     break
             
@@ -1226,7 +1226,7 @@ def _archive_video(query: str, used_urls: set = None) -> str | None:
                     for f in files:
                         name = f.get("name", "")
                         fsize = int(f.get("size", 0) or 0)
-                        if (name.endswith(".mp4") or name.endswith(".webm")) and 1_000_000 < fsize < 500_000_000:
+                        if (name.endswith(".mp4") or name.endswith(".webm")) and 1_000_000 < fsize < 40_000_000:
                             vurl = f"https://archive.org/download/{identifier}/{urllib.parse.quote(name)}"
                             if used_urls is None or vurl not in used_urls:
                                 return vurl
@@ -1772,6 +1772,11 @@ def _download_video_robust(
             print(f"[B-roll] URL returned HTML/text, not a video stream. Rejecting.")
             return False
 
+        cl = r.headers.get("Content-Length")
+        if cl and cl.isdigit() and int(cl) > 55 * 1024 * 1024:
+            print(f"[B-roll] Content-Length {cl} exceeds 55MB. Rejecting to prevent runner timeout.")
+            return False
+
         parsed = urllib.parse.urlparse(url)
         path = parsed.path.lower()
         is_webm = path.endswith(".webm") or path.endswith(".ogv") or "webm" in content_type
@@ -1779,10 +1784,16 @@ def _download_video_robust(
 
         temp_ext = ".webm" if is_webm else ".gif" if is_gif else ".mp4"
         temp_file = f"output/temp_dl_{segment_index}{temp_ext}"
+        max_bytes = 45 * 1024 * 1024
+        downloaded = 0
         with open(temp_file, "wb") as f:
             for chunk in r.iter_content(chunk_size=32768):
                 if chunk:
                     f.write(chunk)
+                    downloaded += len(chunk)
+                    if downloaded > max_bytes:
+                        print(f"[B-roll] Direct download reached {downloaded} bytes (>45MB). Truncating stream.")
+                        break
 
         if os.path.exists(temp_file) and os.path.getsize(temp_file) > 10_000:
             actual_dur = _get_video_duration(temp_file)
@@ -2765,13 +2776,13 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     # Prioritize authentic institutional archives first across all channels (100% unblocked on cloud runners)
     CHANNEL_SOURCE_PRIORITY = {
         "mystery":     ["wikimedia", "archive", "youtube", "pexels", "pixabay"],
-        "nature":      ["wikimedia", "archive", "youtube", "pexels", "pixabay"],
-        "science":     (["nasa"] if is_space_active else []) + ["wikimedia", "archive", "youtube", "pexels", "pixabay"],
-        "space":       ["nasa", "wikimedia", "archive", "youtube", "pexels", "pixabay"],
-        "engineering": (["nasa"] if is_space_active else []) + ["wikimedia", "archive", "dvids", "youtube", "pexels", "pixabay"],
-        "business":    ["archive", "wikimedia", "youtube", "pexels", "pixabay"],
+        "nature":      ["wikimedia", "youtube", "pexels", "pixabay"],
+        "science":     (["nasa"] if is_space_active else []) + ["wikimedia", "youtube", "pexels", "pixabay", "archive"],
+        "space":       ["nasa", "wikimedia", "youtube", "archive", "pexels", "pixabay"],
+        "engineering": (["nasa"] if is_space_active else []) + ["wikimedia", "youtube", "pexels", "pixabay", "dvids", "archive"],
+        "business":    ["youtube", "pexels", "pixabay", "wikimedia", "archive"],
         "military":    ["dvids", "archive", "wikimedia", "youtube", "pexels"],
-        "general":     ["wikimedia", "archive", "youtube", "pexels", "pixabay"],
+        "general":     ["wikimedia", "youtube", "pexels", "pixabay", "archive"],
     }
 
     def run_source_query(source: str, q: str) -> list[dict]:

@@ -38,8 +38,10 @@ def _heuristic_frame_check(frames: list[bytes], topic: str = "", narration: str 
             mean_lum = float(arr.mean())
             std_lum = float(arr.std())
 
-            # 1. Pure black
-            if mean_lum < 8.0 and std_lum < 8.0:
+            # 1. Pure black or flat solid color (monochrome / blank canvas)
+            if std_lum < 9.5:
+                return False, f"Heuristic reject: Flat solid/blank screen in frame {idx} (mean={mean_lum:.1f}, std={std_lum:.1f})"
+            if mean_lum < 8.0 and std_lum < 12.0:
                 return False, f"Heuristic reject: Pure black screen in frame {idx} (mean={mean_lum:.1f})"
 
             # 2. Blank white screen / slide
@@ -143,7 +145,9 @@ def vision_rank_broll(
         f"     Showing empty scenery, landscape, or pond with NO focal organism -> SCORE 0.\n"
         f"   - REAL-WORLD APPARATUS, LABS & MACHINES: ACCEPT authentic contextual documentary footage (e.g. quantum computers, cryogenic dilution refrigerators, cleanroom laboratories, optical lasers, vacuum chambers, oscilloscopes, supercomputers, observatories, geological formations, natural habitats, construction machinery) as HIGH-VALUE VALID MATCHES (scores 80-95)! Do not reject real-world laboratory or engineering apparatus simply because theoretical concepts are microscopic or invisible!\n"
         f"   - UNRELATED TERRESTRIAL ANALOGIES: If video topic is SPACE, ASTRONOMY, or PLANETS, ZERO-SCORE REJECT ANY terrestrial Earth scenes, factories, foundries, metal smelting, blast furnaces, industrial machinery, modern city streets, cars, beaches, sunsets, or modern offices.\n"
-        f"   - UNRELATED INDUSTRIAL/OFFICE SCENES: If video topic is NATURE, WILDLIFE, or DEEP SEA, ZERO-SCORE REJECT modern offices, factory floors, city traffic, or commercial electronics.\n"
+        f"   - UNRELATED INDUSTRIAL/OFFICE/CAR SCENES IN NATURE: If video topic is NATURE, WILDLIFE, or DEEP SEA, ZERO-SCORE REJECT modern offices, factory floors, city traffic, paved roads, cars driving in rain/water, or commercial electronics. Narration metaphors like 'chemical flood' or 'toxic rush' MUST NOT be matched to literal rainstorms, puddles, or cars!\n"
+        f"   - MODERN ANACHRONISMS IN ANCIENT HISTORY: If video topic is ANCIENT / MEDIEVAL HISTORY, ZERO-SCORE REJECT modern concrete dams, modern suspension bridges, electrical power lines, modern highways, electric streetlamps, or tourists in modern clothing.\n"
+        f"   - COMPUTER SCREENS & DESKTOPS IN PHYSICAL SCIENCE: If video topic is PHYSICS, CHEMISTRY, GEOLOGY, or BIOLOGY, ZERO-SCORE REJECT desktop window screencasts (Windows 7/10, WinRAR, MATLAB, browser windows), command prompt consoles, or personal computer monitor recordings.\n"
         f"   - ANY candidate showing cosplayers, LARP, amateur costume roleplay, Comic-Con footage, plastic props/armor, or amateur fantasy reenactments.\n"
         f"   - ANY candidate showing modern car showrooms, indoor car dealerships, vehicle sales floors, or indoor auto expos.\n"
         f"   - ANY candidate showing indoor modern dancers, contemporary choreography, dance studio rehearsals, stage routines, or ballroom dancing.\n"
@@ -305,7 +309,13 @@ def verify_video_frames(
         f"19. DOMESTIC KITCHEN & BAKING (MANDATORY REJECT -> is_valid=false):\n"
         f"    Reject home cooking, kitchen whisks, mixing bowls, cake batter, measuring cups, and kitchen counters when the topic is industrial engineering, mining, chemistry, or commodity syndicates.\n"
         f"20. BLANK / SOLID VOID SCREENS (MANDATORY REJECT -> is_valid=false):\n"
-        f"    Reject frames that are >60% solid white, solid gray, or empty presentation slides with minimal icons or text.\n\n"
+        f"    Reject frames that are >60% solid white, solid gray, or empty presentation slides with minimal icons or text.\n"
+        f"21. METAPHOR LEAKS IN NATURE / WILDLIFE (MANDATORY REJECT -> is_valid=false):\n"
+        f"    Reject modern cars, vintage 1950s automobiles, paved roads, rain gutters, city puddles, or weather rainstorms when narration discusses biological processes (such as 'chemical flood', 'potassium rush', 'nerve signal', 'toxic blast'). Narration metaphors MUST NOT be matched to literal rainstorms, puddles, or cars!\n"
+        f"22. COMPUTER DESKTOPS & SCREENS IN SCIENCE & BIOLOGY (MANDATORY REJECT -> is_valid=false):\n"
+        f"    Reject Windows 7/XP/10 desktop recordings, WinRAR windows, MATLAB GUI screencasts, command prompt consoles, or personal computer monitor recordings when topic is physical science, chemistry, geology, or biology.\n"
+        f"23. VINTAGE MONOCHROME HOME MOVIES IN MODERN NICHES (MANDATORY REJECT -> is_valid=false):\n"
+        f"    Reject 1940s-1950s grainy black-and-white public service announcements, vintage home movies, or monochrome cartoons unless the topic is explicitly vintage 20th-century history.\n\n"
         f"ACCEPTABLE (Return is_valid=true):\n"
         f"Authentic documentary footage, archival footage, machinery, scientific apparatus, specimens, space imagery, or relevant historical footage that directly depicts the subject or mechanism described in the narration.\n\n"
         f"Return ONLY valid JSON (no markdown):\n"

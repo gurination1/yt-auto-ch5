@@ -339,6 +339,10 @@ Please watch the video and evaluate it against these rubrics:
    - For ancient/medieval history topics, reject modern concrete dams/bridges, electric streetlights, power lines, and modern clothing.
    - For industrial, engineering, or commodity topics, reject domestic kitchen baking, cake batter, and whisks.
    - Reject any segment with >60% blank/solid white canvas.
+8. **STRICT DOMAIN PURITY & ZERO METAPHOR LEAKS (ZERO TOLERANCE)**:
+   - Nature / Wildlife: STRICTLY ZERO modern cars, vintage 1950s automobiles, asphalt streets, rain puddles, or urban weather storms when narration uses metaphorical phrases like "chemical flood", "nerve storm", or "fluid rush".
+   - Ancient History: STRICTLY ZERO modern 20th-century concrete gravity dams, electric streetlights, or power transmission lines.
+   - Science / Business: STRICTLY ZERO Windows desktop screencasts, WinRAR/software windows, or domestic kitchen bread baking.
 
 Output strictly valid JSON with this exact schema:
 {{

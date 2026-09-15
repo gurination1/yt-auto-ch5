@@ -114,11 +114,12 @@ Narration Style Requirements (CRITICAL - MAXIMUM VIRALITY & SIMPLICITY):
    - The final sentence should THEMATICALLY echo or re-contextualize the opening hook.
 
 COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
-- CLARITY & ACCESSIBILITY RULE (SIMPLE & INTRIGUING, ZERO PHD JARGON):
-  * Explain the mind-blowing mechanism using simple, vivid, conversational words and tangible physical comparisons.
-  * FORBIDDEN: Academic jargon, dense textbook terminology, or abstract PhD words.
-  * REQUIRED: Describe what physically HAPPENS in punchy, visual language.
-  * An 8th grader must understand the core revelation instantly while feeling genuinely mind-blown.
+- MANDATORY 5TH-TO-8TH GRADE EVERYDAY ENGLISH (ABSOLUTELY NO SAT/ACADEMIC/PHD JARGON):
+  * Speak like an excited, knowledgeable friend sharing an unbelievable secret.
+  * FORBIDDEN VOCABULARY: 'lithography', 'localized', 'degradation', 'cardiovascular', 'neurotoxin', 'physiological', 'adversaries', 'predation', 'equilibrium', 'manifestation', 'subterranean', 'utilizes', 'perpetual', 'confrontation', 'enduring'.
+  * INSTEAD USE: Everyday words a 12-year-old understands instantly ('carves', 'breaks down', 'heart', 'nerve poison', 'body', 'enemies', 'hunts', 'balance', 'signs', 'underground', 'uses', 'never-ending', 'battle', 'lasting').
+  * If a high-tech or scientific term is essential (e.g. 'lithography' or 'amphipod'), IMMEDIATELY clarify it in the same breath in 3 plain words (e.g. 'lithography—the laser machine that prints microchips', 'amphipod—a tiny deep-sea shrimp').
+  * Every single sentence MUST be simple, clear, and instantly understandable on first listen.
 
 - MANDATORY AUTHENTIC DOCUMENTARY SOURCING (ZERO AI SLOP / ZERO UNRELATED STOCK):
   * Target REAL, PHYSICAL, FILMABLE entities:
@@ -600,18 +601,30 @@ Return ONLY a raw JSON object for this segment with the updated "narration" and 
         # Check if segment 2+ accidentally repeats segment 1 hook verbatim
         if idx_s > 0 and len(script.get("segments", [])) > 1:
             first_narr = script["segments"][0].get("narration", "")
-            first_words = set(re.findall(r'\b[a-zA-Z]{4,}\b', first_narr.lower()))
-            seg_words = re.findall(r'\b[a-zA-Z]{4,}\b', narr.lower())
-            if first_words and seg_words:
-                overlap = [w for w in seg_words if w in first_words]
-                if len(overlap) >= 4 and len(overlap) / len(seg_words) >= 0.5:
-                    print(f"[Phase2 Script] Segment {idx_s+1} repeated opening hook words {overlap}. Cleaning overlap...")
-                    clean_tokens = [w for w in narr.split() if w.lower().strip(".,!?;:-") not in overlap[:3]]
-                    if len(clean_tokens) >= 3:
-                        narr = " ".join(clean_tokens)
-                        if not narr.endswith((".", "!", "?")):
-                            narr += "."
-                        seg["narration"] = narr
+            clean_first = first_narr.lower().strip(" .!?:,-")
+            clean_seg = narr.lower().strip(" .!?:,-")
+            # If segment literally begins with the first segment's hook clause, strip prefix cleanly
+            if clean_seg.startswith(clean_first[:30]) and len(narr) > len(first_narr):
+                print(f"[Phase2 Script] Segment {idx_s+1} repeated opening hook prefix. Trimming prefix...")
+                narr = narr[len(clean_first[:30]):].lstrip(" ,.-:;").capitalize()
+                if not narr.endswith((".", "!", "?")):
+                    narr += "."
+                seg["narration"] = narr
+            else:
+                # Check sentence-level duplication rather than destructive token stripping
+                sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', narr) if s.strip()]
+                first_words = set(re.findall(r'\b[a-zA-Z]{4,}\b', first_narr.lower()))
+                non_dup_sentences = []
+                for s in sentences:
+                    s_words = re.findall(r'\b[a-zA-Z]{4,}\b', s.lower())
+                    if s_words and first_words:
+                        overlap = [w for w in s_words if w in first_words]
+                        if len(overlap) >= 4 and len(overlap) / len(s_words) >= 0.7:
+                            print(f"[Phase2 Script] Segment {idx_s+1} contained duplicate sentence '{s}'. Removing duplicate sentence.")
+                            continue
+                    non_dup_sentences.append(s)
+                if non_dup_sentences and len(non_dup_sentences) < len(sentences):
+                    seg["narration"] = " ".join(non_dup_sentences)
 
     # ── Ensure Beacons Link in Description ────────────────────────────────────
     if "description" in script:
