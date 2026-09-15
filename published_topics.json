@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Scientists observe quantum entanglement in a centimeter-sized crystal at room temperature, suggesting macroscopic objects can exhibit 'spooky action at a distance'.",
     "How **negative absolute temperature** makes matter paradoxically hotter than any positive temperature, achieved through **population inversion** in quantum systems.",
     "Gene-Edited Hypoallergenic Pets: Scientists are using advanced gene-editing techniques to create hypoallergenic beagles, paving the way for a future where genetically engineered companion animals, including hypoallergenic cats and potentially even glow-in-the-dark rabbits, are a reality.",
     "How **next-generation humanoid robots** are achieving unprecedented capabilities, from full-body haptic feedback via 'smart skin' to direct brain-computer interface control, pushing them rapidly from labs to mass production lines.",
@@ -89,9 +88,10 @@
     "The Secret Underground Vault in London Where De Beers Physically Locks Away Tons of Diamonds to Prevent the Price From Crashing to Zero",
     "The Runway-Cracking Logistics of ASML's Newest High-NA Machine",
     "The FTC's Crackdown on 'Surveillance Pricing' Algorithms",
-    "The Secret Mafia Controlling the World's Deserts for Construction Sand"
+    "The Secret Mafia Controlling the World's Deserts for Construction Sand",
+    "How Rolls-Royce and GE Power Lease Jet Engines for $0 Upfront Profit, Making Billions Exclusively Through Total Hourly Flight Hour Servicing Monopolies"
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 24,
-  "call_count": 210
+  "subcluster_idx": 4,
+  "fallback_idx": 0,
+  "call_count": 211
 }
