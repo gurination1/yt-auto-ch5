@@ -541,7 +541,18 @@ If a claim is unverifiable, speculative, or false, mark `"verified": false`.
         try:
             verified_text = client.generate_text(verification_prompt, use_grounding=False, temperature=0.2)
             verified_script = _robust_json_loads(verified_text)
-            script["segments"] = verified_script.get("segments", script["segments"])
+            if "segments" in verified_script and isinstance(verified_script["segments"], list):
+                verified_map = {s.get("id"): s for s in verified_script["segments"] if isinstance(s, dict)}
+                for seg in script["segments"]:
+                    seg_id = seg.get("id")
+                    if seg_id in verified_map:
+                        v_seg = verified_map[seg_id]
+                        seg["verified"] = v_seg.get("verified", True)
+                        if "narration" in v_seg and v_seg["narration"]:
+                            seg["narration"] = v_seg["narration"]
+            else:
+                for seg in script["segments"]:
+                    seg["verified"] = True
         except Exception as e:
             print(f"Fact check failed or quota-limited ({e}), keeping original script for Judge AI review.")
             for seg in script["segments"]:

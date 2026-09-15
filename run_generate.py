@@ -222,14 +222,20 @@ def main():
         judge = JudgeClient()
         
         review_metadata = {
-            "title": script["title"],
+            "title": script.get("title", ""),
             "segments": [
                 {
-                    "id": seg["id"],
-                    "narration": seg["narration"],
-                    "broll_query": seg["broll_query"]
+                    "id": seg.get("id", idx + 1),
+                    "narration": seg.get("narration", ""),
+                    "broll_query": (
+                        seg.get("broll_query")
+                        or (seg.get("broll_queries")[0] if seg.get("broll_queries") else "")
+                        or seg.get("query")
+                        or seg.get("visual")
+                        or seg.get("narration", "")
+                    )
                 }
-                for seg in script["segments"]
+                for idx, seg in enumerate(script.get("segments", []))
             ]
         }
         
@@ -346,7 +352,7 @@ def main():
                     args.format,
                     idx,
                     duration=dur,
-                    narration=seg["narration"],
+                    narration=seg.get("narration", ""),
                     alt_queries=repair_queries,
                     used_urls=used_urls,
                     channel=channel_niche,
