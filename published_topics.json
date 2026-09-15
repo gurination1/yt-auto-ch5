@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How analog AI accelerators revolutionize AI processing by performing computations directly in memory, exploiting Ohm's law to bypass the von Neumann bottleneck.",
     "Scientists observe quantum entanglement in a centimeter-sized crystal at room temperature, suggesting macroscopic objects can exhibit 'spooky action at a distance'.",
     "How **negative absolute temperature** makes matter paradoxically hotter than any positive temperature, achieved through **population inversion** in quantum systems.",
     "Gene-Edited Hypoallergenic Pets: Scientists are using advanced gene-editing techniques to create hypoallergenic beagles, paving the way for a future where genetically engineered companion animals, including hypoallergenic cats and potentially even glow-in-the-dark rabbits, are a reality.",
@@ -89,9 +88,10 @@
     "ETH Zurich's Whey Protein Gold Extraction",
     "The Secret Underground Vault in London Where De Beers Physically Locks Away Tons of Diamonds to Prevent the Price From Crashing to Zero",
     "The Runway-Cracking Logistics of ASML's Newest High-NA Machine",
-    "The FTC's Crackdown on 'Surveillance Pricing' Algorithms"
+    "The FTC's Crackdown on 'Surveillance Pricing' Algorithms",
+    "The Secret Mafia Controlling the World's Deserts for Construction Sand"
   ],
-  "subcluster_idx": 2,
-  "fallback_idx": 23,
-  "call_count": 209
+  "subcluster_idx": 3,
+  "fallback_idx": 24,
+  "call_count": 210
 }
