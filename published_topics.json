@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How **negative absolute temperature** makes matter paradoxically hotter than any positive temperature, achieved through **population inversion** in quantum systems.",
     "Gene-Edited Hypoallergenic Pets: Scientists are using advanced gene-editing techniques to create hypoallergenic beagles, paving the way for a future where genetically engineered companion animals, including hypoallergenic cats and potentially even glow-in-the-dark rabbits, are a reality.",
     "How **next-generation humanoid robots** are achieving unprecedented capabilities, from full-body haptic feedback via 'smart skin' to direct brain-computer interface control, pushing them rapidly from labs to mass production lines.",
     "How **circumbinary planets** maintain stable orbits around two stars, defying the chaotic gravitational forces that would typically eject them due to specific orbital resonances.",
@@ -89,9 +88,10 @@
     "The Runway-Cracking Logistics of ASML's Newest High-NA Machine",
     "The FTC's Crackdown on 'Surveillance Pricing' Algorithms",
     "The Secret Mafia Controlling the World's Deserts for Construction Sand",
-    "How Rolls-Royce and GE Power Lease Jet Engines for $0 Upfront Profit, Making Billions Exclusively Through Total Hourly Flight Hour Servicing Monopolies"
+    "How Rolls-Royce and GE Power Lease Jet Engines for $0 Upfront Profit, Making Billions Exclusively Through Total Hourly Flight Hour Servicing Monopolies",
+    "How Rolex's Certified Pre-Owned program intentionally prices used watches higher than new ones, forcing buyers into a psychological trap to clear showroom backlogs."
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 0,
-  "call_count": 211
+  "subcluster_idx": 0,
+  "fallback_idx": 1,
+  "call_count": 212
 }
