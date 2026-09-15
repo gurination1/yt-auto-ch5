@@ -29,8 +29,7 @@ def generate_script(topic: dict, format_type: str) -> dict:
     client = GeminiClient()
     
     if format_type == "short":
-        import random as _random
-        segment_count = _random.choices([4, 5, 6], weights=[15, 65, 20], k=1)[0]
+        segment_count = random.choices([4, 5, 6], weights=[15, 65, 20], k=1)[0]
         
         hook_pattern = random.choice(HOOK_PATTERNS)
         hook_formatted = hook_pattern.format(
@@ -49,7 +48,6 @@ def generate_script(topic: dict, format_type: str) -> dict:
             )
             
         raw_topic_str = topic.get("topic", "science")
-        import re
         # Strip out quoted substrings first to avoid picking figurative metaphors (e.g. 'concrete coffins')
         cleaned_topic = re.sub(r"['\"][^'\"]*['\"]", " ", raw_topic_str)
         if ":" in cleaned_topic:
@@ -294,7 +292,6 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
         is_fallback_script = True
         print("[Phase2] Gemini API rate-limited after retries. Generating niche-aware dynamic topic fallback script dict...")
         raw_title = topic.get('topic', 'Engineering Breakthrough') if isinstance(topic, dict) else str(topic)
-        import re
         clean_subj = re.sub(r'#\d+', '', raw_title)
         clean_subj = re.sub(r'[^\w\s-]', '', clean_subj).strip()
         words = clean_subj.split()
@@ -638,8 +635,7 @@ Return ONLY a raw JSON object for this segment with the updated "narration" and 
 
     # ── Ensure Vocal Tone Variety ─────────────────────────────────────────────
     if "vocal_tone" not in script or not script["vocal_tone"]:
-        import random as _rnd
         vocal_tones = ["dramatic_whisper", "suspenseful_mystery", "energetic_storytelling", "deep_curiosity", "bold_authority", "warm_storyteller", "dark_revelation", "playful_wit"]
-        script["vocal_tone"] = _rnd.choice(vocal_tones)
+        script["vocal_tone"] = random.choice(vocal_tones)
 
     return script

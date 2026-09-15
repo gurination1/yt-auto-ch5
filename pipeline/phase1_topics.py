@@ -146,8 +146,8 @@ def select_topic(format_type: str) -> dict:
         )
 
     # ── 3. Build Gemini prompt with airtight channel boundaries ──────────────
-    prompt = f"""You are the Topic Discovery Specialist for YouTube Channel: '{niche_name}'.
-Your absolute mandate is STRICT CHANNEL NICHE ISOLATION.
+    prompt = f"""You are the Lead Curiosity & Topic Discovery Specialist for YouTube Channel: '{niche_name}'.
+Your absolute mandate is to discover INCREDIBLY COOL, UNKNOWN, HIGH-INTRIGUE secrets that ordinary people DEEPLY want to know about.
 
 CHANNEL NICHE SCOPE:
 {allowed_desc}
@@ -160,20 +160,24 @@ ACTIVE TARGET SUB-CLUSTER:
 STRICT CHANNEL BOUNDARY & NEGATIVE CONSTRAINTS (MANDATORY — ZERO TOLERANCE):
 {strict_negatives}
 
-CRITICAL RULES:
-- Violating ANY of the negative constraints or drifting into another channel's domain leads to IMMEDIATE DISCARD.
-- Stay 100% strictly within the designated CHANNEL NICHE SCOPE and ACTIVE TARGET SUB-CLUSTER.
-- Never propose abstract philosophical theories without concrete physical manifestations.
-- Do NOT suggest any topic similar to these recently published topics:
+THE "MIND-BLOWN" TOPIC MANDATE (ZERO GENERIC SLOP):
+1. ZERO COMMON KNOWLEDGE: Absolutely reject topics taught in standard school textbooks or widely known internet trivia (e.g. "honey never spoils", "sharks don't sleep", "whales are big", "how bridges are built"). The topic MUST reveal something that 99% of educated adults do NOT know.
+2. THE PHYSICAL PARADOX: The best topics pit two seemingly impossible physical realities against each other:
+   - "The organism that snaps its own bones to use them as external claws"
+   - "The glass teardrop that shatters a bullet but turns to powder with a tiny scratch"
+   - "The machine so precise that a 1-nanometer mirror shift halts global smartphone supply"
+   - "Why airlines deliberately sell 10% more tickets than physical seats on every flight"
+   - "The ancient sword alloy that modern supercomputers still cannot replicate"
+3. CONCRETE NAMED ANCHOR: Always name the exact real-world organism (with common or binomial name), specific machine, alloy, cartel, or event. Never use vague generalities like 'an animal' or 'scientists found a machine'.
+4. INSTANT CURIOSITY TEST: Would someone scrolling TikTok or YouTube Shorts at 1 AM immediately stop and text this to a friend? If no, DISCARD IT.
+5. ZERO DRY LOGISTICS: Strictly forbidden are municipal pavement reports, airport tarmac weight regulations, dry corporate filings, or generic textbook definitions.
+
+Do NOT suggest any topic similar to these recently published topics:
 {json.dumps(recent_topics, indent=2)}
 
-AUDIENCE & HOOK RULES:
-- The topic MUST be so clear, punchy, and intriguing that someone scrolling TikTok or Shorts immediately stops.
-- Pick concrete physical objects, materials, machines, events, or phenomena with high visual payoff.
-
-Return ONLY a raw JSON array of objects. No markdown, no preamble.
+Return ONLY a raw JSON array of 5 objects. No markdown, no preamble.
 Each object must have exactly these fields:
-- "topic": specific, punchy curiosity subject naming the real anomaly or object
+- "topic": specific, punchy curiosity subject naming the real anomaly or object (15-25 words max)
 - "short_hook": opening question or bold statement, 8 words or less, creates an irresistible curiosity gap
 - "hook_type": one of "curiosity_gap", "contrarian", "time_pressure", "self_identification", "narrative_pull"
 - "for_format": "short", "long", or "both"
