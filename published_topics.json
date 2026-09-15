@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How cell-inspired nanoreactors efficiently convert sunlight into hydrogen peroxide, mimicking biological processes for cleaner chemical manufacturing.",
     "How analog AI accelerators revolutionize AI processing by performing computations directly in memory, exploiting Ohm's law to bypass the von Neumann bottleneck.",
     "Scientists observe quantum entanglement in a centimeter-sized crystal at room temperature, suggesting macroscopic objects can exhibit 'spooky action at a distance'.",
     "How **negative absolute temperature** makes matter paradoxically hotter than any positive temperature, achieved through **population inversion** in quantum systems.",
@@ -89,9 +88,10 @@
     "The 'Isotopic Branding' War of Madagascar's Vanilla Syndicates",
     "ETH Zurich's Whey Protein Gold Extraction",
     "The Secret Underground Vault in London Where De Beers Physically Locks Away Tons of Diamonds to Prevent the Price From Crashing to Zero",
-    "The Runway-Cracking Logistics of ASML's Newest High-NA Machine"
+    "The Runway-Cracking Logistics of ASML's Newest High-NA Machine",
+    "The FTC's Crackdown on 'Surveillance Pricing' Algorithms"
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 22,
-  "call_count": 208
+  "subcluster_idx": 2,
+  "fallback_idx": 23,
+  "call_count": 209
 }
