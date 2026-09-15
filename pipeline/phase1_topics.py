@@ -130,18 +130,19 @@ def select_topic(format_type: str) -> dict:
     if is_trending:
         topic_instruction = (
             f"Use Google Search to find mind-blowing, verified recent discoveries, breakthroughs, or events from the last 24-48 hours specifically about '{current_subcluster}'. "
-            f"Generate 5 TRENDING topics that reveal a startling reality normal people did NOT know. "
-            f"STRICT RULES: Must be a concrete, verified true subject with massive visual curiosity. NO dry academic papers. "
+            f"Generate 5 TRENDING topics that reveal a startling reality normal people did NOT know but DEEPLY WANT TO KNOW. "
+            f"STRICT RULES: Must be a concrete, verified true subject with massive visual curiosity. "
+            f"FORBIDDEN: Dry municipal logistics, pavement/freight axle load limits, routine regulatory paperwork, or boring corporate filings. "
             f"Every topic must make an average person say: 'Wait, is that actually real?!'"
         )
     else:
         topic_instruction = (
             f"Generate 5 insanely fascinating, real-world EVERGREEN topics specifically about '{current_subcluster}'. "
             f"CRITICAL REQUIREMENTS: "
-            f"1. Must reveal a bizarre, shocking, or counter-intuitive secret that 99% of people do NOT know. "
-            f"2. FORBIDDEN: Do NOT write generic textbook concepts. "
-            f"3. REQUIRED: A specific real-world anomaly, unbelievable physical fact, or mind-bending paradox. "
-            f"4. Easy to understand: An 8th grader must instantly grasp why it is insane. Zero academic jargon."
+            f"1. HIGH-CURIOSITY SECRET: Must reveal a bizarre, shocking, or counter-intuitive secret that 99% of people do NOT know, but ordinary people find deeply fascinating. "
+            f"2. FORBIDDEN: Boring bureaucratic logistics (e.g. airport tarmac pavement degradation, freight axle weight limits, routine municipal maintenance) and generic textbook summaries. "
+            f"3. REQUIRED: A specific real-world anomaly, unbelievable physical fact, corporate trade secret, or mind-bending paradox. "
+            f"4. Easy to understand: A 12-year-old must instantly grasp why it is insane. Zero academic jargon."
         )
 
     # ── 3. Build Gemini prompt with airtight channel boundaries ──────────────
