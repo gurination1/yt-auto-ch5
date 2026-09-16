@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How **next-generation humanoid robots** are achieving unprecedented capabilities, from full-body haptic feedback via 'smart skin' to direct brain-computer interface control, pushing them rapidly from labs to mass production lines.",
     "How **circumbinary planets** maintain stable orbits around two stars, defying the chaotic gravitational forces that would typically eject them due to specific orbital resonances.",
     "How the brain's ancient threat detection system makes us overpay for limited-edition products, due to the activation of the amygdala and the principle of psychological reactance.",
     "The unprecedented demand for AI-specific memory (HBM) has dramatically reversed decades of falling RAM prices, pushing costs to 2007 levels and exposing a critical bottleneck in the global semiconductor supply chain.",
@@ -89,9 +88,10 @@
     "The Secret Mafia Controlling the World's Deserts for Construction Sand",
     "How Rolls-Royce and GE Power Lease Jet Engines for $0 Upfront Profit, Making Billions Exclusively Through Total Hourly Flight Hour Servicing Monopolies",
     "How Rolex's Certified Pre-Owned program intentionally prices used watches higher than new ones, forcing buyers into a psychological trap to clear showroom backlogs.",
-    "The Secret Zero-Gravity Vacuum Chambers Inside ASML Lithography Machines Where Droplets of Molten Tin Are Blasted 50,000 Times a Second with Lasers to Make Microchips"
+    "The Secret Zero-Gravity Vacuum Chambers Inside ASML Lithography Machines Where Droplets of Molten Tin Are Blasted 50,000 Times a Second with Lasers to Make Microchips",
+    "How movie theaters use deceptive vertical popcorn sizing psychology to trick human volumetric perception into buying high-margin large buckets."
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 2,
-  "call_count": 213
+  "subcluster_idx": 2,
+  "fallback_idx": 3,
+  "call_count": 214
 }
