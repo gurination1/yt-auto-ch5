@@ -3,7 +3,7 @@ import json
 import time
 import requests
 import mimetypes
-from pipeline.config import GEMINI_FLASH, GEMINI_FLASH_BACKUP, GEMINI_API_BASE
+from pipeline.config import GEMINI_FLASH, GEMINI_FLASH_BACKUP, GEMINI_PRO, GEMINI_API_BASE
 from pipeline.gemini import _clean_json_output, _shared_pool
 
 
@@ -343,10 +343,15 @@ Please watch the video and evaluate it against these rubrics:
    - Nature / Wildlife: STRICTLY ZERO modern cars, vintage 1950s automobiles, asphalt streets, rain puddles, or urban weather storms when narration uses metaphorical phrases like "chemical flood", "nerve storm", or "fluid rush".
    - Ancient History: STRICTLY ZERO modern 20th-century concrete gravity dams, electric streetlights, or power transmission lines.
    - Science / Business: STRICTLY ZERO Windows desktop screencasts, WinRAR/software windows, or domestic kitchen bread baking.
+9. **STRICT PER-SEGMENT CONTEXT & ZERO IRRELEVANT STOCK (CRITICAL)**:
+   - For ancient engineering/history (e.g. Roman concrete, aqueducts, ancient structures): STRICTLY REJECT Christian monks, saints, religious fresco icons, clerics, or cathedral altars unless narration explicitly discusses religion.
+   - For architecture/engineering/luxury: STRICTLY REJECT generic corporate office elevator lobbies, hallways, exit corridors, or building evacuation plans.
+   - For materials science/construction/geology: STRICTLY REJECT blurry rubber or latex medical gloves, dishwashing gloves, or sterile exam rooms when discussing concrete, stone, or minerals.
+   - If ANY segment exhibits these irrelevant visual substitutions, score MUST be <= 65 and status="REJECTED".
 
 Output strictly valid JSON with this exact schema:
 {{
-  "score": 90, // 0-100 overall viral score. Videos with strong audio-visual alignment, real dynamic footage, and NO mismatches/blank screens score in the 88-96 range! Videos with ANY irrelevant terrestrial stock analogy, hardware/workbench mismatch, horror monster, repeated clips, blank/black screens, OR STATIC AI SLOP / SLIDESHOWS MUST score <= 70 and fail!
+  "score": 90, // 0-100 overall viral score. Videos with strong audio-visual alignment, real dynamic footage, and NO mismatches/blank screens score in the 88-96 range! Videos with ANY irrelevant terrestrial stock analogy, hardware/workbench mismatch, horror monster, repeated clips, blank/black screens, monk/elevator/glove mismatch, OR STATIC AI SLOP / SLIDESHOWS MUST score <= 70 and fail!
   "status": "PASSED", // "PASSED" if score >= 85 and no critical mismatches/repeated clips/blank screens, otherwise "REJECTED"
   "reason": "Explain the decision in detail",
   "cohesiveness_score": 90, // 0-100 score for audio-visual-caption matching
@@ -361,6 +366,7 @@ Output strictly valid JSON with this exact schema:
             models_to_try = [
                 GEMINI_FLASH,
                 GEMINI_FLASH_BACKUP,
+                GEMINI_PRO,
             ]
             response = None
             model_success = False

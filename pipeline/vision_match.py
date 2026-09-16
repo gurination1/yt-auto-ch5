@@ -7,7 +7,7 @@ from pipeline.config import GEMINI_FLASH, GEMINI_API_BASE
 try:
     from pipeline.config import GEMINI_FLASH_BACKUP
 except ImportError:
-    GEMINI_FLASH_BACKUP = "gemini-2.5-flash-lite"
+    GEMINI_FLASH_BACKUP = "gemini-3.1-flash-lite"
 
 def _shrink(img_bytes: bytes, max_dim: int = 768) -> bytes:
     img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
@@ -190,8 +190,12 @@ def vision_rank_broll(
     }
 
     models_to_try = [
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-3.6-flash",
         GEMINI_FLASH,
         GEMINI_FLASH_BACKUP,
+        "gemini-3.7-flash",
     ]
 
     resp = None
@@ -201,17 +205,23 @@ def vision_rank_broll(
         try:
             resp = _post_with_rotation(url, payload, timeout=20)
             if resp and resp.status_code == 200:
-                break
+                cand = resp.json().get("candidates", [{}])[0]
+                text_val = cand.get("content", {}).get("parts", [{}])[0].get("text", "")
+                if text_val:
+                    break
         except Exception as e:
             last_err = e
             continue
 
     if resp is None or resp.status_code != 200:
-        print(f"[VisionMatch] Vision API unavailable or exhausted ({last_err}). Signaling api_unavailable (None, None).")
+        print(f"[VisionMatch] Vision API unavailable ({last_err}). Signaling api_unavailable (None, None).")
         return None, None
 
     try:
-        raw  = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        cand = resp.json().get("candidates", [{}])[0]
+        raw = cand.get("content", {}).get("parts", [{}])[0].get("text", "")
+        if not raw:
+            return None, False
         data = _parse_vision_json(raw)
 
         idx        = data.get("best_index")
@@ -343,29 +353,41 @@ def verify_video_frames(
     }
 
     models_to_try = [
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-3.6-flash",
         GEMINI_FLASH,
         GEMINI_FLASH_BACKUP,
+        "gemini-3.7-flash",
     ]
 
     resp = None
+    last_err = None
     for model_name in models_to_try:
         url = f"{GEMINI_API_BASE}/models/{model_name}:generateContent?key={{key}}"
         try:
             resp = _post_with_rotation(url, payload, timeout=20)
             if resp and resp.status_code == 200:
-                break
-        except Exception:
+                cand = resp.json().get("candidates", [{}])[0]
+                text_val = cand.get("content", {}).get("parts", [{}])[0].get("text", "")
+                if text_val:
+                    break
+        except Exception as e:
+            last_err = e
             continue
 
     if resp is None or resp.status_code != 200:
         if not h_ok:
             print(f"[VisionMatch] Vision API down & candidate REJECTED by heuristic check: {h_reason}")
             return False, h_reason
-        print(f"[VisionMatch] Vision API unavailable or exhausted (status={getattr(resp, 'status_code', 'none')}). Allowing candidate via heuristic frame verification.")
-        return True, "Vision API temporarily unavailable - passed via heuristic frame verification"
+        print(f"[VisionMatch] Vision API models unavailable (last_err={last_err}). Strictly REJECTING candidate to prevent visual mismatches.")
+        return False, f"Vision verification unavailable - strictly rejected unverified candidate ({last_err})"
 
     try:
-        raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        cand = resp.json().get("candidates", [{}])[0]
+        raw = cand.get("content", {}).get("parts", [{}])[0].get("text", "")
+        if not raw:
+            return False, "Vision model returned empty response parts"
         data = _parse_vision_json(raw)
         is_valid = bool(data.get("is_valid", False))
         conf = int(data.get("confidence", 0))

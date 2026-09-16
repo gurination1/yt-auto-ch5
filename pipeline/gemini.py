@@ -142,9 +142,9 @@ class _KeyPool:
                 self._idx = candidate_idx
                 return self._keys[candidate_idx]
         
-        # If all non-disabled keys are temporarily on cooldown, reset active keys and pick next
+        # If all non-disabled keys are temporarily on cooldown, reset active and non-disabled keys so fallback models can execute
         for i in range(len(self._keys)):
-            if self._statuses[i] == "active":
+            if self._statuses[i] != "disabled":
                 self._cooldowns[i] = 0.0
                 self._failures[i] = 0
                 self._idx = i
@@ -304,6 +304,7 @@ def _post_with_rotation(
                     
                 if resp.status_code == 429:
                     # Log the actual quota violation for debugging
+                    _is_per_model = False
                     try:
                         _err = resp.json().get("error", {})
                         _details = _err.get("details", [])
@@ -313,12 +314,16 @@ def _post_with_rotation(
                             for v in d.get("violations", [])
                         ]
                         print(f"[GeminiClient] 429 on slot {slot}: quotaIds={_quota_ids}, msg={_err.get('message', '?')[:80]}")
+                        if any("permodel" in str(q).lower() for q in _quota_ids):
+                            _is_per_model = True
                     except Exception:
                         print(f"[GeminiClient] 429 on slot {slot}: raw={resp.text[:200]}")
 
                     is_daily = _is_daily_exhaustion(resp)
-                    print(f"[GeminiClient] 429 on slot {slot} for model (daily_exhausted={is_daily}). Rotating to next key...")
-                    _shared_pool.mark_failed(key, 429, transient=not is_daily)
+                    # If quota is strictly per-model, keep transient=True so the key remains available for fallback models
+                    transient_fail = True if _is_per_model else (not is_daily)
+                    print(f"[GeminiClient] 429 on slot {slot} for model (daily_exhausted={is_daily}, per_model={_is_per_model}). Rotating key...")
+                    _shared_pool.mark_failed(key, 429, transient=transient_fail)
                     break  # Break inner loop to rotate key
                             
                 elif resp.status_code in (500, 502, 503, 504):
@@ -447,7 +452,7 @@ class GeminiClient:
             payload["tools"] = [{"google_search": {}}]
 
         models_to_try = [model_name]
-        for m in [GEMINI_FLASH, GEMINI_FLASH_BACKUP, "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-flash-lite-latest", "gemini-3.1-flash-lite", "gemini-3.6-flash"]:
+        for m in ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.6-flash", GEMINI_FLASH, GEMINI_FLASH_BACKUP, "gemini-3.7-flash", "gemini-3.5-flash"]:
             if m and m not in models_to_try:
                 models_to_try.append(m)
 
@@ -458,8 +463,6 @@ class GeminiClient:
                 text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
                 return _clean_json_output(text)
             except Exception as e:
-                if "all keys exhausted" in str(e).lower():
-                    raise RuntimeError("All Gemini keys exhausted across all slots.") from e
                 # If grounding failed due to free-tier restrictions, strip tools and retry model directly
                 if payload.get("tools"):
                     print(f"[GeminiClient] Search grounding failed on {m} ({e}). Retrying model without tools...")
@@ -471,8 +474,6 @@ class GeminiClient:
                         return _clean_json_output(text)
                     except Exception as e2:
                         e = e2
-                        if "all keys exhausted" in str(e2).lower():
-                            raise RuntimeError("All Gemini keys exhausted across all slots.") from e2
                 print(f"[GeminiClient] Model {m} failed: {e}. Trying fallback model...")
                 continue
         raise RuntimeError("All Gemini models exhausted across all key slots.")

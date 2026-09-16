@@ -92,9 +92,12 @@ Narration Style Requirements (CRITICAL - MAXIMUM VIRALITY & SIMPLICITY):
    - ABSOLUTELY FORBIDDEN: Academic jargon, dense terminology, passive textbook lecturing.
      NEVER USE WORDS LIKE: "improbable", "desensitized", "homeostatic", "equilibrium", "methodology", "reconsider", "predatory instincts", "operational mechanisms", "unprecedented mechanisms", "fundamental reaction", "historical accounts suggest", "prompts to reconsider".
    - REQUIRED: Plain, sensory, visual language: "melts", "smashes", "tricks", "sneaks in", "explodes", "freezes solid", "eats through", "turns to dust".
-3. RAPID-FIRE PUNCHY BEATS (MAX 8-12 WORDS PER SENTENCE):
-   - Every sentence MUST be short and active. Maximum 12 words per sentence.
-   - ABSOLUTELY FORBIDDEN: Long compound sentences or subordinate clauses (do NOT write sentences starting with "While...", "Although...", "Which means that...", "Making it...").
+3. RAPID-FIRE PUNCHY BEATS (14-18 WORDS PER SEGMENT FOR COMPLETE EDUCATIONAL PAYOFF):
+   - Every sentence MUST be clear, punchy, and active.
+   - Opening hook: 8-12 words (fast, urgent pattern interrupt).
+   - Middle segments (2 to N-1): 14-18 words each (delivers full technical / historical explanation, mechanism, and proof).
+   - CRITICAL EDUCATIONAL PAYOFF: The viewer must walk away with the complete answer. Segment {segment_count - 1} MUST fully resolve the mystery, explain the mechanism, or deliver the historical breakthrough.
+   - Segment {segment_count} (final segment) is strictly the memorable punchline and seamless infinite loop bridge back to Segment 1.
    - Break thoughts into punchy active beats: "A mantis shrimp doesn't just punch. Its claw strikes faster than a bullet. The water boils into a shockwave."
 4. MANDATORY STARTLING UNKNOWN FACT (THE REVEAL):
    - Every single script MUST reveal at least ONE specific, counterintuitive, jaw-dropping secret that 99% of people DO NOT KNOW.
@@ -150,21 +153,21 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
   "title": "A catchy title under 40 chars, starting with a hook word/number and containing one emoji",
   "voiceover_plan": "A 2-3 sentence internal plan detailing the emotional arc of the voiceover. How should the narrator sound? Think step-by-step to plan the performance before writing.",
   "vocal_tone": "Select the single best vocal delivery style for this topic. Choose EXACTLY ONE from this list: 'dramatic_whisper', 'suspenseful_mystery', 'energetic_storytelling', 'deep_curiosity', 'bold_authority', 'warm_storyteller', 'dark_revelation', 'playful_wit'. Match the tone to the emotional core of the topic.",
-  "description": "Line1: restate the hook\\nLine2: Fast. Accurate. Mind-blowing.\\nLine3: 📲 Follow our socials & links -> {BEACONS_LINK}\\n\\n#science #didyouknow #facts",
+  "description": "restate the short hook sentence\\nFast. Accurate. Mind-blowing.\\n📲 Follow our socials & links -> {BEACONS_LINK}\\n\\n#science #didyouknow #facts",
   "tags": ["8 to 12 relevant tags under 500 characters total"],
   "category_id": "27",
   "segments": [
     // Provide exactly {segment_count} segments here.
     {{
       "id": 1,
-      "narration": "opening shocking hook statement - 10 words or less, bold present-tense declaration, NO rhetorical question",
+      "narration": "opening shocking hook statement - 8 to 12 words, bold present-tense declaration, NO rhetorical question",
       "broll_query": "primary entity name (2-3 words, NO buzzwords)",
       "broll_queries": ["exact entity scientific or common name (2-3 words)", "subject action triplet (2-3 words)"],
       "duration_target": 6
     }},
     {{
       "id": 2,
-      "narration": "Mind-bending real fact that delivers on the hook - 10 words or less",
+      "narration": "Mind-bending real fact that delivers on the hook - 14 to 18 words explaining the mechanism",
       "broll_query": "physical mechanism entity (2-3 words, NO buzzwords)",
       "broll_queries": ["exact physical mechanism (2-3 words)", "apparatus or specimen (2-3 words)"],
       "duration_target": 6
@@ -184,12 +187,13 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
 For Segment 1 specifically:
 - `broll_query` MUST describe a high-motion, high-contrast, visually arresting real shot (fast motion, dramatic close-up) — the opening pattern-interrupt.
 
-For Segments 2 to (n-1):
+For Segments 2 to (segment_count - 1):
 - Deliver the single most mind-bending physical fact in Segment 2.
-- Introduce an open loop (a second mystery or surprise fact) in Segment 3 that builds tension.
+- Segment {segment_count - 1} MUST fully explain the core mechanism or historical breakthrough with concrete, satisfying clarity. Deliver the real answer!
 
 For the final segment (Segment {segment_count}) specifically:
 - MUST be a complete, punchy sentence resolving the video and seamlessly linking back to Segment 1.
+- DO NOT put the core explanation only in the final segment; the explanation must already be established in previous segments.
 - ABSOLUTELY NEVER mention 'link in bio' or 'description'. Loop the story.
 """
     else:  # long-form
@@ -638,11 +642,12 @@ Return ONLY a raw JSON object for this segment with the updated "narration" and 
     # ── Ensure Beacons Link in Description ────────────────────────────────────
     if "description" in script:
         desc = script["description"]
+        desc = re.sub(r'(?mi)^line\s*\d+\s*:\s*', '', desc)
         if "[link]" in desc:
             desc = desc.replace("[link]", BEACONS_LINK)
         if BEACONS_LINK not in desc:
             desc += f"\n\n📲 Follow our socials & links: {BEACONS_LINK}"
-        script["description"] = desc
+        script["description"] = desc.strip()
 
     # ── Ensure Vocal Tone Variety ─────────────────────────────────────────────
     if "vocal_tone" not in script or not script["vocal_tone"]:

@@ -61,9 +61,9 @@ YT_CLIENT_SECRET = os.environ.get("YT_CLIENT_SECRET", "")
 YT_REFRESH_TOKEN = os.environ.get("YT_REFRESH_TOKEN", "")
 
 # ── Gemini Models ────────────────────────────────────────────────────────────
-GEMINI_FLASH        = "gemini-3.5-flash"
-GEMINI_FLASH_BACKUP = "gemini-3.5-flash-lite"
-GEMINI_PRO          = "gemini-3.7-flash"
+GEMINI_FLASH        = "gemini-3.5-flash-lite"
+GEMINI_FLASH_BACKUP = "gemini-3.1-flash-lite"
+GEMINI_PRO          = "gemini-3.6-flash"
 GEMINI_TTS_MODEL    = "gemini-2.5-flash-preview-tts"
 GEMINI_API_BASE     = "https://generativelanguage.googleapis.com/v1beta"
 
@@ -360,9 +360,9 @@ FLEET_NICHE_PROFILES = {
         "gemini_voice": "Fenrir",
         "kokoro_voice": "am_adam",
         "edge_voice": "en-US-GuyNeural",
-        "cadence_speed": 1.02,
+        "cadence_speed": 1.12,
         "vocal_tone": "bold_authority",
-        "persona_desc": "precise, analytical, 1.02x",
+        "persona_desc": "precise, analytical, 1.12x",
         "subtitle_fonts": ["Rajdhani", "Montserrat", "Bebas Neue"],
         "c_base": "&H00FFFFFF&",          # Base: Pure White (#FFFFFF)
         "c_active": "&H00FFE500&",        # Active: Electric Cyan (#00E5FF)
@@ -408,9 +408,9 @@ FLEET_NICHE_PROFILES = {
         "gemini_voice": "Kore",
         "kokoro_voice": "af_heart",
         "edge_voice": "en-US-AvaNeural",
-        "cadence_speed": 0.98,
+        "cadence_speed": 1.10,
         "vocal_tone": "deep_curiosity",
-        "persona_desc": "wonder, rhythmic cadence, 0.98x",
+        "persona_desc": "wonder, rhythmic cadence, 1.10x",
         "subtitle_fonts": ["Komika Axis", "Gilroy", "Montserrat", "Bebas Neue"],
         "c_base": "&H00F0FFF0&",          # Base: Honeydew Soft Organic White (#F0FFF0)
         "c_active": "&H0066FF00&",        # Active: Bioluminescent Lime (#00FF66)
@@ -424,25 +424,24 @@ FLEET_NICHE_PROFILES = {
         "procedural_chords": [
             [("E", "min"), ("G", "maj"), ("D", "maj"), ("C", "maj")],
             [("A", "min"), ("C", "maj"), ("G", "maj"), ("F", "maj")],
-            [("D", "min"), ("A#", "maj"), ("F", "maj"), ("C", "maj")],
         ],
-        "music_bpm": 92,
-        "foley_type": "organic_nature",
+        "music_bpm": 112,
+        "foley_type": "nature_wildlife",
         "ducking": {
-            "attack": 40,
-            "release": 350,
-            "ratio": 2.8,
-            "threshold": 0.09,
-            "music_vol": 0.26,
-            "sfx_vol": 0.25,
+            "attack": 15,
+            "release": 200,
+            "ratio": 4.0,
+            "threshold": 0.08,
+            "music_vol": 0.22,
+            "sfx_vol": 0.28,
         },
         "container_metadata": {
-            "artist": "BioSphere Explorations / Wild Earth Media",
-            "genre": "Nature & Wildlife / Extreme Biology",
-            "comment": "Documentary expedition exploring abyssal fauna, evolutionary adaptations, and planetary ecosystems.",
+            "artist": "Deep Wild Chronicles / Nature & Extreme Biology",
+            "genre": "Nature & Wildlife / Extreme Biology & Adaptation",
+            "comment": "Exploring extraordinary biological adaptations, cellular survival mechanisms, and extreme organism physics.",
         },
-        "color_curves": "eq=contrast=1.05:saturation=1.18:gamma=0.98,colorbalance=gs=0.05:gh=0.03:rh=0.02:bh=-0.03",
-        "badge_text": "🌿 EXTREME NATURE",
+        "color_curves": "eq=contrast=1.06:saturation=1.18:gamma=0.96,colorbalance=gs=0.04:gh=0.03:bs=-0.02",
+        "badge_text": "🌿 BIO SECRET",
         "badge_border": "#00FF66",
         "badge_bg": "#041408",
         "thumb_font": "Komika Axis",
@@ -456,9 +455,9 @@ FLEET_NICHE_PROFILES = {
         "gemini_voice": "Charon",
         "kokoro_voice": "am_michael",
         "edge_voice": "en-US-ChristopherNeural",
-        "cadence_speed": 0.96,
+        "cadence_speed": 1.12,
         "vocal_tone": "dark_revelation",
-        "persona_desc": "grave, baritone historical storyteller, 0.96x",
+        "persona_desc": "grave, baritone historical storyteller, 1.12x",
         "subtitle_fonts": ["Cinzel", "TheBoldFont", "Bebas Neue"],
         "c_base": "&H00C7E8F5&",          # Base: Antique Parchment (#F5E8C7)
         "c_active": "&H0000D7FF&",        # Active: Imperial Gold (#FFD700)
@@ -504,9 +503,9 @@ FLEET_NICHE_PROFILES = {
         "gemini_voice": "Puck",
         "kokoro_voice": "am_fenrir",
         "edge_voice": "en-US-EricNeural",
-        "cadence_speed": 1.00,
+        "cadence_speed": 1.12,
         "vocal_tone": "suspenseful_mystery",
-        "persona_desc": "inquisitive, suspenseful, 1.00x",
+        "persona_desc": "inquisitive, suspenseful, 1.12x",
         "subtitle_fonts": ["Montserrat Black", "Montserrat", "Archivo Black", "Bebas Neue"],
         "c_base": "&H00E0E0E0&",          # Base: Spectral Silver (#E0E0E0)
         "c_active": "&H0000FFDF&",        # Active: Acid Yellow (#DFFF00)
@@ -552,9 +551,9 @@ FLEET_NICHE_PROFILES = {
         "gemini_voice": "Orus",
         "kokoro_voice": "am_puck",
         "edge_voice": "en-US-BrianNeural",
-        "cadence_speed": 1.04,
+        "cadence_speed": 1.14,
         "vocal_tone": "bold_authority",
-        "persona_desc": "resonant, punchy industrial, 1.04x",
+        "persona_desc": "resonant, punchy industrial, 1.14x",
         "subtitle_fonts": ["Barlow Condensed", "Bebas Neue", "Anton"],
         "c_base": "&H00FFFFFF&",          # Base: Blueprint Titanium White (#FFFFFF)
         "c_active": "&H000055FF&",        # Active: Safety Orange (#FF5500)
@@ -600,9 +599,9 @@ FLEET_NICHE_PROFILES = {
         "gemini_voice": "Charon",
         "kokoro_voice": "am_michael",
         "edge_voice": "en-US-ChristopherNeural",
-        "cadence_speed": 1.02,
+        "cadence_speed": 1.12,
         "vocal_tone": "bold_authority",
-        "persona_desc": "authoritative financial & trade investigator, 1.02x",
+        "persona_desc": "authoritative financial & trade investigator, 1.12x",
         "subtitle_fonts": ["Montserrat", "Montserrat Black", "Bebas Neue"],
         "c_base": "&H00FFFFFF&",          # Base: Pure Crisp White (#FFFFFF)
         "c_active": "&H00A3E500&",        # Active: Wealth Emerald (#00E5A3)

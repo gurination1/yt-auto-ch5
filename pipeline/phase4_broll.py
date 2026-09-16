@@ -84,7 +84,7 @@ def _verify_image_file_with_vision(img_path: str, narration: str, query: str = "
         return verify_video_frames([img_bytes], narration=narration, query=query, topic=topic)
     except Exception as e:
         print(f"[B-roll] Image vision check exception: {e}")
-        return True, "Vision exception - allowing candidate"
+        return False, f"Vision check exception ({e}) - strictly rejecting candidate"
 
 def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = None, topic: str = "", narration: str = "") -> bool:
     """
@@ -119,7 +119,10 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
             "headquarters", "corporate_office", "office_building", "campus", "exterior",
             "statue", "monument", "bust_of", "portrait_of", "tomb", "gravesite",
             "portrait", "bust", "quadrangle", "colonnade", "hallway", "corridor",
-            "library_building", "university_hall", "sepia", "carte_de_visite"
+            "library_building", "university_hall", "sepia", "carte_de_visite",
+            "monk", "saint", "religious_icon", "cleric", "fresco_of", "icon_of",
+            "elevator", "lift", "stairwell", "staircase", "evacuation_plan", "fire_exit",
+            "emergency_exit", "rubber_glove", "medical_glove"
         ]
         q_top_lower = f"{query} {topic}".lower()
 
@@ -2641,7 +2644,8 @@ def _deep_inspect_video_frames(
                 if not is_valid:
                     return False, f"Vision rejected frames: {vision_reason}"
             except Exception as e_v:
-                print(f"[B-roll] Vision verification note: {e_v}. Relying on heuristic frame checks.")
+                print(f"[B-roll] Vision verification exception: {e_v}. Strictly rejecting candidate.")
+                return False, f"Vision verification exception: {e_v}"
 
         return True, "All frame inspections passed"
 
