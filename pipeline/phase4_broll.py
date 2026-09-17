@@ -2524,8 +2524,17 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
                 crop_words = re.findall(r'\b[a-z]{3,}\b', crop_text)
                 if any(wm in crop_text for wm in watermark_words):
                     return True
-                if len(crop_words) >= 16:
+                if len(crop_words) >= 6:
                     return True
+
+            # 4. Central/lower subtitle band check (detects hardcoded burned-in subtitles)
+            sub_crop = f.crop((int(fw * 0.10), int(fh * 0.35), int(fw * 0.90), int(fh * 0.85)))
+            sub_text = run_ocr(sub_crop, psm=6).lower()
+            sub_words = re.findall(r'\b[a-z]{3,}\b', sub_text)
+            if any(wm in sub_text for wm in watermark_words):
+                return True
+            if len(sub_words) >= 6:
+                return True
 
         return False
     except Exception:
