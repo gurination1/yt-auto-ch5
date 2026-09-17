@@ -2683,6 +2683,29 @@ def _candidate_fingerprint(item: dict) -> str:
     return url.split("?")[0].rstrip("/")
 
 
+def _mark_used_url(u: str, used_urls: set[str] | None = None):
+    if not u or not isinstance(u, str):
+        return
+    u = u.strip()
+    if not u:
+        return
+    if used_urls is not None:
+        used_urls.add(u)
+    try:
+        os.makedirs("output", exist_ok=True)
+        cur = []
+        ufile = "output/.used_media_urls.json"
+        if os.path.exists(ufile):
+            with open(ufile, "r") as f:
+                cur = json.load(f)
+        if u not in cur:
+            cur.append(u)
+            with open(ufile, "w") as f:
+                json.dump(cur, f)
+    except Exception:
+        pass
+
+
 def fetch_broll(query: str, format_type: str, segment_index: int, duration: float = 6.0, narration: str = "", alt_queries: list[str] | None = None, used_urls: set[str] | None = None, channel: str = "general", topic: str = "") -> str:
     """
     Unified B-roll candidate ranking across multiple platforms (Reddit & YouTube prioritized, Coverr, Pexels, Pixabay, NASA, Wikimedia)
@@ -2695,6 +2718,18 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     budget_default = "240" if format_type == "short" else "300"
     budget_seconds = int(os.environ.get("BROLL_SEGMENT_BUDGET_SECONDS", budget_default))
     deadline = time.monotonic() + budget_seconds
+
+    # Synchronize used_urls with disk-backed cross-segment registry
+    try:
+        os.makedirs("output", exist_ok=True)
+        ufile = "output/.used_media_urls.json"
+        if os.path.exists(ufile):
+            with open(ufile, "r") as uf:
+                disk_urls = set(json.load(uf))
+                if used_urls is not None:
+                    used_urls.update(disk_urls)
+    except Exception:
+        pass
 
     # If topic is not provided, try reading from output/topic.json
     if not topic and os.path.exists("output/topic.json"):
@@ -3013,9 +3048,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                             continue
 
                         # Frame inspection passed!
-                        if used_urls is not None:
-                            used_urls.add(chosen["video_url"])
-                            used_urls.add(_candidate_fingerprint(chosen))
+                        _mark_used_url(chosen["video_url"], used_urls)
+                        _mark_used_url(_candidate_fingerprint(chosen), used_urls)
                         print(f"[B-roll] Candidate {try_idx} VERIFIED frame-by-frame! Normalizing into assembly format...")
                         _image_to_ken_burns_video(temp_video_path, out_path, w, h, duration, niche=channel, caption="")
                         if os.path.exists(temp_video_path):
@@ -3052,9 +3086,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                                     pass
                             continue
 
-                        if used_urls is not None:
-                            used_urls.add(chosen["video_url"])
-                            used_urls.add(_candidate_fingerprint(chosen))
+                        _mark_used_url(chosen["video_url"], used_urls)
+                        _mark_used_url(_candidate_fingerprint(chosen), used_urls)
                         print(f"[B-roll] Heuristic candidate {try_idx} VERIFIED frame-by-frame! Normalizing into assembly format...")
                         _image_to_ken_burns_video(temp_video_path, out_path, w, h, duration, niche=channel, caption="")
                         if os.path.exists(temp_video_path):
@@ -3080,9 +3113,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                                 except Exception: pass
                             continue
 
-                        if used_urls is not None:
-                            used_urls.add(chosen["video_url"])
-                            used_urls.add(_candidate_fingerprint(chosen))
+                        _mark_used_url(chosen["video_url"], used_urls)
+                        _mark_used_url(_candidate_fingerprint(chosen), used_urls)
                         print(f"[B-roll] Candidate {try_idx} VERIFIED by direct frame inspection! Normalizing into assembly format...")
                         _image_to_ken_burns_video(temp_video_path, out_path, w, h, duration, niche=channel, caption="")
                         if os.path.exists(temp_video_path):
@@ -3249,9 +3281,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
             import shutil
             shutil.copy(winner_credit_file, target_credit_file)
 
-        if used_urls is not None:
-            used_urls.add(winner["video_url"])
-            used_urls.add(_candidate_fingerprint(winner))
+        _mark_used_url(winner["video_url"], used_urls)
+        _mark_used_url(_candidate_fingerprint(winner), used_urls)
 
         # Clean up temporary video files
         for r in downloaded_results:
