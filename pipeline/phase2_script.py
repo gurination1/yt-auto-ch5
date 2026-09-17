@@ -139,6 +139,9 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
       * NEVER write pop-culture or mythical nicknames like 'Conan the Bacterium', 'Frankenstein', or 'monster'. Use proper scientific subject name (e.g. 'Deinococcus radiodurans bacterium scanning electron microscope').
       * NEVER include words: "animation", "simulation", "concept", "visualization", "fantasy", "cgi", "cartoon", "illustration", "3d model", "futuristic", "diagram".
       * NEVER use biological organisms (plants, seedlings, flowers, fungi, trees, animals), waterfalls, rivers, or weather as metaphors or analogies for physical science (time dilation, speed, gravity, black holes, semiconductors, or quantum states).
+      * NEVER use speed metaphors (bullets, rockets, sledgehammers, lightning) as B-roll queries for wildlife/animals! If narration says "accelerates faster than a bullet", broll_query MUST REMAIN the animal/insect in high-speed macro motion (e.g. "Dracula ant high speed" or "Mystrium camillae strike"), NEVER "bullet impact" or "bullet slow motion"!
+      * NEVER query "microscope" or "light microscope" for quantum physics, lasers, interferometers, or astrophysics! Query specifically: "optical table beam splitter", "laser interferometer", "cryostat vacuum chamber", or "spectrometer optical bench".
+      * NEVER query generic "helmet" or "weapon" in ancient/medieval history topics! Query specifically: "Roman bronze ballista", "ancient siege catapult", or "Roman bronze armor", NEVER modern combat gear.
     - REQUIRED: Every segment MUST specify the CONCRETE, OBSERVABLE physical entity being discussed:
       * ULTRA-COMPACT 2-4 WORD RULE: Search engines (YouTube/Wikimedia) fail on long sentences! broll_query MUST BE 2 TO 4 WORDS MAXIMUM!
       * If topic is a specific animal/organism, broll_query MUST contain its exact scientific binomial or common name: e.g. "Regimbartia attenuata" or "water beetle frog".
