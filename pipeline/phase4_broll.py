@@ -2658,6 +2658,27 @@ def _deep_inspect_video_frames(
                     pass
 
 
+def _candidate_fingerprint(item: dict) -> str:
+    url = str(item.get("video_url", "")).strip()
+    title = str(item.get("title", "")).strip().lower()
+    yt_m = re.search(r'(?:v=|youtu\.be/|shorts/)([a-zA-Z0-9_-]{11})', url)
+    if yt_m:
+        return f"yt:{yt_m.group(1)}"
+    red_m = re.search(r'comments/([a-zA-Z0-9]+)', url)
+    if red_m:
+        return f"reddit:{red_m.group(1)}"
+    pex_m = re.search(r'pexels[^\d]*(\d+)', url)
+    if pex_m:
+        return f"pexels:{pex_m.group(1)}"
+    pix_m = re.search(r'pixabay[^\d]*(\d+)', url)
+    if pix_m:
+        return f"pixabay:{pix_m.group(1)}"
+    if title and len(title) > 8:
+        title_slug = re.sub(r'[^a-z0-9]', '', title)[:30]
+        return f"title:{title_slug}"
+    return url.split("?")[0].rstrip("/")
+
+
 def fetch_broll(query: str, format_type: str, segment_index: int, duration: float = 6.0, narration: str = "", alt_queries: list[str] | None = None, used_urls: set[str] | None = None, channel: str = "general", topic: str = "") -> str:
     """
     Unified B-roll candidate ranking across multiple platforms (Reddit & YouTube prioritized, Coverr, Pexels, Pixabay, NASA, Wikimedia)
@@ -2875,26 +2896,6 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
 
     for src in sources:
         print(f"[B-roll] Source '{src}' returned {source_counts[src]} unique candidates.")
-
-    def _candidate_fingerprint(item: dict) -> str:
-        url = str(item.get("video_url", "")).strip()
-        title = str(item.get("title", "")).strip().lower()
-        yt_m = re.search(r'(?:v=|youtu\.be/|shorts/)([a-zA-Z0-9_-]{11})', url)
-        if yt_m:
-            return f"yt:{yt_m.group(1)}"
-        red_m = re.search(r'comments/([a-zA-Z0-9]+)', url)
-        if red_m:
-            return f"reddit:{red_m.group(1)}"
-        pex_m = re.search(r'pexels[^\d]*(\d+)', url)
-        if pex_m:
-            return f"pexels:{pex_m.group(1)}"
-        pix_m = re.search(r'pixabay[^\d]*(\d+)', url)
-        if pix_m:
-            return f"pixabay:{pix_m.group(1)}"
-        if title and len(title) > 8:
-            title_slug = re.sub(r'[^a-z0-9]', '', title)[:30]
-            return f"title:{title_slug}"
-        return url.split("?")[0].rstrip("/")
 
     # Apply de-duplication: filter out candidates that have already been used
     if used_urls:

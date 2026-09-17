@@ -327,6 +327,9 @@ def main():
                 
             print(f"[Judge AI] Re-fetching B-roll for failed segments {failed_segs}...")
             for idx in failed_segs:
+                if time.time() - pipeline_start_time > 2400:
+                    print("[Judge AI] Total pipeline runtime exceeded 40m during segment repair. Halting segment repair to avoid workflow timeout.")
+                    break
                 if idx < 0 or idx >= len(script["segments"]):
                     print(f"Warning: Invalid failed segment index: {idx}")
                     continue
