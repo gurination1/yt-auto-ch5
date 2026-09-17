@@ -245,8 +245,8 @@ def main():
         judge_start_time = time.time()
         
         while attempt <= max_attempts:
-            if time.time() - judge_start_time > 720 or time.time() - pipeline_start_time > 2700:
-                print(f"\n[Judge AI] Reached review loop budget limit (or 45m total pipeline limit). Accepting current version to avoid workflow timeout.")
+            if time.time() - pipeline_start_time > 3300:
+                print(f"\n[Judge AI] Total pipeline runtime approaching 55m limit. Halting review loop to avoid workflow cancellation.")
                 break
 
             print(f"\n[Judge AI] Review Attempt {attempt}/{max_attempts} for video: {final_video}...")

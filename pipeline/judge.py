@@ -341,6 +341,7 @@ CRITICAL REJECTION RULES (Mark mismatch_detected=true or slop_detected=true if v
 6. FANTASY / AI SLOP / CGI: Strictly reject fantasy art, anime, CGI wizards/monsters, or static illustrations with watermarks.
 7. SLIDES & TEXT: Strictly reject PowerPoint slides, text documents, or software tutorials.
 8. TALKING HEADS: Strictly reject vloggers, facecams, or podcast hosts.
+9. BAKED-IN SUBTITLES & WATERMARKS: Strictly reject any source footage that has pre-existing English subtitles, hardcoded caption banners, news channel ticker bars, or creator watermark text burned into the video frame.
 
 Return JSON ONLY:
 {{
