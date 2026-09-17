@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How the **endowment effect** allows billionaires to lock in consumer loyalty and investor capital by subtly fostering a sense of ownership, making people irrationally overvalue what they already possess.",
     "The 'Hyper Goo Maximalism' aesthetic is exploding, revealing how economic downturns drive consumer demand for \"micro indulgences\" and low-fi, Nickelodeon slime-esque branding in products and packaging.",
     "The recent cyberattack on CEVA Logistics in Europe, coupled with surging global diesel prices due to tightening supplies, is creating a dual shockwave through international supply chains, threatening widespread delivery delays and increased operational costs.",
     "How **Groupthink** can doom even the most experienced corporate boards, where the pressure for consensus stifles critical dissent and leads to irrational, unified decisions that drive once-mighty empires into catastrophic bankruptcy.",
@@ -89,9 +88,10 @@
     "How Madagascar's armed vanilla cartels use secret botanical DNA tracking and clandestine jungle heists to control 80% of the world's natural flavoring supply.",
     "Why commercial aviation engine makers legally prohibit airlines from repairing their own turbine blades, enforcing a multi-billion dollar hourly servicing trap.",
     "How Herm\u00e8s uses the psychological 'Birkin Trap' to force billionaire clients to spend six figures on unrelated tableware before earning the right to buy a handbag.",
-    "How the Malacca Straits choke point forces mega-container ships to carry extra tons of fuel just to physically alter their buoyancy and squeeze through shallow underwater mud thresholds."
+    "How the Malacca Straits choke point forces mega-container ships to carry extra tons of fuel just to physically alter their buoyancy and squeeze through shallow underwater mud thresholds.",
+    "How airline dynamic seat tiering algorithms track your device battery level and search history to subtly hike ticket prices in real-time."
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 7,
-  "call_count": 218
+  "subcluster_idx": 2,
+  "fallback_idx": 8,
+  "call_count": 219
 }
