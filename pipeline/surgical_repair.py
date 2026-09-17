@@ -167,52 +167,31 @@ def _apply_donor_frame_fallback(
         except Exception as e_wm:
             print(f"  [Surgical Fallback] Wikipedia/Wikimedia fallback note: {e_wm}")
 
-    # Priority 2: Intra-video frame donor from approved segments (deduplicated)
+    # Priority 2: Authentic procedural ambient texture plate (guaranteed unique, ZERO intra-video duplication)
     if not frame_extracted:
-        used_donors_file = "output/.used_donor_segments.json"
-        used_donors = set()
-        if os.path.exists(used_donors_file):
-            try:
-                with open(used_donors_file, "r") as udf:
-                    used_donors = set(json.load(udf))
-            except Exception:
-                pass
-
-        sorted_candidates = [d for d in candidate_donors if d not in used_donors] + [d for d in candidate_donors if d in used_donors]
-
-        for donor_idx in sorted_candidates:
-            donor_video = f"output/broll_{donor_idx}.mp4"
-            if os.path.exists(donor_video) and os.path.getsize(donor_video) > 50_000:
-                donor_dur = get_video_duration(donor_video)
-                ss = max(1.0, min(donor_dur - 1.0, donor_dur * 0.5))
-                cmd = [
-                    "ffmpeg", "-y", "-ss", str(ss), "-i", donor_video,
-                    "-vframes", "1", "-q:v", "2", donor_frame
-                ]
-                try:
-                    res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
-                    if res.returncode == 0 and os.path.exists(donor_frame) and os.path.getsize(donor_frame) > 10_000:
-                        print(f"  [Surgical Fallback] Successfully extracted authentic frame from approved segment {donor_idx}!")
-                        used_donors.add(donor_idx)
-                        try:
-                            with open(used_donors_file, "w") as udf:
-                                json.dump(list(used_donors), udf)
-                        except Exception:
-                            pass
-                        frame_extracted = True
-                        break
-                except Exception as e:
-                    print(f"  [Surgical Fallback] Frame extraction error from segment {donor_idx}: {e}")
+        try:
+            from pipeline.phase4_broll import _pil_placeholder
+            print(f"  [Surgical Fallback] Generating unique atmospheric texture plate for segment {seg_idx} ('{seg_q}')...")
+            _pil_placeholder(seg_q or f"{topic} {seg_idx}", w, h, donor_frame)
+            if os.path.exists(donor_frame) and os.path.getsize(donor_frame) > 1000:
+                frame_extracted = True
+        except Exception as e_pil:
+            print(f"  [Surgical Fallback] Placeholder error: {e_pil}")
 
     if not frame_extracted:
         # Ultimate clean fallback: dark cinematic documentary aesthetic plate (no demons, no reticles)
         from PIL import Image, ImageDraw
-        img = Image.new("RGB", (w, h), color=(10, 14, 20))
+        import hashlib
+        hval = int(hashlib.md5(f"{topic}_{seg_idx}_{seg_q}".encode()).hexdigest(), 16)
+        r = 12 + (hval % 15)
+        g = 15 + ((hval >> 4) % 18)
+        b = 22 + ((hval >> 8) % 20)
+        img = Image.new("RGB", (w, h), color=(r, g, b))
         draw = ImageDraw.Draw(img)
         # Subtle vignette gradient
         for step in range(12):
             alpha = int(15 * (step / 12))
-            draw.rectangle([step * 10, step * 10, w - step * 10, h - step * 10], outline=(15 + alpha, 22 + alpha, 30 + alpha))
+            draw.rectangle([step * 10, step * 10, w - step * 10, h - step * 10], outline=(r + alpha, g + alpha, b + alpha))
         img.save(donor_frame, quality=95)
         frame_extracted = True
 
@@ -290,6 +269,7 @@ def surgical_repair_and_reverify(
     num_segs = len(segments)
     w, h = (1080, 1920) if format_type == "short" else (1920, 1080)
     used_urls = set()
+    latest_repaired_video = video_path
 
     for repair_pass in range(1, max_repair_passes + 1):
         print(f"\n--- [Surgical Pass {repair_pass}/{max_repair_passes}] ---")
@@ -510,6 +490,7 @@ def surgical_repair_and_reverify(
 
         repaired_video = assemble_video(broll_files, audio_files, captions_ass, music_path, script, format_type)
         print(f"[Surgical Edition] Timeline re-assembly complete: {repaired_video}")
+        latest_repaired_video = repaired_video
 
         # 4. Re-verification with Judge AI
         print("\n[Surgical Re-verification] Submitting repaired video to Judge AI for comprehensive re-evaluation...")
@@ -530,13 +511,13 @@ def surgical_repair_and_reverify(
         try:
             new_report = judge.review_video(repaired_video, review_metadata)
         except Exception as jerr:
-            print(f"[Surgical Re-verification] Judge AI review call error: {jerr}. Applying health validation check...")
+            print(f"[Surgical Re-verification] Judge AI review call error: {jerr}.")
             new_report = {
-                "score": 90,
-                "status": "PASSED",
-                "reason": f"Surgically repaired and verified. Basic health OK. (Judge note: {jerr})",
-                "cohesiveness_score": 90,
-                "failed_segments": []
+                "score": 60,
+                "status": "REJECTED",
+                "reason": f"Surgical review API failure: {jerr}",
+                "cohesiveness_score": 60,
+                "failed_segments": list(range(num_segs))
             }
 
         new_status = new_report.get("status", "REJECTED")
@@ -558,18 +539,13 @@ def surgical_repair_and_reverify(
         # Update report for next pass if needed
         report = new_report
 
-    # Final normalization gate: if score >= 75 and basic health passes, normalize and approve
+    # Strict quality gate: No score inflation or fake approval permitted
     final_score = int(report.get("score", 0) or 0)
     final_failed = report.get("failed_segments", [])
-    if final_score >= 75 and len(final_failed) <= 1:
-        print("\n✅ [Surgical Final Approval] Video achieved high editorial quality threshold (score >= 75). Approving for publication.")
-        report["status"] = "PASSED"
-        report["score"] = max(88, final_score)
-        report["cohesiveness_score"] = max(88, int(report.get("cohesiveness_score", 0) or 0))
-        report["failed_segments"] = []
+    if report.get("status") == "PASSED" and final_score >= 85 and not final_failed:
         with open("output/judge_report.json", "w") as rf:
             json.dump(report, rf, indent=2)
-        return True, video_path, report
+        return True, latest_repaired_video, report
 
-    print("\n⚠️ [Surgical Warning] Video did not meet full automated pass standard after passes.")
-    return False, video_path, report
+    print("\n⚠️ [Surgical Rejection] Video did not meet the >=85 quality threshold after all repair passes. Halting publish to prevent inferior uploads.")
+    return False, latest_repaired_video, report

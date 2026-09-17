@@ -278,26 +278,15 @@ def main():
             print(f"[Judge AI] Score: {score}, Status: {status}")
             print(f"[Judge AI] Reason: {reason}")
             
-            # Clean review: 0 failed segments, 0 issues, and score >= 70 (LLM mid-range compression)
-            issues = review_result.get("issues", [])
-            if not failed_segs and not issues and score >= 70:
-                print(f"[Judge AI] Clean review (0 failed segments, 0 issues, score={score}). Video passed quality threshold.")
-                status = "PASSED"
-                review_result["status"] = "PASSED"
-            
-            if status == "PASSED" and not failed_segs:
-                if score < 91:
-                    print(f"[Judge AI] Normalizing clean PASS score {score} -> 91.")
-                    review_result["score"] = 91
-                    review_result["cohesiveness_score"] = max(91, int(review_result.get("cohesiveness_score", 0) or 0))
-                    review_result["hook_score"] = max(91, int(review_result.get("hook_score", 0) or 0))
-                    review_result["retention_score"] = max(91, int(review_result.get("retention_score", 0) or 0))
-                print("[Judge AI] Video PASSED the quality review.")
+            # Genuine quality gate: status == PASSED, score >= 85, zero failed segments
+            if status == "PASSED" and score >= 85 and not failed_segs:
+                print(f"[Judge AI] Video PASSED the quality review with authentic score {score}/100.")
                 with open("output/judge_report.json", "w") as rf:
                     json.dump(review_result, rf, indent=2)
                 break
+            
             if not failed_segs:
-                print("[Judge AI] No failed segments returned. Repairing all segments once.")
+                print(f"[Judge AI] Video rejected or score {score} < 85 with no specific failed segments. Flagging all segments for repair.")
                 failed_segs = list(range(len(script["segments"])))
                 
             if attempt == max_attempts:

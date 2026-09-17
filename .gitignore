@@ -15,5 +15,8 @@ gemini_state.json
 local_env.sh
 output/
 state/key_pool.json
-upload_*.py
+inspect_run/
+test_harvest_output/
 music_history.json
+last_run_*/
+upload_*.py

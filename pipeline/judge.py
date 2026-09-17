@@ -3,8 +3,11 @@ import json
 import time
 import requests
 import mimetypes
+import subprocess
+import base64
+from concurrent.futures import ThreadPoolExecutor
 from pipeline.config import GEMINI_FLASH, GEMINI_FLASH_BACKUP, GEMINI_PRO, GEMINI_API_BASE
-from pipeline.gemini import _clean_json_output, _shared_pool
+from pipeline.gemini import _clean_json_output, _shared_pool, _post_with_rotation
 
 
 RETRIABLE_STATUS_CODES = {400, 403, 429, 500, 502, 503, 504}
@@ -203,8 +206,224 @@ def delete_file_from_gemini(file_name: str, api_key: str):
 class JudgeClient:
     def __init__(self):
         self.base_url = GEMINI_API_BASE
-        
+
+    def _forensic_review_segments(self, video_path: str, metadata: dict) -> dict | None:
+        """
+        Forensic Per-Segment Quality Gate:
+        1. Checks for visual duplicates across all segments (deterministic pixel diff).
+        2. Extracts mid-frame of each segment.
+        3. Scrutinizes each segment frame with Gemini Flash Vision against domain rules.
+        """
+        import numpy as np
+        from PIL import Image
+
+        segments = metadata.get("segments", [])
+        if not segments:
+            return None
+
+        # Determine video duration
+        try:
+            dur_cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_path]
+            total_dur = float(subprocess.check_output(dur_cmd).decode().strip())
+        except Exception:
+            total_dur = 30.0
+
+        num_segs = len(segments)
+        seg_dur = total_dur / num_segs
+        os.makedirs("output", exist_ok=True)
+
+        frames_data = []
+        frame_arrays = []
+        failed_segments = []
+        issues = []
+        seg_scores = [0] * num_segs
+
+        # Step 1: Extract middle frame of each segment
+        for idx in range(num_segs):
+            broll_file = f"output/broll_{idx}.mp4"
+            broll_img = f"output/broll_{idx}.jpg"
+            out_frame = f"output/judge_seg_{idx}.jpg"
+
+            extracted = False
+            if os.path.exists(broll_file) and os.path.getsize(broll_file) > 10_000:
+                try:
+                    b_dur_cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", broll_file]
+                    b_dur = float(subprocess.check_output(b_dur_cmd, timeout=5).decode().strip())
+                    ss = max(0.5, min(b_dur - 0.5, b_dur * 0.5))
+                except Exception:
+                    ss = 1.0
+                cmd = ["ffmpeg", "-y", "-ss", f"{ss:.2f}", "-i", broll_file, "-vf", "scale=-2:720", "-vframes", "1", "-q:v", "2", out_frame]
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+                if os.path.exists(out_frame) and os.path.getsize(out_frame) > 1000:
+                    extracted = True
+
+            if not extracted and os.path.exists(broll_img) and os.path.getsize(broll_img) > 1000:
+                import shutil
+                shutil.copy(broll_img, out_frame)
+                extracted = True
+
+            if not extracted:
+                ss = idx * seg_dur + seg_dur * 0.5
+                cmd = ["ffmpeg", "-y", "-ss", f"{ss:.2f}", "-i", video_path, "-vf", "scale=-2:720", "-vframes", "1", "-q:v", "2", out_frame]
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+                if os.path.exists(out_frame) and os.path.getsize(out_frame) > 1000:
+                    extracted = True
+
+            if not extracted:
+                failed_segments.append(idx)
+                issues.append(f"Segment {idx+1}: Missing or unextractable video frame")
+                frames_data.append(None)
+                frame_arrays.append(None)
+                continue
+
+            # Check black/blank screen locally
+            try:
+                with Image.open(out_frame) as im:
+                    gray = np.array(im.convert("L"))
+                    mean_lum = float(np.mean(gray))
+                    std_lum = float(np.std(gray))
+                    if mean_lum < 8.0 and std_lum < 8.0:
+                        failed_segments.append(idx)
+                        issues.append(f"Segment {idx+1}: Pitch black screen (mean={mean_lum:.1f})")
+                    elif mean_lum > 225.0 and std_lum < 20.0:
+                        failed_segments.append(idx)
+                        issues.append(f"Segment {idx+1}: Blank white screen (mean={mean_lum:.1f})")
+
+                    thumb = np.array(im.convert("L").resize((64, 64)), dtype=float)[12:52, :]
+                    frame_arrays.append(thumb)
+            except Exception:
+                frame_arrays.append(None)
+
+            frames_data.append(out_frame)
+
+        # Step 2: Deterministic Duplicate Detection across all segment pairs
+        for i in range(num_segs):
+            if frame_arrays[i] is None:
+                continue
+            for j in range(i + 1, num_segs):
+                if frame_arrays[j] is None:
+                    continue
+                diff = float(np.mean(np.abs(frame_arrays[i] - frame_arrays[j])))
+                if diff < 22.0:
+                    print(f"[Judge AI] DUPLICATE DETECTED between Segment {i+1} and Segment {j+1} (pixel diff: {diff:.2f})!")
+                    if j not in failed_segments:
+                        failed_segments.append(j)
+                        issues.append(f"Segment {j+1}: Visual duplicate of Segment {i+1} (pixel diff {diff:.1f})")
+
+        # Step 3: Per-segment forensic audit with Gemini Vision
+        title = metadata.get("title", "")
+
+        def audit_single_segment(seg_tuple):
+            idx, seg = seg_tuple
+            out_frame = frames_data[idx]
+            if not out_frame or not os.path.exists(out_frame) or idx in failed_segments:
+                return idx, 20, False, False, "Duplicate or unextractable frame", ""
+
+            narration = seg.get("narration", "")
+            broll_q = seg.get("broll_query") or seg.get("query") or seg.get("narration", "")
+
+            try:
+                with open(out_frame, "rb") as f:
+                    b64 = base64.b64encode(f.read()).decode()
+
+                prompt = f"""You are a ruthless forensic media director and quality assurance judge inspecting a video segment.
+Video Title: "{title}"
+Segment {idx+1} Narration: "{narration}"
+Target B-roll Entity: "{broll_q}"
+
+Scrutinize this actual frame extracted from the video segment with brutal honesty.
+CRITICAL REJECTION RULES (Mark mismatch_detected=true or slop_detected=true if violated):
+1. WRONG BRAND / STOREFRONT: If topic is a specific company/brand (e.g. Hermès, Ferrari, Apple), B-roll MUST NOT show unrelated retail storefronts (e.g. Scully & Scully), wrong logos, or domestic shops.
+2. DOMESTIC / NOVELTY SLOP: If narration describes six-figure luxury, industrial engineering, or high finance, strictly REJECT ordinary kitchen cupboards, novelty coffee mugs with cartoon prints, or everyday home dishware.
+3. CHEAP PROPS & TOYS: Strictly reject miniature toy purses, faux leather 4-inch props held in hands, plastic desk toys, or amateur mockups.
+4. ANACHRONISMS IN HISTORY: Strictly reject modern civilian clothing (t-shirts, jeans, hoodies), modern living rooms, or DIY craft tables in ancient/medieval history.
+5. METALLURGY / RUBBLE: Strictly reject blurry piles of gravel or dirt clods when narration describes weapons, metallurgy, or engineering.
+6. FANTASY / AI SLOP / CGI: Strictly reject fantasy art, anime, CGI wizards/monsters, or static illustrations with watermarks.
+7. SLIDES & TEXT: Strictly reject PowerPoint slides, text documents, or software tutorials.
+8. TALKING HEADS: Strictly reject vloggers, facecams, or podcast hosts.
+
+Return JSON ONLY:
+{{
+  "visible_subject": "1 concise sentence describing what is physically visible",
+  "relevance_score": 1-100,
+  "mismatch_detected": false,
+  "slop_detected": false,
+  "critique": "Brutally honest critique"
+}}"""
+
+                payload = {
+                    "contents": [{"parts": [{"text": prompt}, {"inlineData": {"mimeType": "image/jpeg", "data": b64}}]}],
+                    "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"}
+                }
+                url = f"{self.base_url}/models/{GEMINI_FLASH}:generateContent?key={{key}}"
+                resp = _post_with_rotation(url, payload, timeout=25)
+
+                if resp and resp.status_code == 200:
+                    cand = resp.json().get("candidates", [{}])[0]
+                    raw = cand.get("content", {}).get("parts", [{}])[0].get("text", "")
+                    data = json.loads(_clean_json_output(raw))
+                    rel_score = int(data.get("relevance_score", 50))
+                    mismatch = bool(data.get("mismatch_detected", False))
+                    slop = bool(data.get("slop_detected", False))
+                    critique = str(data.get("critique", ""))
+                    subj = str(data.get("visible_subject", ""))
+                    return idx, rel_score, mismatch, slop, critique, subj
+                else:
+                    return idx, 70, False, False, "Vision API unavailable", ""
+            except Exception as e_seg:
+                return idx, 70, False, False, f"Audit error: {e_seg}", ""
+
+        with ThreadPoolExecutor(max_workers=min(4, num_segs)) as executor:
+            futures = [executor.submit(audit_single_segment, (i, seg)) for i, seg in enumerate(segments)]
+            for fut in futures:
+                s_idx, s_rel, s_mis, s_slop, s_crit, s_subj = fut.result()
+                seg_scores[s_idx] = s_rel
+                print(f"[Judge AI | Seg {s_idx+1}] Subj: {s_subj[:40]}... | Score: {s_rel}/100 | Mismatch: {s_mis} | Slop: {s_slop}")
+                if s_rel < 80 or s_mis or s_slop:
+                    if s_idx not in failed_segments:
+                        failed_segments.append(s_idx)
+                    issues.append(f"Segment {s_idx+1} ('{segments[s_idx].get('broll_query', '')}'): {s_crit} (Score: {s_rel}/100)")
+
+        # Step 4: Final Score Compilation
+        failed_segments = sorted(list(set(failed_segments)))
+        avg_score = int(sum(seg_scores) / len(seg_scores)) if seg_scores else 50
+
+        if failed_segments or avg_score < 85:
+            final_status = "REJECTED"
+            final_score = max(20, min(80, avg_score))
+            if not failed_segments and avg_score < 85:
+                lowest_idx = int(np.argmin(seg_scores)) if len(seg_scores) > 0 else 0
+                failed_segments = [lowest_idx]
+                issues.append(f"Average score {avg_score}/100 below 85 pass threshold. Segment {lowest_idx+1} lowest score ({seg_scores[lowest_idx]}/100).")
+            reason = f"Forensic Review FAILED: {len(failed_segments)} segment(s) rejected: {failed_segments}. Issues: " + "; ".join(issues[:3])
+        else:
+            final_status = "PASSED"
+            final_score = avg_score
+            reason = f"Forensic Review PASSED: All {num_segs} segments verified authentic (Average Score: {final_score}/100)."
+
+        print(f"[Judge AI] Forensic Audit Result: Status={final_status}, Score={final_score}/100, Failed Segments={failed_segments}")
+        return {
+            "score": final_score,
+            "status": final_status,
+            "reason": reason,
+            "cohesiveness_score": final_score,
+            "hook_score": seg_scores[0] if seg_scores else final_score,
+            "retention_score": final_score,
+            "failed_segments": failed_segments,
+            "issues": issues,
+            "forensic_audit": True
+        }
+
     def review_video(self, video_path: str, metadata: dict) -> dict:
+        # Priority 1: Rigorous forensic per-segment visual audit & deterministic duplicate detection
+        try:
+            print("[Judge AI] Initiating Forensic Per-Segment Visual & Alignment Audit...")
+            forensic_report = self._forensic_review_segments(video_path, metadata)
+            if forensic_report is not None:
+                return forensic_report
+        except Exception as e_forensic:
+            print(f"[Judge AI] Forensic per-segment audit exception: {e_forensic}. Falling back to holistic video review...")
+
         last_error: Exception | None = None
         pool_len = len(_shared_pool) if hasattr(_shared_pool, "_keys") else 5
         max_attempts = min(10, pool_len)

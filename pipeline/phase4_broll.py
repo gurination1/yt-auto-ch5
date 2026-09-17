@@ -2594,11 +2594,12 @@ def _deep_inspect_video_frames(
             cmd = [
                 "ffmpeg", "-y", "-ss", f"{ts:.3f}",
                 "-i", video_path,
+                "-vf", "scale=-2:720",
                 "-vframes", "1",
                 "-q:v", "2",
                 frame_file
             ]
-            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=25)
 
             if not os.path.exists(frame_file) or os.path.getsize(frame_file) < 1000:
                 return False, f"Failed to extract frame at t={ts:.2f}s"
@@ -3602,35 +3603,40 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
                     except Exception: pass
                 return out_path
 
-    # Last Resort: Reuse previous authentic segment video or frame with opposing camera dynamic
-    for prev_idx in range(segment_index):
-        prev_vid = f"output/broll_{prev_idx}.mp4"
-        prev_img = f"output/broll_{prev_idx}.jpg"
-        
-        # If previous segment had an authentic video, extract a frame from it
-        if os.path.exists(prev_vid) and os.path.getsize(prev_vid) > 20_000:
-            cmd = f"ffmpeg -y -ss 1.5 -i '{prev_vid}' -vframes 1 -q:v 2 '{img_path}'"
-            subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            if os.path.exists(img_path) and os.path.getsize(img_path) > 10_000:
-                print(f"[B-roll] Segment {segment_index}: Extracted authentic frame from video {prev_idx}. Applying dynamic Ken Burns...")
+    # High-Priority Fallback: Targeted Wikipedia/Wikimedia HD photo search for query or alt queries
+    all_fallback_queries = [sanitized_q, clean_fallback, general_fallback]
+    if alt_queries:
+        all_fallback_queries.extend([_sanitize_broll_query(aq) for aq in alt_queries])
+    if topic:
+        all_fallback_queries.append(topic)
+    
+    for fq in all_fallback_queries:
+        if not fq:
+            continue
+        try:
+            print(f"[B-roll] Segment {segment_index}: Attempting targeted Wikipedia HD photo for '{fq}'...")
+            if _wikipedia_hd_image(fq, img_path, used_urls=used_urls, topic=topic, narration=narration):
+                print(f"[B-roll] Segment {segment_index}: Authentic Wikipedia photo secured for '{fq}'. Applying Ken Burns...")
                 _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
                 if os.path.exists(stale_credit_f):
                     try: os.remove(stale_credit_f)
                     except Exception: pass
                 return out_path
+            wm_img = _wikimedia_image(fq, used_urls=used_urls)
+            if wm_img and os.path.exists(wm_img):
+                import shutil
+                shutil.copy(wm_img, img_path)
+                print(f"[B-roll] Segment {segment_index}: Authentic Wikimedia photo secured for '{fq}'. Applying Ken Burns...")
+                _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
+                if os.path.exists(stale_credit_f):
+                    try: os.remove(stale_credit_f)
+                    except Exception: pass
+                return out_path
+        except Exception as e_fb:
+            print(f"[B-roll] Segment {segment_index}: Fallback photo search error: {e_fb}")
 
-        if os.path.exists(prev_img) and os.path.getsize(prev_img) > 10_000:
-            import shutil
-            shutil.copy(prev_img, img_path)
-            print(f"[B-roll] Segment {segment_index}: Reusing authentic subject frame {prev_idx} with opposite directional pan...")
-            _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
-            if os.path.exists(stale_credit_f):
-                try: os.remove(stale_credit_f)
-                except Exception: pass
-            return out_path
-
-    # Failsafe: if nothing at all exists, synthesize with PIL gradient, NEVER pure black
-    print(f"[B-roll] Segment {segment_index}: Extreme failsafe plate...")
-    _pil_placeholder("", w, h, img_path)
+    # Final anti-duplicate failsafe: Clean cinematic documentary dark ambient gradient (NEVER duplicate another segment!)
+    print(f"[B-roll] Segment {segment_index}: Sourcing clean cinematic ambient texture plate (guaranteed unique, zero duplicate)...")
+    _pil_placeholder(sanitized_q or query, w, h, img_path)
     _image_to_ken_burns_video(img_path, out_path, w, h, duration, niche=channel, caption="")
     return out_path
