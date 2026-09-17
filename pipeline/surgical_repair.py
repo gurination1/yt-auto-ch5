@@ -129,7 +129,6 @@ def _apply_donor_frame_fallback(
     
     # Check adjacent and other approved broll clips
     candidate_donors = []
-    # Prioritize adjacent segments (seg_idx - 1, seg_idx + 1)
     if seg_idx > 0:
         candidate_donors.append(seg_idx - 1)
     if seg_idx + 1 < num_segs:
@@ -141,36 +140,69 @@ def _apply_donor_frame_fallback(
     donor_frame = f"output/surgical_donor_{seg_idx}.jpg"
     frame_extracted = False
 
-    for donor_idx in candidate_donors:
-        donor_video = f"output/broll_{donor_idx}.mp4"
-        if os.path.exists(donor_video) and os.path.getsize(donor_video) > 50_000:
-            donor_dur = get_video_duration(donor_video)
-            ss = max(0.5, min(1.5, donor_dur * 0.4))
-            cmd = [
-                "ffmpeg", "-y", "-ss", str(ss), "-i", donor_video,
-                "-vframes", "1", "-q:v", "2", donor_frame
-            ]
-            try:
-                res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
-                if res.returncode == 0 and os.path.exists(donor_frame) and os.path.getsize(donor_frame) > 10_000:
-                    print(f"  [Surgical Fallback] Successfully extracted 1080p authentic frame from approved segment {donor_idx}!")
-                    frame_extracted = True
-                    break
-            except Exception as e:
-                print(f"  [Surgical Fallback] Frame extraction error from segment {donor_idx}: {e}")
+    seg = segments[seg_idx] if seg_idx < num_segs else {}
+    seg_q = (
+        seg.get("broll_query")
+        or (seg.get("broll_queries")[0] if seg.get("broll_queries") else "")
+        or seg.get("narration", "")
+    )
+    seg_narr = seg.get("narration", "")
 
-    # If no local video donor found, search Wikimedia Commons for authentic public domain micrograph / photo
-    if not frame_extracted:
+    # Priority 1: Search Wikipedia/Wikimedia Commons for authentic archival photo of the EXACT entity
+    if seg_q:
         try:
-            print(f"  [Surgical Fallback] Searching Wikimedia Commons for authentic archival photo...")
-            from pipeline.open_media_engine import search_wikimedia_image
-            wm_img = search_wikimedia_image(topic or "documentary", orientation="portrait" if h > w else "landscape")
-            if wm_img and os.path.exists(wm_img):
-                import shutil
-                shutil.copyfile(wm_img, donor_frame)
+            from pipeline.phase4_broll import _wikipedia_hd_image, _wikimedia_image
+            import shutil
+            print(f"  [Surgical Fallback] Searching Wikipedia/Wikimedia for authentic archival photo of '{seg_q}'...")
+            ok = _wikipedia_hd_image(seg_q, donor_frame, topic=topic, narration=seg_narr)
+            if ok and os.path.exists(donor_frame) and os.path.getsize(donor_frame) > 10_000:
+                print(f"  [Surgical Fallback] Successfully acquired authentic archival image for segment {seg_idx}!")
                 frame_extracted = True
-        except Exception as e:
-            print(f"  [Surgical Fallback] Wikimedia image fallback note: {e}")
+            if not frame_extracted:
+                wm_local = _wikimedia_image(seg_q)
+                if wm_local and os.path.exists(wm_local) and os.path.getsize(wm_local) > 10_000:
+                    shutil.copyfile(wm_local, donor_frame)
+                    print(f"  [Surgical Fallback] Successfully acquired Wikimedia image for segment {seg_idx}!")
+                    frame_extracted = True
+        except Exception as e_wm:
+            print(f"  [Surgical Fallback] Wikipedia/Wikimedia fallback note: {e_wm}")
+
+    # Priority 2: Intra-video frame donor from approved segments (deduplicated)
+    if not frame_extracted:
+        used_donors_file = "output/.used_donor_segments.json"
+        used_donors = set()
+        if os.path.exists(used_donors_file):
+            try:
+                with open(used_donors_file, "r") as udf:
+                    used_donors = set(json.load(udf))
+            except Exception:
+                pass
+
+        sorted_candidates = [d for d in candidate_donors if d not in used_donors] + [d for d in candidate_donors if d in used_donors]
+
+        for donor_idx in sorted_candidates:
+            donor_video = f"output/broll_{donor_idx}.mp4"
+            if os.path.exists(donor_video) and os.path.getsize(donor_video) > 50_000:
+                donor_dur = get_video_duration(donor_video)
+                ss = max(1.0, min(donor_dur - 1.0, donor_dur * 0.5))
+                cmd = [
+                    "ffmpeg", "-y", "-ss", str(ss), "-i", donor_video,
+                    "-vframes", "1", "-q:v", "2", donor_frame
+                ]
+                try:
+                    res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+                    if res.returncode == 0 and os.path.exists(donor_frame) and os.path.getsize(donor_frame) > 10_000:
+                        print(f"  [Surgical Fallback] Successfully extracted authentic frame from approved segment {donor_idx}!")
+                        used_donors.add(donor_idx)
+                        try:
+                            with open(used_donors_file, "w") as udf:
+                                json.dump(list(used_donors), udf)
+                        except Exception:
+                            pass
+                        frame_extracted = True
+                        break
+                except Exception as e:
+                    print(f"  [Surgical Fallback] Frame extraction error from segment {donor_idx}: {e}")
 
     if not frame_extracted:
         # Ultimate clean fallback: dark cinematic documentary aesthetic plate (no demons, no reticles)
