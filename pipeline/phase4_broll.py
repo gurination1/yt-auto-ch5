@@ -1707,6 +1707,8 @@ def _download_video_robust(
                             fallback_starts = [max(15.0, actual_dur * 0.25), max(25.0, actual_dur * 0.50), max(35.0, actual_dur * 0.75)]
                         elif actual_dur >= 25.0:
                             fallback_starts = [max(8.0, actual_dur * 0.25), max(14.0, actual_dur * 0.55)]
+                        elif actual_dur >= 6.0:
+                            fallback_starts = [min(1.5, actual_dur * 0.15), max(3.0, actual_dur * 0.40)]
                         else:
                             fallback_starts = [0.0]
 
@@ -1804,6 +1806,8 @@ def _download_video_robust(
                 candidate_starts = [max(15.0, actual_dur * 0.25), max(25.0, actual_dur * 0.50), max(35.0, actual_dur * 0.75)]
             elif actual_dur >= 20.0:
                 candidate_starts = [max(5.0, actual_dur * 0.15), max(10.0, actual_dur * 0.50)]
+            elif actual_dur >= 6.0:
+                candidate_starts = [min(1.5, actual_dur * 0.15), max(3.0, actual_dur * 0.40)]
             else:
                 candidate_starts = [0.0]
 
@@ -2635,11 +2639,11 @@ def _deep_inspect_video_frames(
             with open(frame_file, "rb") as fh:
                 frame_bytes_list.append(fh.read())
 
-        # 3. Gemini Flash Vision check on representative frames (t=40% and t=65%)
+        # 3. Gemini Flash Vision check on representative frames (opener t=15%, t=40%, and t=65%)
         if (narration or query) and len(frame_bytes_list) >= 2:
             try:
                 from pipeline.vision_match import verify_video_frames
-                selected_frames = [frame_bytes_list[1], frame_bytes_list[2]]
+                selected_frames = [frame_bytes_list[0], frame_bytes_list[1], frame_bytes_list[2]] if len(frame_bytes_list) >= 3 else frame_bytes_list
                 is_valid, vision_reason = verify_video_frames(selected_frames, narration, query, topic=topic)
                 if not is_valid:
                     return False, f"Vision rejected frames: {vision_reason}"
