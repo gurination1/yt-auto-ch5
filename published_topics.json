@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How Status AI's social simulation platform is rapidly ascending by leveraging AI-generated personas and virtual communities, capturing an 8.1K search volume and 760% growth, making it a top trending startup in August 2026.",
     "How the **endowment effect** allows billionaires to lock in consumer loyalty and investor capital by subtly fostering a sense of ownership, making people irrationally overvalue what they already possess.",
     "The 'Hyper Goo Maximalism' aesthetic is exploding, revealing how economic downturns drive consumer demand for \"micro indulgences\" and low-fi, Nickelodeon slime-esque branding in products and packaging.",
     "The recent cyberattack on CEVA Logistics in Europe, coupled with surging global diesel prices due to tightening supplies, is creating a dual shockwave through international supply chains, threatening widespread delivery delays and increased operational costs.",
@@ -89,9 +88,10 @@
     "How movie theaters use deceptive vertical popcorn sizing psychology to trick human volumetric perception into buying high-margin large buckets.",
     "How Madagascar's armed vanilla cartels use secret botanical DNA tracking and clandestine jungle heists to control 80% of the world's natural flavoring supply.",
     "Why commercial aviation engine makers legally prohibit airlines from repairing their own turbine blades, enforcing a multi-billion dollar hourly servicing trap.",
-    "How Herm\u00e8s uses the psychological 'Birkin Trap' to force billionaire clients to spend six figures on unrelated tableware before earning the right to buy a handbag."
+    "How Herm\u00e8s uses the psychological 'Birkin Trap' to force billionaire clients to spend six figures on unrelated tableware before earning the right to buy a handbag.",
+    "How the Malacca Straits choke point forces mega-container ships to carry extra tons of fuel just to physically alter their buoyancy and squeeze through shallow underwater mud thresholds."
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 6,
-  "call_count": 217
+  "subcluster_idx": 1,
+  "fallback_idx": 7,
+  "call_count": 218
 }
