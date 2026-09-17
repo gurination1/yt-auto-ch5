@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How the brain's ancient threat detection system makes us overpay for limited-edition products, due to the activation of the amygdala and the principle of psychological reactance.",
     "The unprecedented demand for AI-specific memory (HBM) has dramatically reversed decades of falling RAM prices, pushing costs to 2007 levels and exposing a critical bottleneck in the global semiconductor supply chain.",
     "How Status AI's social simulation platform is rapidly ascending by leveraging AI-generated personas and virtual communities, capturing an 8.1K search volume and 760% growth, making it a top trending startup in August 2026.",
     "How the **endowment effect** allows billionaires to lock in consumer loyalty and investor capital by subtly fostering a sense of ownership, making people irrationally overvalue what they already possess.",
@@ -89,9 +88,10 @@
     "How Rolex's Certified Pre-Owned program intentionally prices used watches higher than new ones, forcing buyers into a psychological trap to clear showroom backlogs.",
     "The Secret Zero-Gravity Vacuum Chambers Inside ASML Lithography Machines Where Droplets of Molten Tin Are Blasted 50,000 Times a Second with Lasers to Make Microchips",
     "How movie theaters use deceptive vertical popcorn sizing psychology to trick human volumetric perception into buying high-margin large buckets.",
-    "How Madagascar's armed vanilla cartels use secret botanical DNA tracking and clandestine jungle heists to control 80% of the world's natural flavoring supply."
+    "How Madagascar's armed vanilla cartels use secret botanical DNA tracking and clandestine jungle heists to control 80% of the world's natural flavoring supply.",
+    "Why commercial aviation engine makers legally prohibit airlines from repairing their own turbine blades, enforcing a multi-billion dollar hourly servicing trap."
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 4,
-  "call_count": 215
+  "subcluster_idx": 4,
+  "fallback_idx": 5,
+  "call_count": 216
 }
