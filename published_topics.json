@@ -1,6 +1,5 @@
 {
   "topics": [
-    "US appeals court allows thousands of lawsuits against Meta, Google, TikTok, and Snapchat to proceed, alleging their platforms are intentionally designed to be addictive for young users, potentially reshaping corporate accountability for tech monopolies.",
     "How George Soros's **Reflexivity Theory** reveals that market beliefs don't just reflect reality, but actively shape it, creating self-fulfilling bubbles and crashes through feedback loops.",
     "The 'Things That Are Worth Every Penny' trend is exploding, showcasing a psychological marketing trick where brands implicitly encourage perceived value and justify premium pricing by leveraging social proof and aspirational consumer justification.",
     "How the minute atomic weight differences between **isotopes** of the same element, requiring technologies akin to nuclear enrichment, create multi-billion dollar resource monopolies for medical diagnostics and advanced semiconductors.",
@@ -89,9 +88,10 @@
     "The Shadowy Commodity Syndicates That Monopolize Global Quartz Sand, Dictating the Purity Standards Required to Manufacture Every Single Silicon Microchip on Earth.",
     "How Swiss recycling refineries recover millions in lost precious metals from discarded medical equipment using high-temperature plasma arc smelting.",
     "Why luxury fashion giants deliberately burn or shred millions of dollars in unsold designer clothing each year to protect brand exclusivity from bargain hunters.",
-    "The invisible anti-piracy private mercenary fleets stationed in the Malacca Straits that legally operate in a maritime gray zone to protect billion-dollar crude tankers."
+    "The invisible anti-piracy private mercenary fleets stationed in the Malacca Straits that legally operate in a maritime gray zone to protect billion-dollar crude tankers.",
+    "How supermarket endcap displays and the infamous 'Gruen transfer' layout psychology force shoppers past high-margin impulse items before reaching basic dairy essentials."
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 12,
-  "call_count": 223
+  "subcluster_idx": 2,
+  "fallback_idx": 13,
+  "call_count": 224
 }
