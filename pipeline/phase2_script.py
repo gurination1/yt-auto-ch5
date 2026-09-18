@@ -109,6 +109,11 @@ Narration Style Requirements (CRITICAL - MAXIMUM VIRALITY & SIMPLICITY):
    - NEVER start Segment 1 by reading or reciting the video title verbatim. The title is already visible to the viewer. Segment 1 must dive straight into the shocking physical action or visual observation.
    - Segment 2 and subsequent segments MUST NEVER repeat the opening hook phrase, title words, or introductory sentence from Segment 1. Each segment must reveal completely fresh, advancing facts.
    - If Segment 1 introduces the entity, refer to it naturally in subsequent segments ("this creature", "the weapon", "this alloy", "this machine"). NEVER repeat the full topic or title string.
+5b. STRICT INTER-SEGMENT PROGRESSION (ZERO REPETITION OR QUALIFYING LOOPS):
+   - Every single segment MUST reveal a completely NEW physical mechanism, consequence, or real-world fact.
+   - ABSOLUTELY FORBIDDEN: NEVER repeat the same claim, qualifying clause, or sentence structure across segments!
+   - NEVER repeat phrases like "While [entity] denies...", "Although companies claim...", "Algorithms track...", "Studies show...", or rephrase the same point in consecutive segments.
+   - If Segment 3 reveals that dynamic algorithms adjust prices based on search cookies, Segment 4 CANNOT mention algorithms, cookies, or prices again—it MUST advance to the physical operational reality (e.g. airline seat inventory, aircraft dispatch, or passenger checkout).
 6. SEAMLESS INFINITE LOOP CLOSING (SEGMENT {segment_count} MANDATE):
    - The final segment must be a 100% grammatically complete sentence ending with a period.
    - ABSOLUTELY FORBIDDEN: NEVER say "link in bio", "link in description", "subscribe", "follow", "check bio", or any social media callout in narration. It destroys loop retention.
@@ -123,14 +128,18 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
   * If a high-tech or scientific term is essential (e.g. 'lithography' or 'amphipod'), IMMEDIATELY clarify it in the same breath in 3 plain words (e.g. 'lithography—the laser machine that prints microchips', 'amphipod—a tiny deep-sea shrimp').
   * Every single sentence MUST be simple, clear, and instantly understandable on first listen.
 
-- MANDATORY AUTHENTIC DOCUMENTARY SOURCING (ZERO AI SLOP / ZERO UNRELATED STOCK):
+- MANDATORY AUTHENTIC DOCUMENTARY SOURCING (ZERO AI SLOP / ZERO UNRELATED STOCK / ZERO STATIC UI):
   * Target REAL, PHYSICAL, FILMABLE entities:
-    - Science: scanning electron microscope, laser optical trap, silicon crystal ingot, cleanroom photolithography.
+    - Science: scanning electron microscope, laser optical trap, silicon crystal ingot, cleanroom photolithography, cryostat dilution refrigerator.
     - Nature: macro wildlife close-up, deep sea ROV submersible, extremophile hydrothermal vent, ice core drill.
     - History: ancient siege catapult, Roman ballista firing, unearthed bronze sword, archaeological excavation.
     - Mystery: ocean floor sonar bathymetry, radar satellite scan, LIDAR jungle ruins, deep cave bore hole.
     - Megaprojects: tunnel boring machine cutterhead, concrete batching plant, hydraulic spillway discharge, giant crawler crane.
-    - Business: container cargo ship port, semiconductor cleanroom fabrication, bulk commodity trading floor, cargo aircraft loading.
+    - Business: container cargo ship port, gantry cranes, bulk commodity trading floor, cargo aircraft loading, Boeing/Airbus flight deck avionics, aircraft engine maintenance hangars, airport baggage ramp operations, hyperscale datacenter server corridors, semiconductor cleanrooms, currency printing presses, automated warehouse robotics.
+  * STRICT BAN ON DIGITAL / UI / SCREENSHOT B-ROLL:
+    - ABSOLUTELY FORBIDDEN IN B-ROLL: Laptop screens, phone screens, web browsers, website URLs, cookie popups, software code, UI dialogs, spreadsheets, desktop screencasts, Google Maps screenshots.
+    - NEVER write queries like: "laptop browser search", "website code running", "browsing frequency", "cookie notice", "phone screen", "computer window".
+    - ALWAYS anchor business/tech topics in the PHYSICAL INDUSTRIAL ASSETS: e.g. "Boeing cockpit avionics", "container ship gantry crane", "server room corridor", "trading floor floor traders", "semiconductor wafer stepper", "airport ramp cargo".
   * STRICT NO-METAPHOR VISUAL RULE (CRITICAL FOR VIRAL QUALITY):
     - NEVER use metaphorical language, idioms, or abstract analogies in 'broll_query' or 'broll_queries'.
     - ABSOLUTELY FORBIDDEN IN B-ROLL QUERIES:
@@ -611,36 +620,132 @@ Return ONLY a raw JSON object for this segment with the updated "narration" and 
                 narr_clean += "."
             seg["narration"] = narr_clean
 
-    # ── Deduplicate Segment Repetition & Title Echoes ────────────────────────
-    for idx_s, seg in enumerate(script.get("segments", [])):
-        narr = seg.get("narration", "")
-        # Check if segment 2+ accidentally repeats segment 1 hook verbatim
-        if idx_s > 0 and len(script.get("segments", [])) > 1:
-            first_narr = script["segments"][0].get("narration", "")
-            clean_first = first_narr.lower().strip(" .!?:,-")
-            clean_seg = narr.lower().strip(" .!?:,-")
-            # If segment literally begins with the first segment's hook clause, strip prefix cleanly
-            if clean_seg.startswith(clean_first[:30]) and len(narr) > len(first_narr):
-                print(f"[Phase2 Script] Segment {idx_s+1} repeated opening hook prefix. Trimming prefix...")
-                narr = narr[len(clean_first[:30]):].lstrip(" ,.-:;").capitalize()
-                if not narr.endswith((".", "!", "?")):
-                    narr += "."
-                seg["narration"] = narr
-            else:
-                # Check sentence-level duplication rather than destructive token stripping
-                sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', narr) if s.strip()]
-                first_words = set(re.findall(r'\b[a-zA-Z]{4,}\b', first_narr.lower()))
-                non_dup_sentences = []
-                for s in sentences:
-                    s_words = re.findall(r'\b[a-zA-Z]{4,}\b', s.lower())
-                    if s_words and first_words:
-                        overlap = [w for w in s_words if w in first_words]
-                        if len(overlap) >= 4 and len(overlap) / len(s_words) >= 0.7:
-                            print(f"[Phase2 Script] Segment {idx_s+1} contained duplicate sentence '{s}'. Removing duplicate sentence.")
-                            continue
-                    non_dup_sentences.append(s)
-                if non_dup_sentences and len(non_dup_sentences) < len(sentences):
-                    seg["narration"] = " ".join(non_dup_sentences)
+    # ── Inter-Segment Semantic & Phrase Deduplication Engine ─────────────────
+    stop_words = {
+        "the", "and", "for", "with", "that", "this", "from", "into", "they", "them", "their",
+        "have", "been", "were", "will", "would", "could", "should", "about", "more", "most",
+        "some", "what", "when", "where", "which", "while", "because", "also", "just", "only",
+        "very", "even", "then", "than", "over", "each", "every", "these", "those", "such",
+        "there", "here", "other", "being", "through", "after", "before", "between", "both"
+    }
+
+    segments = script.get("segments", [])
+    for pass_num in range(2):
+        repetition_found = False
+        for i in range(len(segments)):
+            narr_i = segments[i].get("narration", "").strip()
+            words_i = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', narr_i.lower()) if w not in stop_words]
+            tokens_i = narr_i.lower().split()
+
+            for j in range(i + 1, len(segments)):
+                narr_j = segments[j].get("narration", "").strip()
+                words_j = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', narr_j.lower()) if w not in stop_words]
+                tokens_j = narr_j.lower().split()
+
+                # 1. Opening clause / prefix echo check (e.g. "While airlines deny...")
+                clause_i = " ".join(tokens_i[:4]) if len(tokens_i) >= 4 else ""
+                clause_j = " ".join(tokens_j[:4]) if len(tokens_j) >= 4 else ""
+                common_prefix = (clause_i == clause_j) and len(clause_i) > 8
+
+                # 2. Consecutive 4-gram overlap check
+                has_4gram = False
+                for k in range(len(tokens_i) - 3):
+                    ngram = " ".join(tokens_i[k:k+4])
+                    if ngram in narr_j.lower():
+                        has_4gram = True
+                        break
+
+                # 3. High lexical overlap ratio
+                overlap = set(words_i) & set(words_j)
+                min_len = min(len(set(words_i)), len(set(words_j)))
+                overlap_ratio = len(overlap) / min_len if min_len > 0 else 0.0
+                is_lexical_dup = (len(overlap) >= 3 and overlap_ratio >= 0.35)
+
+                if common_prefix or has_4gram or is_lexical_dup:
+                    print(f"[Phase2 Script] REPETITION DETECTED between Segment {i+1} and Segment {j+1}!")
+                    print(f"  Seg {i+1}: '{narr_i}'")
+                    print(f"  Seg {j+1}: '{narr_j}'")
+                    print(f"  Overlap: {overlap} | Ratio: {overlap_ratio:.2f} | 4-gram: {has_4gram} | Prefix: {common_prefix}")
+                    repetition_found = True
+
+                    # Attempt focused LLM rewrite of Segment j if not fallback
+                    rewritten = False
+                    if not is_fallback_script:
+                        try:
+                            rewrite_prompt = f"""In this educational script on "{topic.get('topic', '')}", Segment {j+1} repeated the concepts/phrasing of Segment {i+1}.
+Segment {i+1} Narration: "{narr_i}"
+Segment {j+1} Narration: "{narr_j}"
+
+Rewrite Segment {j+1} (14-18 words) so it presents a COMPLETELY DIFFERENT, advancing physical mechanism, operational consequence, or historical breakthrough.
+STRICT RULES:
+1. DO NOT use the words or phrases: {list(overlap)}.
+2. DO NOT start with the clause "{clause_j}".
+3. Target a physical, real-world entity for broll_query (NO screens, NO code, NO browsers).
+Return ONLY raw JSON:
+{{
+  "narration": "...",
+  "broll_query": "2-3 words physical entity",
+  "broll_queries": ["query 1", "query 2"]
+}}"""
+                            regen_raw = client.generate_text(rewrite_prompt, use_grounding=False, temperature=0.5)
+                            regen_obj = _robust_json_loads(regen_raw)
+                            if isinstance(regen_obj, dict) and regen_obj.get("narration"):
+                                new_narr = regen_obj["narration"].strip()
+                                new_words = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', new_narr.lower()) if w not in stop_words]
+                                new_overlap = set(words_i) & set(new_words)
+                                if len(new_overlap) < 3:
+                                    segments[j]["narration"] = new_narr
+                                    if regen_obj.get("broll_query"):
+                                        segments[j]["broll_query"] = regen_obj["broll_query"]
+                                    if regen_obj.get("broll_queries"):
+                                        segments[j]["broll_queries"] = regen_obj["broll_queries"]
+                                    rewritten = True
+                                    print(f"[Phase2 Script] Successfully rewrote Segment {j+1}: '{new_narr}'")
+                        except Exception as e_rw:
+                            print(f"[Phase2 Script] LLM segment rewrite note: {e_rw}")
+
+                    if not rewritten:
+                        # Heuristic fallback rewrite: strip duplicate prefix and replace with progressive operational fact
+                        if common_prefix and len(narr_j) > len(clause_j):
+                            clean_j = narr_j[len(clause_j):].lstrip(" ,.-:;").capitalize()
+                            segments[j]["narration"] = f"In actual operations, {clean_j[:1].lower() + clean_j[1:]}"
+                        else:
+                            segments[j]["narration"] = "Behind closed doors, industry telemetry records show physical dispatch systems reacting instantly across global networks."
+        if not repetition_found:
+            break
+
+    # ── Cleanse B-Roll Queries of Abstract / UI / Digital Slop ────────────────
+    ui_broll_map = {
+        "cookie": "server room lights",
+        "browser": "flight operations center",
+        "laptop": "datacenter server racks",
+        "phone": "airplane cockpit flight deck",
+        "screen": "trading floor monitors",
+        "website": "container cargo ship",
+        "code": "semiconductor cleanroom",
+        "dynamic pricing": "airline ticket counter",
+        "algorithm": "server rack cooling",
+        "pricing": "cargo airplane loading"
+    }
+    for seg in script.get("segments", []):
+        bq = seg.get("broll_query", "")
+        bqs = seg.get("broll_queries", [])
+        clean_bq = bq
+        for bad_k, good_rep in ui_broll_map.items():
+            if re.search(r'\b' + re.escape(bad_k) + r'\b', clean_bq.lower()):
+                clean_bq = good_rep
+                break
+        seg["broll_query"] = clean_bq
+
+        clean_bqs = []
+        for q in bqs:
+            q_cand = q
+            for bad_k, good_rep in ui_broll_map.items():
+                if re.search(r'\b' + re.escape(bad_k) + r'\b', q_cand.lower()):
+                    q_cand = good_rep
+                    break
+            clean_bqs.append(q_cand)
+        seg["broll_queries"] = clean_bqs or [clean_bq]
 
     # ── Ensure Beacons Link in Description ────────────────────────────────────
     if "description" in script:
