@@ -310,6 +310,44 @@ class JudgeClient:
                         failed_segments.append(j)
                         issues.append(f"Segment {j+1}: Visual duplicate of Segment {i+1} (pixel diff {diff:.1f})")
 
+        # Step 2b: Forensic Script Narration Audit (Detect Inter-Segment Repetition & Qualifying Rut Loops)
+        stop_words = {
+            "the", "and", "for", "with", "that", "this", "from", "into", "they", "them", "their",
+            "have", "been", "were", "will", "would", "could", "should", "about", "more", "most",
+            "some", "what", "when", "where", "which", "while", "because", "also", "just", "only",
+            "very", "even", "then", "than", "over", "each", "every", "these", "those", "such"
+        }
+        for i in range(num_segs):
+            narr_i = segments[i].get("narration", "").strip()
+            words_i = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', narr_i.lower()) if w not in stop_words]
+            tokens_i = narr_i.lower().split()
+            clause_i = " ".join(tokens_i[:4]) if len(tokens_i) >= 4 else ""
+
+            for j in range(i + 1, num_segs):
+                narr_j = segments[j].get("narration", "").strip()
+                words_j = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', narr_j.lower()) if w not in stop_words]
+                tokens_j = narr_j.lower().split()
+                clause_j = " ".join(tokens_j[:4]) if len(tokens_j) >= 4 else ""
+
+                common_prefix = (clause_i == clause_j) and len(clause_i) > 8
+
+                has_4gram = False
+                for k in range(len(tokens_i) - 3):
+                    ngram = " ".join(tokens_i[k:k+4])
+                    if ngram in narr_j.lower():
+                        has_4gram = True
+                        break
+
+                overlap = set(words_i) & set(words_j)
+                min_w = min(len(set(words_i)), len(set(words_j))) if (words_i and words_j) else 0
+                overlap_ratio = len(overlap) / min_w if min_w > 0 else 0.0
+
+                if common_prefix or has_4gram or (len(overlap) >= 3 and overlap_ratio >= 0.35):
+                    print(f"[Judge AI] SCRIPT REPETITION DETECTED between Seg {i+1} and Seg {j+1}! Overlap: {overlap}, 4-gram: {has_4gram}, prefix: {common_prefix}")
+                    if j not in failed_segments:
+                        failed_segments.append(j)
+                    issues.append(f"Segment {j+1}: Script narration repeats phrasing/claims from Segment {i+1} ('{narr_j[:40]}...')")
+
         # Step 3: Per-segment forensic audit with Gemini Vision
         title = metadata.get("title", "")
 
@@ -317,7 +355,7 @@ class JudgeClient:
             idx, seg = seg_tuple
             out_frame = frames_data[idx]
             if not out_frame or not os.path.exists(out_frame) or idx in failed_segments:
-                return idx, 20, False, False, "Duplicate or unextractable frame", ""
+                return idx, 20, False, False, "Duplicate, repetitive, or unextractable frame", ""
 
             narration = seg.get("narration", "")
             broll_q = seg.get("broll_query") or seg.get("query") or seg.get("narration", "")
@@ -342,6 +380,7 @@ CRITICAL REJECTION RULES (Mark mismatch_detected=true or slop_detected=true if v
 7. SLIDES & TEXT: Strictly reject PowerPoint slides, text documents, or software tutorials.
 8. TALKING HEADS: Strictly reject vloggers, facecams, or podcast hosts.
 9. BAKED-IN SUBTITLES & WATERMARKS: Strictly reject any source footage that has pre-existing English subtitles, hardcoded caption banners, news channel ticker bars, or creator watermark text burned into the video frame.
+10. SCREENSHOTS & SOFTWARE UI: Strictly reject web browser screenshots, cookie consent popups, website dialog banners, computer desktop windows, Google Maps screengrabs, phone UI screenshots, or software code windows. Visuals must be real, physical, cinematic footage or authentic physical photographs of real-world objects, places, or machinery!
 
 Return JSON ONLY:
 {{
@@ -568,6 +607,10 @@ Please watch the video and evaluate it against these rubrics:
    - For architecture/engineering/luxury: STRICTLY REJECT generic corporate office elevator lobbies, hallways, exit corridors, or building evacuation plans.
    - For materials science/construction/geology: STRICTLY REJECT blurry rubber or latex medical gloves, dishwashing gloves, or sterile exam rooms when discussing concrete, stone, or minerals.
    - If ANY segment exhibits these irrelevant visual substitutions, score MUST be <= 65 and status="REJECTED".
+10. **STRICT BAN ON SCREENSHOTS & SOFTWARE UI (CRITICAL)**:
+    - YouTube Shorts must display cinematic real-world footage or physical objects.
+    - STRICTLY REJECT ANY video containing computer desktop screencasts, web browser tabs, cookie consent dialog banners, Google Maps routes, or phone UI screenshots.
+    - If ANY segment displays a software window, browser dialog, or UI screenshot, score MUST be <= 65 and status="REJECTED".
 
 Output strictly valid JSON with this exact schema:
 {{

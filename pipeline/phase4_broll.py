@@ -11,7 +11,11 @@ BANNED_IMAGE_PATTERNS = [
     "locator_map", "location_map", "blank", "phylogen", "cladogram", "taxonomy",
     "classification", "tree", "pterygota", "neoptera", "paleoptera", "hierarchy",
     "structure", "systematics", "evolutionary", "schema", "graphical", "poster",
-    "infograph", "slide", "presentation", "figure_", "fig_", "plate_", "model_"
+    "infograph", "slide", "presentation", "figure_", "fig_", "plate_", "model_",
+    "screenshot", "screen_shot", "screencap", "screengrab", "cookie", "notice",
+    "popup", "dialog", "browser", "webpage", "website", "software", "interface",
+    "user_interface", "gui_", "window_", "desktop_capture", "app_store", "software_window",
+    "consent", "gdpr", "settings_cookie", "cookie_notice", "settings_dialog"
 ]
 
 def _validate_and_normalize_image(img_path: str) -> bool:
@@ -55,6 +59,20 @@ def _validate_and_normalize_image(img_path: str) -> bool:
                     if paper_ratio > 0.60:
                         print(f"[B-roll] Image rejected as scientific diagram/white plate (paper_ratio={paper_ratio:.1%}).")
                         return False
+
+            # 3. UI, browser dialog, cookie consent popup, and software window rejection
+            try:
+                import pytesseract
+                h_im, w_im = im.size[1], im.size[0]
+                dialog_crop = im.crop((int(w_im*0.05), int(h_im*0.15), int(w_im*0.95), int(h_im*0.85)))
+                dialog_txt = pytesseract.image_to_string(dialog_crop).lower()
+                ui_tokens = {"cookie", "cookies", "settings", "privacy", "consent", "gdpr", "accept", "decline", "terms", "browser", "dialog", "wikipedia.org", "en.m.wikipedia", "confirm", "preferences", "opt-out", "sign in", "login", "password", "username", "account", "click here", "webpage", "website", "http", "https", "url", "www."}
+                found_ui = [tok for tok in ui_tokens if re.search(r'\b' + re.escape(tok) + r'\b', dialog_txt)]
+                if len(found_ui) >= 2 or any(k in dialog_txt for k in ["cookie notice", "settings cookie", "en.m.wikipedia", "wikipedia.org wants to", "accept all cookies"]):
+                    print(f"[B-roll] Image rejected as software/browser UI/cookie dialog (found tokens: {found_ui}).")
+                    return False
+            except Exception:
+                pass
 
             im.save(img_path, "JPEG", quality=95)
         return True
@@ -122,7 +140,10 @@ def _wikipedia_hd_image(query: str, img_path: str, used_urls: set[str] | None = 
             "library_building", "university_hall", "sepia", "carte_de_visite",
             "monk", "saint", "religious_icon", "cleric", "fresco_of", "icon_of",
             "elevator", "lift", "stairwell", "staircase", "evacuation_plan", "fire_exit",
-            "emergency_exit", "rubber_glove", "medical_glove"
+            "emergency_exit", "rubber_glove", "medical_glove",
+            "screenshot", "dialog", "cookie", "popup", "browser", "webpage", "website",
+            "software", "interface", "settings", "terms_of_service", "gdpr",
+            "user_interface", "app_store", "screengrab", "screencap"
         ]
         q_top_lower = f"{query} {topic}".lower()
 
@@ -2461,7 +2482,10 @@ def _has_baked_text_ocr(frame_path: str) -> bool:
             "welcome back", "my channel", "like and share", "bell icon", "patreon",
             "episode", "chapter", "presentation", "lecture", "bullet points", "definition",
             "summary", "overview", "agenda", "slide", "lesson", "diagram", "figure",
-            "problem", "solution", "example", "formula"
+            "problem", "solution", "example", "formula",
+            "cookie notice", "settings cookie", "en.m.wikipedia", "wikipedia.org", "accept all",
+            "cookie policy", "terms of service", "privacy policy", "consent", "confirm settings",
+            "browser cookies", "manage cookies"
         }
 
         def run_ocr(crop_im, psm=6) -> str:
