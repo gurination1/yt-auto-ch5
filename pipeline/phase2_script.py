@@ -300,7 +300,10 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
         try:
             script_text = client.generate_text(prompt, use_grounding=False, temperature=0.8, model=GEMINI_FLASH)
             script = _robust_json_loads(script_text)
-            break
+            if isinstance(script, list):
+                script = {"segments": script}
+            if isinstance(script, dict) and "segments" in script:
+                break
         except Exception as e:
             print(f"Error parsing script JSON on attempt {attempt+1}: {e}. Raw script text: {script_text}")
 
@@ -544,6 +547,30 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
         # Default publish_at for shorts: let's set it to None so we can upload as private first
         script["publish_at"] = None
 
+    # Ensure script is dict
+    if not isinstance(script, dict):
+        script = {"segments": []}
+
+    # Flatten and validate segments to guarantee a clean list of dicts
+    raw_segments = script.get("segments", [])
+    clean_segments = []
+    if isinstance(raw_segments, list):
+        for item in raw_segments:
+            if isinstance(item, dict):
+                clean_segments.append(item)
+            elif isinstance(item, list):
+                for sub in item:
+                    if isinstance(sub, dict):
+                        clean_segments.append(sub)
+    elif isinstance(raw_segments, dict):
+        clean_segments.append(raw_segments)
+
+    # Assign standard segment IDs if missing
+    for idx, seg in enumerate(clean_segments, 1):
+        if "id" not in seg or not isinstance(seg["id"], (int, str)):
+            seg["id"] = idx
+    script["segments"] = clean_segments
+
     # --- FACT VERIFICATION ---
     if not is_fallback_script:
         print("Running fact verification on the generated script...")
@@ -557,30 +584,48 @@ If a claim is unverifiable, speculative, or false, mark `"verified": false`.
         try:
             verified_text = client.generate_text(verification_prompt, use_grounding=False, temperature=0.2)
             verified_script = _robust_json_loads(verified_text)
-            if "segments" in verified_script and isinstance(verified_script["segments"], list):
-                verified_map = {s.get("id"): s for s in verified_script["segments"] if isinstance(s, dict)}
+            if isinstance(verified_script, list):
+                verified_script = {"segments": verified_script}
+            if isinstance(verified_script, dict) and "segments" in verified_script and isinstance(verified_script["segments"], list):
+                verified_map = {}
+                for s in verified_script["segments"]:
+                    if isinstance(s, dict):
+                        verified_map[s.get("id")] = s
+                    elif isinstance(s, list):
+                        for sub_s in s:
+                            if isinstance(sub_s, dict):
+                                verified_map[sub_s.get("id")] = sub_s
                 for seg in script["segments"]:
+                    if not isinstance(seg, dict):
+                        continue
                     seg_id = seg.get("id")
                     if seg_id in verified_map:
                         v_seg = verified_map[seg_id]
                         seg["verified"] = v_seg.get("verified", True)
                         if "narration" in v_seg and v_seg["narration"]:
                             seg["narration"] = v_seg["narration"]
+                    else:
+                        seg["verified"] = True
             else:
                 for seg in script["segments"]:
-                    seg["verified"] = True
+                    if isinstance(seg, dict):
+                        seg["verified"] = True
         except Exception as e:
             print(f"Fact check failed or quota-limited ({e}), keeping original script for Judge AI review.")
             for seg in script["segments"]:
-                seg["verified"] = True
+                if isinstance(seg, dict):
+                    seg["verified"] = True
     else:
         for seg in script["segments"]:
-            seg["verified"] = True
+            if isinstance(seg, dict):
+                seg["verified"] = True
 
     # Regenerate unverified segments
     for seg in script["segments"]:
+        if not isinstance(seg, dict):
+            continue
         if not seg.get("verified", True):
-            print(f"Segment {seg['id']} failed fact check. Regenerating narration...")
+            print(f"Segment {seg.get('id', '?')} failed fact check. Regenerating narration...")
             regen_prompt = f"""The following script segment narration failed fact-checking or was unverified:
 Topic: {topic['topic']}
 Segment details: {json.dumps(seg, indent=2)}
@@ -591,10 +636,11 @@ Return ONLY a raw JSON object for this segment with the updated "narration" and 
             try:
                 regen_text = client.generate_text(regen_prompt, use_grounding=False, temperature=0.3)
                 regen_seg = _robust_json_loads(regen_text)
-                seg["narration"] = regen_seg.get("narration", seg["narration"])
+                if isinstance(regen_seg, dict):
+                    seg["narration"] = regen_seg.get("narration", seg["narration"])
                 seg["verified"] = True
             except Exception as e:
-                print(f"Failed to regenerate segment {seg['id']} ({e}). Keeping original for Judge AI review.")
+                print(f"Failed to regenerate segment {seg.get('id', '?')} ({e}). Keeping original for Judge AI review.")
                 seg["verified"] = True
 
     

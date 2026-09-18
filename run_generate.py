@@ -193,11 +193,17 @@ def main():
                 used_urls.update(snapshot_used)
             return idx, bpath
 
-        with ThreadPoolExecutor(max_workers=min(3, len(script["segments"]))) as executor:
-            futures = [executor.submit(_fetch_segment_broll, i, seg) for i, seg in enumerate(script["segments"])]
-            for fut in futures:
-                idx, bpath = fut.result()
+        if args.format == "short":
+            print(f"[Phase 4] Sequential B-roll fetching for Shorts (strictly prevents duplicate clips across segments)")
+            for i, seg in enumerate(script["segments"]):
+                idx, bpath = _fetch_segment_broll(i, seg)
                 broll_files[idx] = bpath
+        else:
+            with ThreadPoolExecutor(max_workers=min(3, len(script["segments"]))) as executor:
+                futures = [executor.submit(_fetch_segment_broll, i, seg) for i, seg in enumerate(script["segments"])]
+                for fut in futures:
+                    idx, bpath = fut.result()
+                    broll_files[idx] = bpath
             
         print("[Phase 5] Generating captions with word-level timing...")
         # Pass args.format to customize resolution/style
