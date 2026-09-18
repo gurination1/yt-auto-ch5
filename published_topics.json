@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How **Groupthink** can doom even the most experienced corporate boards, where the pressure for consensus stifles critical dissent and leads to irrational, unified decisions that drive once-mighty empires into catastrophic bankruptcy.",
     "AI's democratization is empowering small businesses to outcompete large corporations, shifting economic power by providing access to advanced marketing, automation, and operational tools once exclusive to tech giants.",
     "US appeals court allows thousands of lawsuits against Meta, Google, TikTok, and Snapchat to proceed, alleging their platforms are intentionally designed to be addictive for young users, potentially reshaping corporate accountability for tech monopolies.",
     "How George Soros's **Reflexivity Theory** reveals that market beliefs don't just reflect reality, but actively shape it, creating self-fulfilling bubbles and crashes through feedback loops.",
@@ -89,9 +88,10 @@
     "How the Malacca Straits choke point forces mega-container ships to carry extra tons of fuel just to physically alter their buoyancy and squeeze through shallow underwater mud thresholds.",
     "How airline dynamic seat tiering algorithms track your device battery level and search history to subtly hike ticket prices in real-time.",
     "The Shadowy Commodity Syndicates That Monopolize Global Quartz Sand, Dictating the Purity Standards Required to Manufacture Every Single Silicon Microchip on Earth.",
-    "How Swiss recycling refineries recover millions in lost precious metals from discarded medical equipment using high-temperature plasma arc smelting."
+    "How Swiss recycling refineries recover millions in lost precious metals from discarded medical equipment using high-temperature plasma arc smelting.",
+    "Why luxury fashion giants deliberately burn or shred millions of dollars in unsold designer clothing each year to protect brand exclusivity from bargain hunters."
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 10,
-  "call_count": 221
+  "subcluster_idx": 0,
+  "fallback_idx": 11,
+  "call_count": 222
 }
