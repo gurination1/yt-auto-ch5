@@ -27,7 +27,7 @@ jobs:
     env:
       PYTHONUNBUFFERED: "1"
       CHANNEL_NICHE: "business"
-      BROLL_SEGMENT_BUDGET_SECONDS: "240"
+      BROLL_SEGMENT_BUDGET_SECONDS: "180"
       JUDGE_MAX_ATTEMPTS: "3"
 
     steps:
@@ -89,7 +89,7 @@ jobs:
           curl -x socks5h://127.0.0.1:40000 -s https://cloudflare.com/cdn-cgi/trace | grep "warp=" || echo "WARP starting..."
 
       - name: Generate Short
-        timeout-minutes: 70
+        timeout-minutes: 75
         env:
           WARP_SOCKS_PROXY:  "socks5h://127.0.0.1:40000"
           GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}

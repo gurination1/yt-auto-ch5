@@ -196,6 +196,9 @@ def main():
         if args.format == "short":
             print(f"[Phase 4] Sequential B-roll fetching for Shorts (strictly prevents duplicate clips across segments)")
             for i, seg in enumerate(script["segments"]):
+                if time.time() - pipeline_start_time > 35 * 60:
+                    print(f"[Phase 4] Total pipeline runtime reached 35m. Enabling fast fallback to guarantee video assembly finishes within budget.")
+                    os.environ["FAST_BROLL_FALLBACK"] = "1"
                 idx, bpath = _fetch_segment_broll(i, seg)
                 broll_files[idx] = bpath
         else:
@@ -389,6 +392,62 @@ def main():
                 )
                 broll_files[idx] = old_b
             final_video = phase7.assemble_video(broll_files, audio_files, captions_ass, music_path, script, args.format)
+
+        # ── Attach Rotating Outro Ad Bumper ──
+        bumpers_dir = "assets/bumpers"
+        bumper_files = []
+        if os.path.exists(bumpers_dir):
+            bumper_files = sorted([
+                os.path.join(bumpers_dir, f) for f in os.listdir(bumpers_dir)
+                if f.endswith(".mp4") and not f.endswith(".temp.mp4")
+            ])
+        
+        bumper_path = None
+        if bumper_files:
+            import secrets
+            bumper_path = secrets.choice(bumper_files)
+            print(f"[Phase 7b] Selected outro ad with zero pattern from {len(bumper_files)} candidates: {os.path.basename(bumper_path)}")
+        elif os.path.exists("assets/ad_bumper_ch1.mp4"):
+            bumper_path = "assets/ad_bumper_ch1.mp4"
+            print(f"[Phase 7b] Fallback outro ad selected: {os.path.basename(bumper_path)}")
+
+        if bumper_path and os.path.exists(bumper_path) and args.format == "short":
+            print(f"[Phase 7b] Appending Outro Ad Bumper ({os.path.basename(bumper_path)})...")
+            try:
+                concat_list = "output/concat_bumper_list.txt"
+                with open(concat_list, "w") as f:
+                    f.write(f"file '{os.path.abspath(final_video)}'\n")
+                    f.write(f"file '{os.path.abspath(bumper_path)}'\n")
+                final_with_ad = "output/final_short_with_ad.mp4"
+                cmd_cat = [
+                    "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                    "-i", concat_list, "-c", "copy", final_with_ad
+                ]
+                res = subprocess.run(cmd_cat, capture_output=True)
+                if res.returncode == 0 and os.path.exists(final_with_ad) and os.path.getsize(final_with_ad) > 1000:
+                    import shutil
+                    shutil.move(final_with_ad, final_video)
+                    print(f"[Phase 7b] Outro ad appended successfully via stream copy to {final_video}.")
+                else:
+                    print(f"[Phase 7b] Direct copy concat fallback; re-encoding transition...")
+                    cmd_reencode = [
+                        "ffmpeg", "-y",
+                        "-i", final_video,
+                        "-i", bumper_path,
+                        "-filter_complex", "[0:v:0][0:a:0][1:v:0][1:a:0]concat=n=2:v=1:a=1[v][a]",
+                        "-map", "[v]", "-map", "[a]",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
+                        final_with_ad
+                    ]
+                    res2 = subprocess.run(cmd_reencode, capture_output=True)
+                    if res2.returncode == 0 and os.path.exists(final_with_ad):
+                        import shutil
+                        shutil.move(final_with_ad, final_video)
+                        print(f"[Phase 7b] Outro ad appended successfully via re-encode to {final_video}.")
+                    else:
+                        print(f"[Phase 7b] Warning: Re-encode concat failed: {res2.stderr.decode('utf-8', errors='ignore')}")
+            except Exception as b_err:
+                print(f"[Phase 7b] Warning: Bumper append encountered error: {b_err}")
 
         print("[Phase 8] Generating thumbnail...")
         thumb_text = script.get("thumbnail_text") or script.get("title") or "SECRET REVEALED"
