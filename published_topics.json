@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How the minute atomic weight differences between **isotopes** of the same element, requiring technologies akin to nuclear enrichment, create multi-billion dollar resource monopolies for medical diagnostics and advanced semiconductors.",
     "The 'Quiet' AI Job Transformation: How AI is reshaping job quality, not just quantity, creating a 'disposable worker' economy as roles shift from execution to supervision and demand new skill sets.",
     "How trillion-dollar tech monopolies exploit **phase transitions** in network effects to achieve irreversible market dominance, like water suddenly turning to ice.",
     "The Unseen Threat: How Fake News Is Manipulating Trillions in Global Stock Markets, causing rapid gains and losses.",
@@ -89,9 +88,10 @@
     "The invisible anti-piracy private mercenary fleets stationed in the Malacca Straits that legally operate in a maritime gray zone to protect billion-dollar crude tankers.",
     "How supermarket endcap displays and the infamous 'Gruen transfer' layout psychology force shoppers past high-margin impulse items before reaching basic dairy essentials.",
     "How artisanal cobalt miners in the Democratic Republic of Congo manually tunnel through unstable earth by hand, feeding the secretive global battery supply chain.",
-    "How certified e-waste refineries use micro-targeted ionic leaching to strip pure 24-karat gold from discarded smartphone circuit boards with zero toxic acid waste."
+    "How certified e-waste refineries use micro-targeted ionic leaching to strip pure 24-karat gold from discarded smartphone circuit boards with zero toxic acid waste.",
+    "Why authorized Swiss watch dealers maintain multi-year phantom waitlists for steel sports watches while empty display cases line high-end boutiques."
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 15,
-  "call_count": 226
+  "subcluster_idx": 0,
+  "fallback_idx": 16,
+  "call_count": 227
 }
