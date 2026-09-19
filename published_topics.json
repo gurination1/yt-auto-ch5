@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The 'Things That Are Worth Every Penny' trend is exploding, showcasing a psychological marketing trick where brands implicitly encourage perceived value and justify premium pricing by leveraging social proof and aspirational consumer justification.",
     "How the minute atomic weight differences between **isotopes** of the same element, requiring technologies akin to nuclear enrichment, create multi-billion dollar resource monopolies for medical diagnostics and advanced semiconductors.",
     "The 'Quiet' AI Job Transformation: How AI is reshaping job quality, not just quantity, creating a 'disposable worker' economy as roles shift from execution to supervision and demand new skill sets.",
     "How trillion-dollar tech monopolies exploit **phase transitions** in network effects to achieve irreversible market dominance, like water suddenly turning to ice.",
@@ -89,9 +88,10 @@
     "Why luxury fashion giants deliberately burn or shred millions of dollars in unsold designer clothing each year to protect brand exclusivity from bargain hunters.",
     "The invisible anti-piracy private mercenary fleets stationed in the Malacca Straits that legally operate in a maritime gray zone to protect billion-dollar crude tankers.",
     "How supermarket endcap displays and the infamous 'Gruen transfer' layout psychology force shoppers past high-margin impulse items before reaching basic dairy essentials.",
-    "How artisanal cobalt miners in the Democratic Republic of Congo manually tunnel through unstable earth by hand, feeding the secretive global battery supply chain."
+    "How artisanal cobalt miners in the Democratic Republic of Congo manually tunnel through unstable earth by hand, feeding the secretive global battery supply chain.",
+    "How certified e-waste refineries use micro-targeted ionic leaching to strip pure 24-karat gold from discarded smartphone circuit boards with zero toxic acid waste."
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 14,
-  "call_count": 225
+  "subcluster_idx": 4,
+  "fallback_idx": 15,
+  "call_count": 226
 }
