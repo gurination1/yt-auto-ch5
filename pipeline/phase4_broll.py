@@ -2751,6 +2751,8 @@ def fetch_broll(query: str, format_type: str, segment_index: int, duration: floa
     w, h        = (1080, 1920) if format_type == "short" else (1920, 1080)
     budget_default = "240" if format_type == "short" else "300"
     budget_seconds = int(os.environ.get("BROLL_SEGMENT_BUDGET_SECONDS", budget_default))
+    if os.environ.get("FAST_BROLL_FALLBACK") == "1":
+        budget_seconds = min(budget_seconds, 45)
     deadline = time.monotonic() + budget_seconds
 
     # Synchronize used_urls with disk-backed cross-segment registry
