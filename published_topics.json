@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The 'Quiet' AI Job Transformation: How AI is reshaping job quality, not just quantity, creating a 'disposable worker' economy as roles shift from execution to supervision and demand new skill sets.",
     "How trillion-dollar tech monopolies exploit **phase transitions** in network effects to achieve irreversible market dominance, like water suddenly turning to ice.",
     "The Unseen Threat: How Fake News Is Manipulating Trillions in Global Stock Markets, causing rapid gains and losses.",
     "The 'New Rich' vs. 'Old Rich' Investment Divide: Modern Billionaires' Shift to Unconventional Assets as a Key Wealth Strategy.",
@@ -89,9 +88,10 @@
     "How supermarket endcap displays and the infamous 'Gruen transfer' layout psychology force shoppers past high-margin impulse items before reaching basic dairy essentials.",
     "How artisanal cobalt miners in the Democratic Republic of Congo manually tunnel through unstable earth by hand, feeding the secretive global battery supply chain.",
     "How certified e-waste refineries use micro-targeted ionic leaching to strip pure 24-karat gold from discarded smartphone circuit boards with zero toxic acid waste.",
-    "Why authorized Swiss watch dealers maintain multi-year phantom waitlists for steel sports watches while empty display cases line high-end boutiques."
+    "Why authorized Swiss watch dealers maintain multi-year phantom waitlists for steel sports watches while empty display cases line high-end boutiques.",
+    "Why TSMC semiconductor foundries in Taiwan require hyper-purified nitrogen gas so sterile that a single stray atom of dust ruins an entire batch of multi-billion-dollar silicon wafers."
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 16,
-  "call_count": 227
+  "subcluster_idx": 1,
+  "fallback_idx": 17,
+  "call_count": 228
 }
