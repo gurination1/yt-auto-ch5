@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The 'New Rich' vs. 'Old Rich' Investment Divide: Modern Billionaires' Shift to Unconventional Assets as a Key Wealth Strategy.",
     "How adding a strategically worse, 'decoy' option can dramatically boost sales of a specific product, exploiting the **Asymmetric Dominance Effect** to manipulate consumer choice.",
     "The convergence of potential transit fees in the Strait of Hormuz, record-low water levels in European rivers like the Rhine, and a new U.S. ban on imported robots is creating an unprecedented 'triple threat' stress test for global supply chains, amplifying logistical costs and disrupting established trade routes simultaneously.",
     "SpaceX's $60 Billion Acquisition of AI Coding Platform Cursor Marks Largest Startup Exit in History",
@@ -89,9 +88,10 @@
     "Why authorized Swiss watch dealers maintain multi-year phantom waitlists for steel sports watches while empty display cases line high-end boutiques.",
     "Why TSMC semiconductor foundries in Taiwan require hyper-purified nitrogen gas so sterile that a single stray atom of dust ruins an entire batch of multi-billion-dollar silicon wafers.",
     "How supermarket vegetable misting systems use forced evaporative cooling not for freshness, but to artificially add water weight that makes shoppers pay fresh-produce prices for pure tap water.",
-    "How underground black-market brokers launder millions of carats of conflict diamonds and illicit industrial minerals through shadow ports in Dubai and Antwerp."
+    "How underground black-market brokers launder millions of carats of conflict diamonds and illicit industrial minerals through shadow ports in Dubai and Antwerp.",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 19,
-  "call_count": 230
+  "subcluster_idx": 4,
+  "fallback_idx": 20,
+  "call_count": 231
 }
