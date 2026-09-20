@@ -98,7 +98,7 @@ def get_gha_runs(repo: str, limit: int = 6):
 
 def dispatch_workflow(repo: str, workflow: str = "generate_short.yml", ref: str = None):
     """Trigger a workflow run on GHA."""
-    cmd = ["gh", "workflow", "run", workflow, "--repo", repo]
+    cmd = ["gh", "workflow", "run", workflow, "--repo", repo, "-f", "publish=true"]
     if ref:
         cmd.extend(["--ref", ref])
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=25)
