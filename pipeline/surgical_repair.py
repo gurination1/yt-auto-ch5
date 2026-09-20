@@ -271,7 +271,12 @@ def surgical_repair_and_reverify(
     used_urls = set()
     latest_repaired_video = video_path
 
+    repair_start_time = time.time()
+
     for repair_pass in range(1, max_repair_passes + 1):
+        if time.time() - repair_start_time > 10 * 60:
+            print(f"\n[Surgical Action] Total repair time exceeded 10m. Finalizing assembled timeline with existing repairs.")
+            break
         print(f"\n--- [Surgical Pass {repair_pass}/{max_repair_passes}] ---")
 
         # 1. Identify failed segments
@@ -310,6 +315,11 @@ def surgical_repair_and_reverify(
             dur = get_wav_duration(tts_path) if os.path.exists(tts_path) else 6.0
             out_path = f"output/broll_{seg_idx}.mp4"
 
+            if time.time() - repair_start_time > 8 * 60:
+                print(f"  [Surgical Action] Runtime budget reached 8m. Fast-fallback to authentic donor frame for Segment {seg_idx}.")
+                _apply_donor_frame_fallback(seg_idx, script, out_path, w, h, dur, channel, topic=topic)
+                continue
+
             # Remove previous bad files
             for f_old in [
                 out_path, f"output/broll_{seg_idx}.jpg", f"output/broll_{seg_idx}_norm.mp4",
@@ -328,6 +338,11 @@ def surgical_repair_and_reverify(
 
             # Search priority 1: YouTube authentic footage candidates
             for sq in surgical_queries:
+                if time.time() - repair_start_time > 5 * 60:
+                    print(f"  [Surgical Action] Approaching 5m search budget. Fast-fallback to donor frame for Segment {seg_idx}.")
+                    _apply_donor_frame_fallback(seg_idx, script, out_path, w, h, dur, channel, topic=topic)
+                    repaired = True
+                    break
                 try:
                     cands = _youtube_candidates(sq, n=3)
                     for cand in cands:

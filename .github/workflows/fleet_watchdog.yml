@@ -1,0 +1,25 @@
+name: Fleet Cloud Autonomous Watchdog
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Staggered fleet watchdog check
+    - cron: '04,34 * * * *'
+
+jobs:
+  audit-and-dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Audit Fleet and Auto-Dispatch Missed Slots
+        env:
+          GH_TOKEN: ${{ secrets.GH_FLEET_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          python3 scripts/audit_fleet.py --dispatch-missed
