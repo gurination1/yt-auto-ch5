@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How adding a strategically worse, 'decoy' option can dramatically boost sales of a specific product, exploiting the **Asymmetric Dominance Effect** to manipulate consumer choice.",
     "The convergence of potential transit fees in the Strait of Hormuz, record-low water levels in European rivers like the Rhine, and a new U.S. ban on imported robots is creating an unprecedented 'triple threat' stress test for global supply chains, amplifying logistical costs and disrupting established trade routes simultaneously.",
     "SpaceX's $60 Billion Acquisition of AI Coding Platform Cursor Marks Largest Startup Exit in History",
     "Apple's ecosystem faces escalating antitrust scrutiny from the Justice Department, challenging its tightly controlled platform and potentially forcing open its lucrative \"walled garden\" strategy.",
@@ -89,9 +88,10 @@
     "Why TSMC semiconductor foundries in Taiwan require hyper-purified nitrogen gas so sterile that a single stray atom of dust ruins an entire batch of multi-billion-dollar silicon wafers.",
     "How supermarket vegetable misting systems use forced evaporative cooling not for freshness, but to artificially add water weight that makes shoppers pay fresh-produce prices for pure tap water.",
     "How underground black-market brokers launder millions of carats of conflict diamonds and illicit industrial minerals through shadow ports in Dubai and Antwerp.",
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "How Swiss watch cartels strictly control component allocations to independent master watchmakers, effectively choking off the secondary market to manufacture perpetual artificial scarcity."
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 20,
-  "call_count": 231
+  "subcluster_idx": 0,
+  "fallback_idx": 21,
+  "call_count": 232
 }
