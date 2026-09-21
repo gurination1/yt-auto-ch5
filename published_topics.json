@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Apple's ecosystem faces escalating antitrust scrutiny from the Justice Department, challenging its tightly controlled platform and potentially forcing open its lucrative \"walled garden\" strategy.",
     "How **Tunnel Boring Machines (TBMs)** achieve pinpoint navigation underground using **Inertial Guidance Systems** and **laser alignment**, without relying on GPS.",
     "Gotthard Base Tunnel Subterranean Alps Engineering",
     "SpaceX's unprecedented launch cadence in 2026, exceeding 100 orbital missions by August 19, alongside rapid advancements in Starship V3, Raptor 3 engines, and the Terafab facility, is accelerating the vision for orbital data centers and Mars colonization.",
@@ -89,9 +88,10 @@
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How Swiss watch cartels strictly control component allocations to independent master watchmakers, effectively choking off the secondary market to manufacture perpetual artificial scarcity.",
     "The Global Helium Crisis: Why medical MRI machines and semiconductor cleanrooms are scrambling over an irreplaceable non-renewable underground gas",
-    "Casino Floor Psychological Engineering: Why casinos eliminate windows, remove all clocks, and curve carpet pathways to distort time and risk perception"
+    "Casino Floor Psychological Engineering: Why casinos eliminate windows, remove all clocks, and curve carpet pathways to distort time and risk perception",
+    "How armed maritime mafia cartels illegally dredge riverbeds and coastlines for construction-grade sand, causing entire islands to vanish overnight."
   ],
-  "subcluster_idx": 2,
-  "fallback_idx": 24,
-  "call_count": 234
+  "subcluster_idx": 3,
+  "fallback_idx": 0,
+  "call_count": 235
 }
