@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The convergence of potential transit fees in the Strait of Hormuz, record-low water levels in European rivers like the Rhine, and a new U.S. ban on imported robots is creating an unprecedented 'triple threat' stress test for global supply chains, amplifying logistical costs and disrupting established trade routes simultaneously.",
     "SpaceX's $60 Billion Acquisition of AI Coding Platform Cursor Marks Largest Startup Exit in History",
     "Apple's ecosystem faces escalating antitrust scrutiny from the Justice Department, challenging its tightly controlled platform and potentially forcing open its lucrative \"walled garden\" strategy.",
     "How **Tunnel Boring Machines (TBMs)** achieve pinpoint navigation underground using **Inertial Guidance Systems** and **laser alignment**, without relying on GPS.",
@@ -89,9 +88,10 @@
     "How supermarket vegetable misting systems use forced evaporative cooling not for freshness, but to artificially add water weight that makes shoppers pay fresh-produce prices for pure tap water.",
     "How underground black-market brokers launder millions of carats of conflict diamonds and illicit industrial minerals through shadow ports in Dubai and Antwerp.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "How Swiss watch cartels strictly control component allocations to independent master watchmakers, effectively choking off the secondary market to manufacture perpetual artificial scarcity."
+    "How Swiss watch cartels strictly control component allocations to independent master watchmakers, effectively choking off the secondary market to manufacture perpetual artificial scarcity.",
+    "The Global Helium Crisis: Why medical MRI machines and semiconductor cleanrooms are scrambling over an irreplaceable non-renewable underground gas"
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 21,
-  "call_count": 232
+  "subcluster_idx": 1,
+  "fallback_idx": 23,
+  "call_count": 233
 }
