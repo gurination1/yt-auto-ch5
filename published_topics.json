@@ -1,6 +1,5 @@
 {
   "topics": [
-    "SpaceX's unprecedented launch cadence in 2026, exceeding 100 orbital missions by August 19, alongside rapid advancements in Starship V3, Raptor 3 engines, and the Terafab facility, is accelerating the vision for orbital data centers and Mars colonization.",
     "How the immense weight of water in some hydroelectric megadams can, counterintuitively, trigger earthquakes through a phenomenon called **Reservoir-Induced Seismicity (RIS)**, reactivating ancient fault lines.",
     "A recent European Commission study indicates hyperloop technology is maturing, moving from prototype to demonstration, with a pilot project planned to establish common safety requirements and overcome regulatory fragmentation.",
     "Imperial College London and Arup's new skyscraper design utilizes a building's own mass to significantly reduce movement during high winds and earthquakes, enhancing safety and sustainability in tall structures.",
@@ -89,9 +88,10 @@
     "Casino Floor Psychological Engineering: Why casinos eliminate windows, remove all clocks, and curve carpet pathways to distort time and risk perception",
     "How armed maritime mafia cartels illegally dredge riverbeds and coastlines for construction-grade sand, causing entire islands to vanish overnight.",
     "How GE Aerospace transformed its entire business model from hardware manufacturing into an elite software and hourly service cartel dictating global commercial flight margins.",
-    "The Herm\u00e8s Birkin Purchase Ledger: How Secret Client Scoring Algorithms Determine Who Is 'Worthy' of Buying a Six-Figure Handbag"
+    "The Herm\u00e8s Birkin Purchase Ledger: How Secret Client Scoring Algorithms Determine Who Is 'Worthy' of Buying a Six-Figure Handbag",
+    "How Suez Canal transit authorities calculate dynamic vessel draft limits using real-time hydrodynamic suction forces to prevent container ships from grounding."
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 2,
-  "call_count": 237
+  "subcluster_idx": 1,
+  "fallback_idx": 3,
+  "call_count": 238
 }
