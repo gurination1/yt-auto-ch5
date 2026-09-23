@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How the immense weight of water in some hydroelectric megadams can, counterintuitively, trigger earthquakes through a phenomenon called **Reservoir-Induced Seismicity (RIS)**, reactivating ancient fault lines.",
     "A recent European Commission study indicates hyperloop technology is maturing, moving from prototype to demonstration, with a pilot project planned to establish common safety requirements and overcome regulatory fragmentation.",
     "Imperial College London and Arup's new skyscraper design utilizes a building's own mass to significantly reduce movement during high winds and earthquakes, enhancing safety and sustainability in tall structures.",
     "How \"underwater highways\" like the Chesapeake Bay Bridge-Tunnel are built by precisely *sinking* massive, buoyant concrete tube sections using controlled **ballasting**, rather than digging through the seabed.",
@@ -89,9 +88,10 @@
     "How armed maritime mafia cartels illegally dredge riverbeds and coastlines for construction-grade sand, causing entire islands to vanish overnight.",
     "How GE Aerospace transformed its entire business model from hardware manufacturing into an elite software and hourly service cartel dictating global commercial flight margins.",
     "The Herm\u00e8s Birkin Purchase Ledger: How Secret Client Scoring Algorithms Determine Who Is 'Worthy' of Buying a Six-Figure Handbag",
-    "How Suez Canal transit authorities calculate dynamic vessel draft limits using real-time hydrodynamic suction forces to prevent container ships from grounding."
+    "How Suez Canal transit authorities calculate dynamic vessel draft limits using real-time hydrodynamic suction forces to prevent container ships from grounding.",
+    "The De Beers Diamond Illusion: How an offshore cartel invented the engagement ring tradition out of thin air and artificially stockpiled diamonds to inflate prices"
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 3,
-  "call_count": 238
+  "subcluster_idx": 2,
+  "fallback_idx": 5,
+  "call_count": 239
 }
