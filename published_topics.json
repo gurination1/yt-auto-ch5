@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Autonomous heavy machinery, equipped with AI and LiDAR, is now being deployed on real-world construction sites, revolutionizing efficiency and addressing labor shortages.",
     "Autonomous deep-sea robots are redefining mineral extraction, enabling selective polymetallic nodule mining with significantly reduced environmental impact, as NOAA advances the first commercial recovery application.",
     "How **Scramjet engines** achieve propulsion at hypersonic speeds (Mach 5+) with virtually no moving parts, relying entirely on extreme aerodynamic compression and **supersonic combustion** to create thrust, a counterintuitive feat of propulsion design.",
     "China's Yebatan Hydropower Station, set to be the world's largest, is defying extreme Himalayan conditions with revolutionary low-heat cement and tunneling through mountains, sparking global debate on its audacious engineering, environmental impact, and geopolitical significance.",
@@ -89,9 +88,10 @@
     "The De Beers Diamond Illusion: How an offshore cartel invented the engagement ring tradition out of thin air and artificially stockpiled diamonds to inflate prices",
     "The Gillette Razor and Blades Model: How industrial consumables trap millions of consumers into high-margin refill subscriptions for decades",
     "The Strait of Malacca Bottleneck: Why 25% of all global traded oil passes through a 1.7-mile maritime corridor and what happens if it shuts down",
-    "The Lithium Triangle Geopolitics: How Chile, Bolivia, and Argentina control 50% of the world's battery reserves and play superpowers against each other"
+    "The Lithium Triangle Geopolitics: How Chile, Bolivia, and Argentina control 50% of the world's battery reserves and play superpowers against each other",
+    "How TSMC foundries use ultra-pure liquid hydrogen fluoride acid contained in specially coated Teflon drums to chemically etch microchips without dissolving their own containment walls."
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 15,
-  "call_count": 242
+  "subcluster_idx": 1,
+  "fallback_idx": 16,
+  "call_count": 243
 }
