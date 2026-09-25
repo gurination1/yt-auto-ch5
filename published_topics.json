@@ -1,6 +1,5 @@
 {
   "topics": [
-    "China's Yebatan Hydropower Station, set to be the world's largest, is defying extreme Himalayan conditions with revolutionary low-heat cement and tunneling through mountains, sparking global debate on its audacious engineering, environmental impact, and geopolitical significance.",
     "China's experimental maglev vehicle accelerates to 497 mph (800 km/h) in 5.3 seconds on a 1-kilometer test track, setting a new short-distance acceleration record.",
     "How colossal skyscrapers, designed to sway miles above ground, use counter-oscillating **Tuned Mass Dampers (TMDs)** to absorb dangerous resonant vibrations, not just stop visible movement.",
     "South Korea's city of Ulsan is pioneering the development of standardized subsea data center models to address the escalating demands of AI computing and solve land, power, and cooling constraints.",
@@ -89,9 +88,10 @@
     "The Lithium Triangle Geopolitics: How Chile, Bolivia, and Argentina control 50% of the world's battery reserves and play superpowers against each other",
     "How TSMC foundries use ultra-pure liquid hydrogen fluoride acid contained in specially coated Teflon drums to chemically etch microchips without dissolving their own containment walls.",
     "How cinema concession profit margins rely on a 1,200% markup on raw kernels, subsidizing film ticket sales that otherwise net zero studio revenue.",
-    "The SaaS Subscription Shift: How software companies abandoned $50 lifetime licenses for recurring monthly fees and multiplied corporate valuations tenfold"
+    "The SaaS Subscription Shift: How software companies abandoned $50 lifetime licenses for recurring monthly fees and multiplied corporate valuations tenfold",
+    "Haber-Bosch and Fertilizer Economics: How natural gas feedstock produces global ammonia fertilizer that feeds 50% of the human population"
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 18,
-  "call_count": 245
+  "subcluster_idx": 4,
+  "fallback_idx": 19,
+  "call_count": 246
 }
