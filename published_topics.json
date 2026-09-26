@@ -1,6 +1,5 @@
 {
   "topics": [
-    "India's $1.2 Billion Incentive to Boost Domestic Tunnel Boring Machine Manufacturing",
     "How deep underground mines, like South Africa's Mponeng Gold Mine, employ massive **refrigeration plants** and intricate ventilation shafts to *cool* air from 60\u00b0C to breathable temperatures, countering the extreme **geothermal gradient**.",
     "SpaceX's audacious plan to construct a $100 billion mega-spaceport in Louisiana, aiming to mass-produce 10,000 Starship rockets annually, marks an unprecedented shift towards industrial-scale space colonization.",
     "Ethiopia's silent advance on new Nile megadams, including Karadobi, Mandaya, and Beko Abo, reignites a high-stakes geopolitical chess match as Egypt seeks to belatedly influence projects after the Grand Ethiopian Renaissance Dam (GERD) precedent.",
@@ -89,9 +88,10 @@
     "Haber-Bosch and Fertilizer Economics: How natural gas feedstock produces global ammonia fertilizer that feeds 50% of the human population",
     "The Intermodal Shipping Container: How a standardized corrugated steel box invented by Malcolm McLean dropped freight transport costs by 99%",
     "Pharmaceutical Patent Thickets: How drug corporations file hundreds of minor secondary patents to delay generic life-saving medicine competition for 30 years",
-    "Why grocery store floor tiles are explicitly textured with a click-clack noise pattern to force shoppers to slow down and buy more."
+    "Why grocery store floor tiles are explicitly textured with a click-clack noise pattern to force shoppers to slow down and buy more.",
+    "How the shadowy global river-sand mafia uses GPS-spoofing barges to evade maritime patrols while stripping away critical coastal protection barriers under cover of night."
   ],
-  "subcluster_idx": 2,
-  "fallback_idx": 1,
-  "call_count": 249
+  "subcluster_idx": 3,
+  "fallback_idx": 2,
+  "call_count": 250
 }
