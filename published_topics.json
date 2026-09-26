@@ -1,6 +1,5 @@
 {
   "topics": [
-    "South Korea's city of Ulsan is pioneering the development of standardized subsea data center models to address the escalating demands of AI computing and solve land, power, and cooling constraints.",
     "India's $1.2 Billion Incentive to Boost Domestic Tunnel Boring Machine Manufacturing",
     "How deep underground mines, like South Africa's Mponeng Gold Mine, employ massive **refrigeration plants** and intricate ventilation shafts to *cool* air from 60\u00b0C to breathable temperatures, countering the extreme **geothermal gradient**.",
     "SpaceX's audacious plan to construct a $100 billion mega-spaceport in Louisiana, aiming to mass-produce 10,000 Starship rockets annually, marks an unprecedented shift towards industrial-scale space colonization.",
@@ -89,9 +88,10 @@
     "The SaaS Subscription Shift: How software companies abandoned $50 lifetime licenses for recurring monthly fees and multiplied corporate valuations tenfold",
     "Haber-Bosch and Fertilizer Economics: How natural gas feedstock produces global ammonia fertilizer that feeds 50% of the human population",
     "The Intermodal Shipping Container: How a standardized corrugated steel box invented by Malcolm McLean dropped freight transport costs by 99%",
-    "Pharmaceutical Patent Thickets: How drug corporations file hundreds of minor secondary patents to delay generic life-saving medicine competition for 30 years"
+    "Pharmaceutical Patent Thickets: How drug corporations file hundreds of minor secondary patents to delay generic life-saving medicine competition for 30 years",
+    "Why grocery store floor tiles are explicitly textured with a click-clack noise pattern to force shoppers to slow down and buy more."
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 0,
-  "call_count": 248
+  "subcluster_idx": 2,
+  "fallback_idx": 1,
+  "call_count": 249
 }
