@@ -348,6 +348,25 @@ class JudgeClient:
                         failed_segments.append(j)
                     issues.append(f"Segment {j+1}: Script narration repeats phrasing/claims from Segment {i+1} ('{narr_j[:40]}...')")
 
+        # Step 2c: Dopamine Loop & Narrative Tension Scrutiny
+        if num_segs >= 3:
+            first_narr = segments[0].get("narration", "").strip().lower()
+            forbidden_starts = ("did you know", "have you ever", "what if", "could it be", "imagine if", "can you believe")
+            if any(first_narr.startswith(fs) for fs in forbidden_starts):
+                print(f"[Judge AI] NARRATIVE VIOLATION: Segment 1 starts with forbidden rhetorical question ('{first_narr[:30]}...')!")
+                if 0 not in failed_segments:
+                    failed_segments.append(0)
+                issues.append("Segment 1: Starts with passive rhetorical question instead of immediate high-stakes physical fact.")
+
+            last_narr = segments[-1].get("narration", "").lower()
+            spam_triggers = ("link in bio", "subscribe", "follow for more", "check bio", "link in description")
+            if any(st in last_narr for st in spam_triggers):
+                print(f"[Judge AI] NARRATIVE VIOLATION: Final segment contains spoken social spam ('{last_narr[:40]}...')!")
+                last_idx = num_segs - 1
+                if last_idx not in failed_segments:
+                    failed_segments.append(last_idx)
+                issues.append("Final Segment: Contains forbidden spoken social spam ('link in bio' / 'subscribe').")
+
         # Step 3: Per-segment forensic audit with Gemini Vision
         title = metadata.get("title", "")
 
@@ -611,6 +630,12 @@ Please watch the video and evaluate it against these rubrics:
     - YouTube Shorts must display cinematic real-world footage or physical objects.
     - STRICTLY REJECT ANY video containing computer desktop screencasts, web browser tabs, cookie consent dialog banners, Google Maps routes, or phone UI screenshots.
     - If ANY segment displays a software window, browser dialog, or UI screenshot, score MUST be <= 65 and status="REJECTED".
+11. **DOPAMINE ADDICTION LOOP & NARRATIVE TENSION (CRITICAL)**:
+    - **High Stakes (Segment 1)**: Must establish immediate consequence, peril, or active physical fact (NO passive lecturing, NO "Did you know?", NO rhetorical questions).
+    - **The Headfake / Prediction Error (Middle Segments)**: Must contain an active expectation subversion ("You'd think X, but the reality is Y", or showing where obvious theories failed) to prevent mid-video drop-off.
+    - **Core Breakthrough Payoff**: Must deliver the verified real answer before the ending (no cliffhanger cop-outs).
+    - **Seamless Infinite Loop**: Final segment must redeal tension and bridge back to the opening hook without spoken social media spam ("subscribe", "link in bio").
+    - Scripts that read like flat textbook lectures lacking storytelling tension or prediction errors MUST score <= 70 and fail!
 
 Output strictly valid JSON with this exact schema:
 {{

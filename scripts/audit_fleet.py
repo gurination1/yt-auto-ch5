@@ -79,11 +79,12 @@ def check_local_processes():
         return []
 
 
-def get_gha_runs(repo: str, limit: int = 6):
-    """Fetch latest workflow runs for repo via GitHub CLI."""
+def get_gha_runs(repo: str, workflow: str = "generate_short.yml", limit: int = 12):
+    """Fetch latest workflow runs for repo via GitHub CLI, strictly filtering by workflow."""
     cmd = [
         "gh", "run", "list",
         "--repo", repo,
+        "--workflow", workflow,
         "--limit", str(limit),
         "--json", "databaseId,status,conclusion,createdAt,workflowName,headSha,event"
     ]
@@ -134,7 +135,7 @@ def audit_fleet(dispatch_missed: bool = False):
     for key, cfg in FLEET.items():
         repo = cfg["repo"]
         name = cfg["name"]
-        runs = get_gha_runs(repo, limit=6)
+        runs = get_gha_runs(repo, workflow="generate_short.yml", limit=12)
 
         today_runs = []
         for r in runs:
@@ -163,14 +164,17 @@ def audit_fleet(dispatch_missed: bool = False):
         # Determine if any slot was missed
         completed_count = len(success) + len(active)
         missed_count = max(0, len(expected_slots_passed) - completed_count)
+        # Never trigger concurrent catch-ups if a generation run is already actively running
+        if active:
+            missed_count = 0
 
         status_icon = "🟢"
-        if active:
-            status_icon = "🔄"
-        elif missed_count > 0:
-            status_icon = "🟡"
-        if failed:
+        if missed_count > 0:
             status_icon = "🔴"
+        elif active:
+            status_icon = "🔄"
+        elif failed:
+            status_icon = "🟡"
 
         print(f"\n{status_icon} {name} [{repo}]")
         print(f"   Expected Slots Elapsed Today: {len(expected_slots_passed)} | Runs Executed: {len(today_runs)} (Pass: {len(success)}, Active: {len(active)}, Fail: {len(failed)})")

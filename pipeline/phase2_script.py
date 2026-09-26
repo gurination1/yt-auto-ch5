@@ -82,50 +82,66 @@ def generate_script(topic: dict, format_type: str) -> dict:
         prompt = f"""Generate an extremely viral, high-retention 25-35 second YouTube Short educational script on the topic: "{topic['topic']}".
 Use the following hook concept as your core theme: "{hook_formatted}" (short hook: "{topic.get('short_hook', '')}").
 {lang_instruction}
-Narration Style Requirements (CRITICAL - MAXIMUM VIRALITY & SIMPLICITY):
-1. 0.0s PATTERN INTERRUPT HOOK (SEGMENT 1 MANDATE):
-   - Segment 1 MUST open with an immediate, startling declarative statement in the present tense with active verbs.
-   - ABSOLUTELY FORBIDDEN: NEVER start with rhetorical questions (NO "Could...", "Have you ever wondered...", "What if...", "Did you know...").
-   - Start directly with the jaw-dropping physical fact: e.g. "Microscopic machines are tearing apart toxic plastic right now." or "Every mega-dam on Earth is slowly choking itself to death."
-2. EXTREME SIMPLICITY & CONVERSATIONAL ENGLISH (8TH GRADE LEVEL):
+DOPAMINE ADDICTION LOOP ARCHITECTURE (MANDATORY CASINO-GRADE RETENTION SYSTEM):
+Every script must strictly follow the 4-stage Dopamine Addiction Loop psychology to eliminate mid-video drop-off and maximize re-loops:
+
+STAGE 1: THE STAKES & IMMEDIATE PERIL (SEGMENT 1 - 0.0s to 6.0s):
+- Dopamine requires caring. To make the viewer care, establish immediate, tangible high stakes.
+- Stakes Formula: [Concrete Named Entity / Character] + [Massive Peril / Catastrophe / Something at Risk] + [Urgency / Present Tense].
+- 8 to 12 words. High-energy declarative statement in the present tense with active verbs.
+- ABSOLUTELY FORBIDDEN: NEVER open with rhetorical questions (NO "Could...", "Have you ever wondered...", "What if...", "Did you know..."), passive throat-clearing, or reading the title.
+- Start directly with the jaw-dropping physical fact: e.g. "Microscopic machines are tearing apart toxic plastic right now." or "Every mega-dam on Earth is fighting a silent, catastrophic enemy."
+
+STAGE 2: THE BIG QUESTION & CURIOSITY LOCK (SEGMENT 2 - 6.0s to 12.0s):
+- Stakes make them care; The Big Question locks them in.
+- Give enough concrete physical context and measurable scale to open an irresistible information gap in the viewer's mind.
+- 14 to 18 words. Active verbs.
+- State the physical paradox, impossible obstacle, or baffling observation with concrete metrics.
+- Example: "Normal river silt settles into concrete-hard sludge that would snap the spillway gates under immense hydrostatic drag."
+
+STAGE 3: THE HEADFAKE / PREDICTION ERROR (SEGMENT 3 - 12.0s to 18.0s - CRITICAL ANTI-DROP-OFF BEAT):
+- THIS IS WHERE CASINOS HOOK GAMBLERS AND WHERE 90% OF EDUCATIONAL SHORTS FAIL.
+- THE HEADFAKE IS MANDATORY: Contrast directly against what common sense or the average viewer assumes.
+- The human brain drops dopamine when it anticipates the answer. Subverting expectation triggers a REWARD PREDICTION ERROR that forces total focus!
+- Explicitly state: "Common sense says X, but the reality is the exact opposite..." or reveal what failed first or why the obvious solution is lethal.
+- 14 to 18 words. Plain, sensory language: "melts", "smashes", "tricks", "sneaks in", "explodes", "freezes solid", "eats through".
+
+STAGE 4: THE CORE BREAKTHROUGH PAYOFF (SEGMENT {segment_count - 1} - 18.0s to 24.0s):
+- Full, satisfying technical, biological, or operational resolution.
+- Deliver the verified real answer with absolute clarity (8th grade English, zero jargon).
+- Segment {segment_count - 1} MUST fully resolve the mystery, explain the mechanism, or deliver the historical breakthrough.
+- The viewer must feel the intense psychological satisfaction of the mystery being solved.
+- 14 to 18 words.
+
+STAGE 5: THE REHOOK & INFINITE LOOP BRIDGE (SEGMENT {segment_count} - 24.0s to 30.0s):
+- Just like a casino dealer instantly redeals the next blackjack hand before the gambler walks away, the final segment must REHOOK the viewer.
+- DO NOT wind down or deliver a polite sign-off.
+- The final sentence must resolve the immediate payoff while launching a cascading bridge that syntactically and thematically flows directly back into Segment 1's opening line.
+- Complete grammatical sentence ending in a period.
+- ABSOLUTELY FORBIDDEN: NEVER say "link in bio", "link in description", "subscribe", "follow", "check bio", or any social media callout in narration. It destroys loop retention.
+
+STYLE & VOCABULARY GUARDRAILS:
+1. EXTREME SIMPLICITY & CONVERSATIONAL ENGLISH (8TH GRADE LEVEL):
    - Write like an excited friend telling an insane secret around a campfire.
-   - ABSOLUTELY FORBIDDEN: Academic jargon, dense terminology, passive textbook lecturing.
-     NEVER USE WORDS LIKE: "improbable", "desensitized", "homeostatic", "equilibrium", "methodology", "reconsider", "predatory instincts", "operational mechanisms", "unprecedented mechanisms", "fundamental reaction", "historical accounts suggest", "prompts to reconsider".
+   - ABSOLUTELY FORBIDDEN ACADEMIC JARGON: NEVER USE WORDS LIKE "improbable", "desensitized", "homeostatic", "equilibrium", "methodology", "reconsider", "predatory instincts", "operational mechanisms", "unprecedented mechanisms", "fundamental reaction", "historical accounts suggest", "prompts to reconsider", "utilizes", "physiological", "adversaries", "confrontation", "enduring".
    - REQUIRED: Plain, sensory, visual language: "melts", "smashes", "tricks", "sneaks in", "explodes", "freezes solid", "eats through", "turns to dust".
-3. RAPID-FIRE PUNCHY BEATS (14-18 WORDS PER SEGMENT FOR COMPLETE EDUCATIONAL PAYOFF):
-   - Every sentence MUST be clear, punchy, and active.
-   - Opening hook: 8-12 words (fast, urgent pattern interrupt).
-   - Middle segments (2 to N-1): 14-18 words each (delivers full technical / historical explanation, mechanism, and proof).
-   - CRITICAL EDUCATIONAL PAYOFF: The viewer must walk away with the complete answer. Segment {segment_count - 1} MUST fully resolve the mystery, explain the mechanism, or deliver the historical breakthrough.
-   - Segment {segment_count} (final segment) is strictly the memorable punchline and seamless infinite loop bridge back to Segment 1.
-   - Break thoughts into punchy active beats: "A mantis shrimp doesn't just punch. Its claw strikes faster than a bullet. The water boils into a shockwave."
-4. MANDATORY STARTLING UNKNOWN FACT (THE REVEAL):
-   - Every single script MUST reveal at least ONE specific, counterintuitive, jaw-dropping secret that 99% of people DO NOT KNOW.
-   - NEVER deflate the hook with a wet blanket or say "actually it didn't happen". Deliver an astonishing, verified truth.
-4b. MANDATORY CONCRETE NAMED ENTITIES (ZERO ABSTRACT GENERALITIES):
+2. MANDATORY CONCRETE NAMED ENTITIES (ZERO ABSTRACT GENERALITIES):
    - You MUST name the exact real-world detector, instrument, mine, organism, cartel, or megaproject (e.g. "The LUX-ZEPLIN detector 1 mile deep", "De Beers", "The Challenger Deep amphipod", "The Herrenknecht TBM", "ASML").
-   - ABSOLUTELY FORBIDDEN: Vague filler phrases like "a detector deep underground", "scientists believe", "an underground facility", "a mysterious machine", "a massive company", "an animal". Concrete names anchor credibility and multiply viewer retention!
-5. ZERO TITLE / HOOK REPETITION (CRITICAL RETENTION MANDATE):
-   - NEVER start Segment 1 by reading or reciting the video title verbatim. The title is already visible to the viewer. Segment 1 must dive straight into the shocking physical action or visual observation.
+   - ABSOLUTELY FORBIDDEN: Vague filler phrases like "a detector deep underground", "scientists believe", "an underground facility", "a mysterious machine", "a massive company", "an animal".
+3. ZERO TITLE / HOOK REPETITION & ZERO REDUNDANT QUALIFIERS:
+   - Segment 1 must dive straight into the shocking physical action or visual observation without reading the title.
    - Segment 2 and subsequent segments MUST NEVER repeat the opening hook phrase, title words, or introductory sentence from Segment 1. Each segment must reveal completely fresh, advancing facts.
-   - If Segment 1 introduces the entity, refer to it naturally in subsequent segments ("this creature", "the weapon", "this alloy", "this machine"). NEVER repeat the full topic or title string.
-5b. STRICT INTER-SEGMENT PROGRESSION (ZERO REPETITION OR QUALIFYING LOOPS):
-   - Every single segment MUST reveal a completely NEW physical mechanism, consequence, or real-world fact.
-   - ABSOLUTELY FORBIDDEN: NEVER repeat the same claim, qualifying clause, or sentence structure across segments!
-   - NEVER repeat phrases like "While [entity] denies...", "Although companies claim...", "Algorithms track...", "Studies show...", or rephrase the same point in consecutive segments.
-   - If Segment 3 reveals that dynamic algorithms adjust prices based on search cookies, Segment 4 CANNOT mention algorithms, cookies, or prices again—it MUST advance to the physical operational reality (e.g. airline seat inventory, aircraft dispatch, or passenger checkout).
-6. SEAMLESS INFINITE LOOP CLOSING (SEGMENT {segment_count} MANDATE):
+   - ABSOLUTELY FORBIDDEN: NEVER repeat phrases like "While [entity] denies...", "Although companies claim...", "Algorithms track...", "Studies show...".
+4. SEAMLESS INFINITE LOOP CLOSING (SEGMENT {segment_count} MANDATE):
    - The final segment must be a 100% grammatically complete sentence ending with a period.
-   - ABSOLUTELY FORBIDDEN: NEVER say "link in bio", "link in description", "subscribe", "follow", "check bio", or any social media callout in narration. It destroys loop retention.
    - The final sentence must resolve the tension while phonetically and syntactically flowing seamlessly back into Segment 1's hook narration.
-   - The final sentence should THEMATICALLY echo or re-contextualize the opening hook.
 
 COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
 - MANDATORY 5TH-TO-8TH GRADE EVERYDAY ENGLISH (ABSOLUTELY NO SAT/ACADEMIC/PHD JARGON):
   * Speak like an excited, knowledgeable friend sharing an unbelievable secret.
   * FORBIDDEN VOCABULARY: 'lithography', 'localized', 'degradation', 'cardiovascular', 'neurotoxin', 'physiological', 'adversaries', 'predation', 'equilibrium', 'manifestation', 'subterranean', 'utilizes', 'perpetual', 'confrontation', 'enduring'.
   * INSTEAD USE: Everyday words a 12-year-old understands instantly ('carves', 'breaks down', 'heart', 'nerve poison', 'body', 'enemies', 'hunts', 'balance', 'signs', 'underground', 'uses', 'never-ending', 'battle', 'lasting').
-  * If a high-tech or scientific term is essential (e.g. 'lithography' or 'amphipod'), IMMEDIATELY clarify it in the same breath in 3 plain words (e.g. 'lithography—the laser machine that prints microchips', 'amphipod—a tiny deep-sea shrimp').
+  * If a high-tech or scientific term is essential, IMMEDIATELY clarify it in the same breath in 3 plain words.
   * Every single sentence MUST be simple, clear, and instantly understandable on first listen.
 
 - MANDATORY AUTHENTIC DOCUMENTARY SOURCING (ZERO AI SLOP / ZERO UNRELATED STOCK / ZERO STATIC UI):
@@ -142,23 +158,8 @@ COMPANION LAYER - NICHE & FORMAT UPGRADE (SHORT):
     - ALWAYS anchor business/tech topics in the PHYSICAL INDUSTRIAL ASSETS: e.g. "Boeing cockpit avionics", "container ship gantry crane", "server room corridor", "trading floor floor traders", "semiconductor wafer stepper", "airport ramp cargo".
   * STRICT NO-METAPHOR VISUAL RULE (CRITICAL FOR VIRAL QUALITY):
     - NEVER use metaphorical language, idioms, or abstract analogies in 'broll_query' or 'broll_queries'.
-    - ABSOLUTELY FORBIDDEN IN B-ROLL QUERIES:
-      * NEVER write queries like 'tiny warriors', 'antidote factory', 'quantum leaps all around us', 'weird spots inside Earth', 'dark mystery', 'mind blowing', 'secret weapon'.
-      * NEVER use slang like 'bug' or 'critter' for bacteria, fungi, microorganisms, or non-insect organisms.
-      * NEVER write pop-culture or mythical nicknames like 'Conan the Bacterium', 'Frankenstein', or 'monster'. Use proper scientific subject name (e.g. 'Deinococcus radiodurans bacterium scanning electron microscope').
-      * NEVER include words: "animation", "simulation", "concept", "visualization", "fantasy", "cgi", "cartoon", "illustration", "3d model", "futuristic", "diagram".
-      * NEVER use biological organisms (plants, seedlings, flowers, fungi, trees, animals), waterfalls, rivers, or weather as metaphors or analogies for physical science (time dilation, speed, gravity, black holes, semiconductors, or quantum states).
-      * NEVER use speed metaphors (bullets, rockets, sledgehammers, lightning) as B-roll queries for wildlife/animals! If narration says "accelerates faster than a bullet", broll_query MUST REMAIN the animal/insect in high-speed macro motion (e.g. "Dracula ant high speed" or "Mystrium camillae strike"), NEVER "bullet impact" or "bullet slow motion"!
-      * NEVER query "microscope" or "light microscope" for quantum physics, lasers, interferometers, or astrophysics! Query specifically: "optical table beam splitter", "laser interferometer", "cryostat vacuum chamber", or "spectrometer optical bench".
-      * NEVER query generic "helmet" or "weapon" in ancient/medieval history topics! Query specifically: "Roman bronze ballista", "ancient siege catapult", or "Roman bronze armor", NEVER modern combat gear.
-    - REQUIRED: Every segment MUST specify the CONCRETE, OBSERVABLE physical entity being discussed:
-      * ULTRA-COMPACT 2-4 WORD RULE: Search engines (YouTube/Wikimedia) fail on long sentences! broll_query MUST BE 2 TO 4 WORDS MAXIMUM!
-      * If topic is a specific animal/organism, broll_query MUST contain its exact scientific binomial or common name: e.g. "Regimbartia attenuata" or "water beetle frog".
-      * If narration says "These tiny warriors smash venom apart" -> broll_query MUST BE: "rattlesnake antivenom lab" or "antivenom protein reaction".
-      * If narration says "quantum leaps happening all around us" -> broll_query MUST BE: "quantum laser cryostat" or "silicon wafer cleanroom".
-      * If narration says "weird spots inside Earth" -> broll_query MUST BE: "earth mantle core" or "diamond anvil cell".
-      * If narration says "supply chain choke point" -> broll_query MUST BE: "container cargo ship" or "suez canal tanker".
-      * NEVER append "4k", "1080p", "real footage", "cinematic", "documentary" to broll_query or broll_queries.
+    - ULTRA-COMPACT 2-4 WORD RULE: Search engines fail on long sentences! broll_query MUST BE 2 TO 4 WORDS MAXIMUM!
+    - NEVER append "4k", "1080p", "real footage", "cinematic", "documentary" to broll_query or broll_queries.
 
 You MUST return your response ONLY as a raw JSON object with no markdown syntax. The JSON structure MUST be exactly like this:
 {{
@@ -172,23 +173,37 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
     // Provide exactly {segment_count} segments here.
     {{
       "id": 1,
-      "narration": "opening shocking hook statement - 8 to 12 words, bold present-tense declaration, NO rhetorical question",
-      "broll_query": "primary entity name (2-3 words, NO buzzwords)",
-      "broll_queries": ["exact entity scientific or common name (2-3 words)", "subject action triplet (2-3 words)"],
+      "narration": "STAGE 1 - THE STAKES: 8 to 12 words. Immediate high-stakes declarative opening in present tense. Named entity + hazard/peril. NO rhetorical questions.",
+      "broll_query": "primary entity (2-3 words, NO buzzwords)",
+      "broll_queries": ["exact entity (2-3 words)", "action shot (2-3 words)"],
       "duration_target": 6
     }},
     {{
       "id": 2,
-      "narration": "Mind-bending real fact that delivers on the hook - 14 to 18 words explaining the mechanism",
-      "broll_query": "physical mechanism entity (2-3 words, NO buzzwords)",
-      "broll_queries": ["exact physical mechanism (2-3 words)", "apparatus or specimen (2-3 words)"],
+      "narration": "STAGE 2 - THE BIG QUESTION: 14 to 18 words. Sets up the baffling paradox, metric, or physical obstacle locking the viewer's curiosity.",
+      "broll_query": "physical context entity (2-3 words, NO buzzwords)",
+      "broll_queries": ["context query (2-3 words)", "mechanism query (2-3 words)"],
+      "duration_target": 6
+    }},
+    {{
+      "id": 3,
+      "narration": "STAGE 3 - THE HEADFAKE (PREDICTION ERROR): 14 to 18 words. Mandatory subversion: contrasts against what the viewer assumes or reveals why the obvious solution fails.",
+      "broll_query": "subversion/twist entity (2-3 words, NO buzzwords)",
+      "broll_queries": ["twist query (2-3 words)", "apparatus query (2-3 words)"],
+      "duration_target": 6
+    }},
+    {{
+      "id": 4,
+      "narration": "STAGE 4 - THE BREAKTHROUGH PAYOFF: 14 to 18 words. Delivers the complete, satisfying, verified scientific/historical answer.",
+      "broll_query": "breakthrough entity (2-3 words, NO buzzwords)",
+      "broll_queries": ["breakthrough query (2-3 words)", "action query (2-3 words)"],
       "duration_target": 6
     }},
     {{
       "id": {segment_count},
-      "narration": "A complete, punchy final payoff sentence that seamlessly loops back into the opening hook line. Complete sentence ending with a period. NO link in bio, NO subscribe.",
-      "broll_query": "physical evidence entity (2-3 words, NO buzzwords)",
-      "broll_queries": ["observable evidence entity (2-3 words)", "habitat or field specimen (2-3 words)"],
+      "narration": "STAGE 5 - THE REHOOK & INFINITE LOOP: 10 to 14 words. Complete sentence ending with a period. Redeals tension and seamlessly bridges back to Segment 1. NO link in bio, NO subscribe.",
+      "broll_query": "closing evidence entity (2-3 words, NO buzzwords)",
+      "broll_queries": ["closing query (2-3 words)", "loop query (2-3 words)"],
       "duration_target": 6
     }}
   ],
@@ -200,7 +215,8 @@ For Segment 1 specifically:
 - `broll_query` MUST describe a high-motion, high-contrast, visually arresting real shot (fast motion, dramatic close-up) — the opening pattern-interrupt.
 
 For Segments 2 to (segment_count - 1):
-- Deliver the single most mind-bending physical fact in Segment 2.
+- Segment 2 MUST establish the Big Question and curiosity lock.
+- Segment 3 MUST deliver The Headfake (prediction error subverting viewer assumptions).
 - Segment {segment_count - 1} MUST fully explain the core mechanism or historical breakthrough with concrete, satisfying clarity. Deliver the real answer!
 
 For the final segment (Segment {segment_count}) specifically:
@@ -339,7 +355,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
         if niche == "engineering":
             script = {
                 "title": f"🏗️ Inside {entity_name[:32]}",
-                "voiceover_plan": "Deliver fast-paced, awe-inspiring engineering narration.",
+                "voiceover_plan": "Deliver fast-paced, high-stakes engineering narration with intense curiosity.",
                 "vocal_tone": "deep_curiosity",
                 "description": f"The impossible engineering behind {entity_name}.\n\nMassive scale. Extreme physics.\n\n#engineering #megaprojects #construction",
                 "tags": ["engineering", "megaprojects", "construction", "technology", "architecture", "machines", "didyouknow"],
@@ -347,31 +363,31 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
                 "segments": [
                     {
                         "id": 1,
-                        "narration": f"The {entity_name} is one of the most audacious megaprojects ever constructed by human engineers.",
-                        "broll_query": f"{entity_name} megaproject construction real footage 4k",
-                        "broll_queries": [f"{entity_name} megaproject construction real footage 4k", f"{entity_name} colossal engineering machinery 4k", f"{entity_name} aerial landmark 1080p"],
+                        "narration": f"Right now, the {entity_name} is fighting hundreds of millions of tons of suffocating pressure threatening its foundation.",
+                        "broll_query": f"{entity_name} megaproject construction",
+                        "broll_queries": [f"{entity_name} megaproject construction", f"{entity_name} heavy civil engineering", "tunnel boring machine cutterhead"],
                         "duration_target": 6
                     },
                     {
                         "id": 2,
-                        "narration": f"To build the {entity_name}, teams had to overcome extreme physical forces and push modern materials beyond their limits.",
-                        "broll_query": f"{entity_name} heavy machinery construction site 4k",
-                        "broll_queries": [f"{entity_name} heavy machinery construction site 4k", f"{entity_name} tunnel boring machine industrial 4k", "massive civil engineering construction 4k"],
+                        "narration": f"Normal physical forces are manageable, but engineers faced an impossible obstacle that would snap standard structural barriers like toothpicks.",
+                        "broll_query": f"{entity_name} construction site",
+                        "broll_queries": [f"{entity_name} construction site", "massive hydraulic jacks foundation", "heavy steel structural beam"],
                         "duration_target": 6
                     },
                     {
                         "id": 3,
-                        "narration": f"Every single section required millimeter-level precision and unprecedented structural breakthroughs.",
-                        "broll_query": f"{entity_name} completed operational infrastructure 4k",
-                        "broll_queries": [f"{entity_name} completed operational infrastructure 4k", f"{entity_name} high speed transit aerial 4k", "modern engineering masterpiece 4k"],
+                        "narration": "Common sense assumed massive rigid concrete walls would hold the load, but the real breakthrough required letting the structure bend like rubber.",
+                        "broll_query": "hydraulic damper testing",
+                        "broll_queries": ["hydraulic damper testing", "seismic shock absorber bridge", "flexible steel joints industrial"],
                         "duration_target": 6
                     },
                     {
                         "id": 4,
-                        "narration": f"Today, the {entity_name} stands as living proof of what human ambition can achieve.",
-                        "broll_query": f"{entity_name} cinematic engineering documentary 4k",
-                        "broll_queries": [f"{entity_name} cinematic engineering documentary 4k", f"{entity_name} drone overview 4k", "futuristic megastructure architecture 4k"],
-                        "duration_target": 5
+                        "narration": f"By absorbing kinetic shock through dynamic counterweights, the {entity_name} conquers the impossible forces threatening its foundation.",
+                        "broll_query": f"{entity_name} completed infrastructure",
+                        "broll_queries": [f"{entity_name} completed infrastructure", "high speed transit aerial", "engineering masterpiece aerial"],
+                        "duration_target": 6
                     }
                 ],
                 "loop_callout": True
@@ -379,7 +395,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
         elif niche == "nature":
             script = {
                 "title": f"🌊 Secret of {entity_name[:32]}",
-                "voiceover_plan": "Deliver intense, suspenseful wildlife narration.",
+                "voiceover_plan": "Deliver intense, suspenseful wildlife narration with sudden expectation subversion.",
                 "vocal_tone": "deep_curiosity",
                 "description": f"The shocking survival adaptation of {entity_name}.\n\nWild biology in extreme habitats.\n\n#nature #wildlife #ocean",
                 "tags": ["nature", "wildlife", "animals", "biology", "ocean", "evolution", "didyouknow"],
@@ -387,31 +403,31 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
                 "segments": [
                     {
                         "id": 1,
-                        "narration": f"Deep in the wild, the {entity_name} developed one of the most extreme survival mechanisms on Earth.",
-                        "broll_query": f"{entity_name} wildlife documentary real footage 4k",
-                        "broll_queries": [f"{entity_name} wildlife documentary real footage 4k", f"{entity_name} animal close up authentic footage 4k", f"{entity_name} ocean habitat 1080p"],
+                        "narration": f"Deep in extreme terrain, the {entity_name} faces lethal predators and freezing pressures that would instantly crush human steel.",
+                        "broll_query": f"{entity_name} wildlife documentary",
+                        "broll_queries": [f"{entity_name} wildlife documentary", f"{entity_name} macro photography", "deep ocean abyss creature"],
                         "duration_target": 6
                     },
                     {
                         "id": 2,
-                        "narration": f"To survive intense predation, the {entity_name} utilizes biological adaptations seen nowhere else in nature.",
-                        "broll_query": f"{entity_name} hunting predation behavior 4k",
-                        "broll_queries": [f"{entity_name} hunting predation behavior 4k", f"{entity_name} natural habitat camera 4k", "deep wilderness wildlife documentary 4k"],
+                        "narration": f"Biologists discovered its body produces an intense biological reaction, opening a baffling question about how it survives without poison harming itself.",
+                        "broll_query": f"{entity_name} hunting behavior",
+                        "broll_queries": [f"{entity_name} hunting behavior", "marine predator macro strike", "underwater specimen close up"],
                         "duration_target": 6
                     },
                     {
                         "id": 3,
-                        "narration": f"Biologists studying the {entity_name} uncovered physiological traits that allow it to thrive under lethal conditions.",
-                        "broll_query": f"{entity_name} underwater scientific observation 4k",
-                        "broll_queries": [f"{entity_name} underwater scientific observation 4k", f"{entity_name} macro wildlife photography 4k", "fascinating creature biology 4k"],
+                        "narration": "You'd assume it stores defensive venom internally, but deep-sea cameras caught it spitting enzymes outward to build a temporary physical shield.",
+                        "broll_query": "deep sea bioluminescence",
+                        "broll_queries": ["deep sea bioluminescence", "underwater ROV specimen camera", "fluorescent ocean organism"],
                         "duration_target": 6
                     },
                     {
                         "id": 4,
-                        "narration": f"The incredible biology of the {entity_name} reveals how life adapts to conquer the impossible.",
-                        "broll_query": f"{entity_name} cinematic wildlife documentary 4k",
-                        "broll_queries": [f"{entity_name} cinematic wildlife documentary 4k", f"{entity_name} animal kingdom close up 4k", "natural world documentary 4k"],
-                        "duration_target": 5
+                        "narration": f"This bizarre counter-attack turns lethal strikes into an instant retreat, keeping the {entity_name} alive in extreme terrain.",
+                        "broll_query": f"{entity_name} swimming natural habitat",
+                        "broll_queries": [f"{entity_name} swimming natural habitat", "wild ocean documentary footage", "creature underwater close up"],
+                        "duration_target": 6
                     }
                 ],
                 "loop_callout": True
@@ -419,7 +435,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
         elif niche == "history":
             script = {
                 "title": f"⚔️ Tactical Secret of {entity_name[:32]}",
-                "voiceover_plan": "Deliver dramatic, epic historical narration.",
+                "voiceover_plan": "Deliver dramatic, high-tension battlefield storytelling.",
                 "vocal_tone": "deep_curiosity",
                 "description": f"The battlefield strategy that changed world history: {entity_name}.\n\n#history #warfare #tactics",
                 "tags": ["history", "warfare", "tactics", "ancient", "battles", "strategy", "didyouknow"],
@@ -427,31 +443,31 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
                 "segments": [
                     {
                         "id": 1,
-                        "narration": f"In ancient history, the tactical mastery of {entity_name} permanently shattered the balance of power.",
-                        "broll_query": f"{entity_name} historical documentary battle 4k",
-                        "broll_queries": [f"{entity_name} historical documentary battle 4k", f"{entity_name} ancient warfare reenactment 1080p", "ancient empire fortress ruins 4k"],
+                        "narration": f"At the decisive turning point of {entity_name}, an outnumbered army was facing total annihilation within hours.",
+                        "broll_query": f"{entity_name} battle documentary",
+                        "broll_queries": [f"{entity_name} battle documentary", "ancient fortress ruins aerial", "battlefield archaeology site"],
                         "duration_target": 6
                     },
                     {
                         "id": 2,
-                        "narration": f"Commanders deployed revolutionary combat strategies that caught their adversaries completely off guard.",
-                        "broll_query": f"{entity_name} tactical military formation historical 4k",
-                        "broll_queries": [f"{entity_name} tactical military formation historical 4k", "ancient weapons combat strategy 4k", "battlefield history documentary 4k"],
+                        "narration": "Frontal assaults meant certain death against fortified stone battlements, leaving commanders with only one desperate, unproven gamble.",
+                        "broll_query": "ancient siege fortress wall",
+                        "broll_queries": ["ancient siege fortress wall", "medieval catapult siege engine", "ancient warrior bronze armor"],
                         "duration_target": 6
                     },
                     {
                         "id": 3,
-                        "narration": f"This decisive confrontation proved that superior discipline and tactical terrain mastery overcome raw numbers.",
-                        "broll_query": f"{entity_name} archaeological ruins battlefield 4k",
-                        "broll_queries": [f"{entity_name} archaeological ruins battlefield 4k", "ancient civilization history 4k", "historical empire conquest 4k"],
+                        "narration": "Enemy sentries kept watching no-man's land for charging infantry, completely blind to specialized engineers tunneling 100 feet beneath their boots.",
+                        "broll_query": "underground tunnel excavation torch",
+                        "broll_queries": ["underground tunnel excavation torch", "ancient mine excavation", "sappers digging trench battle"],
                         "duration_target": 6
                     },
                     {
                         "id": 4,
-                        "narration": f"The enduring strategic legacy of {entity_name} is still analyzed by historians to this day.",
-                        "broll_query": f"{entity_name} ancient monument historical documentary 4k",
-                        "broll_queries": [f"{entity_name} ancient monument historical documentary 4k", "epic historical archive cinematic 4k", "ancient world civilization 4k"],
-                        "duration_target": 5
+                        "narration": f"When the subterranean charges blew through the defensive line, history changed forever at {entity_name}.",
+                        "broll_query": "historical monument battlefield aerial",
+                        "broll_queries": ["historical monument battlefield aerial", "ancient fortress ruins cinematic", "archaeological discovery site"],
+                        "duration_target": 6
                     }
                 ],
                 "loop_callout": True
@@ -459,7 +475,7 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
         elif niche == "mystery":
             script = {
                 "title": f"👁️ Unsolved: {entity_name[:32]}",
-                "voiceover_plan": "Deliver dark, suspenseful mystery narration.",
+                "voiceover_plan": "Deliver dark, suspenseful mystery narration with high intrigue.",
                 "vocal_tone": "deep_curiosity",
                 "description": f"The baffling anomaly of {entity_name}.\n\nUnexplained evidence. Lingering questions.\n\n#mystery #unexplained #strange",
                 "tags": ["mystery", "unexplained", "strange", "paranormal", "anomaly", "didyouknow"],
@@ -467,39 +483,39 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
                 "segments": [
                     {
                         "id": 1,
-                        "narration": f"For decades, the inexplicable enigma surrounding {entity_name} has baffled researchers across the world.",
-                        "broll_query": f"{entity_name} mystery anomaly archival footage 4k",
-                        "broll_queries": [f"{entity_name} mystery anomaly archival footage 4k", f"{entity_name} unexplained phenomenon documentary 1080p", "dark mystery twilight 4k"],
+                        "narration": f"For decades, physical evidence recovered from {entity_name} has defied every known law of modern forensics.",
+                        "broll_query": f"{entity_name} anomaly investigation",
+                        "broll_queries": [f"{entity_name} anomaly investigation", "archival evidence documents inspection", "deep cave entrance drone"],
                         "duration_target": 6
                     },
                     {
                         "id": 2,
-                        "narration": f"Physical evidence and documented records of {entity_name} reveal anomalies that modern theories fail to explain.",
-                        "broll_query": f"{entity_name} scientific investigation anomaly evidence 4k",
-                        "broll_queries": [f"{entity_name} scientific investigation anomaly evidence 4k", "archival mystery raw footage 4k", "strange earth enigma 4k"],
+                        "narration": "Field instruments registered abnormal magnetic signatures, opening a bizarre dilemma that baffled elite scientific teams worldwide.",
+                        "broll_query": "magnetometer field measurement instrument",
+                        "broll_queries": ["magnetometer field measurement instrument", "scientific sensor expedition desert", "sonar ocean bathymetry scan"],
                         "duration_target": 6
                     },
                     {
                         "id": 3,
-                        "narration": f"Investigators analyzing the data discovered patterns that defy all conventional logic.",
-                        "broll_query": f"{entity_name} mysterious location drone camera 4k",
-                        "broll_queries": [f"{entity_name} mysterious location drone camera 4k", "unsolved mystery investigation 4k", "historical enigma dark 4k"],
+                        "narration": "Most researchers assumed equipment failure or natural mineral deposits, until satellite radar revealed identical geometric patterns buried deep beneath the rock.",
+                        "broll_query": "satellite synthetic aperture radar",
+                        "broll_queries": ["satellite synthetic aperture radar", "ground penetrating radar survey", "lidar jungle ruins scan"],
                         "duration_target": 6
                     },
                     {
                         "id": 4,
-                        "narration": f"To this day, the true explanation for {entity_name} remains shrouded in total mystery.",
-                        "broll_query": f"{entity_name} unsolved mystery documentary 4k",
-                        "broll_queries": [f"{entity_name} unsolved mystery documentary 4k", "strange world anomaly cinematic 4k", "deep mystery landscape 4k"],
-                        "duration_target": 5
+                        "narration": f"These buried geometric anomalies prove that an organized purpose existed long before modern history at {entity_name}.",
+                        "broll_query": "unsolved mystery landscape aerial",
+                        "broll_queries": ["unsolved mystery landscape aerial", "mysterious ancient terrain 4k", "dark twilight horizon timelapse"],
+                        "duration_target": 6
                     }
                 ],
                 "loop_callout": True
             }
         else: # science
             script = {
-                "title": f"🔬 Breakthrough in {entity_name[:32]}",
-                "voiceover_plan": "Deliver fast, energetic scientific narration.",
+                "title": f"🔬 Secret of {entity_name[:32]}",
+                "voiceover_plan": "Deliver fast, energetic scientific narration with sharp prediction errors.",
                 "vocal_tone": "deep_curiosity",
                 "description": f"The mind-blowing physics behind {entity_name}.\n\n#science #physics #technology",
                 "tags": ["science", "physics", "technology", "quantum", "universe", "didyouknow"],
@@ -507,31 +523,31 @@ You MUST return your response ONLY as a raw JSON object with no markdown syntax.
                 "segments": [
                     {
                         "id": 1,
-                        "narration": f"The breakthrough discovery of {entity_name} is transforming our understanding of physical reality.",
-                        "broll_query": f"{entity_name} scientific laboratory research 4k",
-                        "broll_queries": [f"{entity_name} scientific laboratory research 4k", f"{entity_name} experimental physics discovery 1080p", "advanced science laboratory 4k"],
+                        "narration": f"Inside ultra-cold vacuum chambers, physicists studying {entity_name} are testing the razor edge of physical reality.",
+                        "broll_query": f"{entity_name} physics laboratory",
+                        "broll_queries": [f"{entity_name} physics laboratory", "cryostat vacuum chamber research", "optical laser table experiment"],
                         "duration_target": 6
                     },
                     {
                         "id": 2,
-                        "narration": f"By analyzing extreme experimental data, physicists proved that {entity_name} operates through unprecedented mechanisms.",
-                        "broll_query": f"{entity_name} laboratory experiment laser apparatus 4k",
-                        "broll_queries": [f"{entity_name} laboratory experiment laser apparatus 4k", "particle physics laboratory 4k", "high tech science experiment 4k"],
+                        "narration": "Standard physics insists fast-moving particles carry unstoppable kinetic energy, creating an impossible barrier for next-generation technology.",
+                        "broll_query": "laser beam splitter optics",
+                        "broll_queries": ["laser beam splitter optics", "particle accelerator beam pipe", "quantum computer dilution refrigerator"],
                         "duration_target": 6
                     },
                     {
                         "id": 3,
-                        "narration": f"This fundamental reaction produces energy dynamics that challenge established theoretical models.",
-                        "broll_query": f"{entity_name} scientific simulation visualization 4k",
-                        "broll_queries": [f"{entity_name} scientific simulation visualization 4k", "atomic particle reaction physics 4k", "supercomputer science simulation 4k"],
+                        "narration": "You'd think blasting particles with light adds heat, but tuning laser frequencies head-on strips momentum away until atoms freeze completely solid.",
+                        "broll_query": "laser cooling magneto optical trap",
+                        "broll_queries": ["laser cooling magneto optical trap", "bose einstein condensate chamber", "fluorescent atom cloud trap"],
                         "duration_target": 6
                     },
                     {
                         "id": 4,
-                        "narration": f"As scientific tools advance, {entity_name} may unlock the next great revolution in technology.",
-                        "broll_query": f"{entity_name} futuristic science innovation 4k",
-                        "broll_queries": [f"{entity_name} futuristic science innovation 4k", "frontier technology laboratory 4k", "deep space scientific observatory 4k"],
-                        "duration_target": 5
+                        "narration": f"This optical braking creates an extraordinary new state of matter, unlocking the hidden power of {entity_name}.",
+                        "broll_query": "quantum chip silicon wafer",
+                        "broll_queries": ["quantum chip silicon wafer", "superconducting circuit cleanroom", "advanced science observatory night"],
+                        "duration_target": 6
                     }
                 ],
                 "loop_callout": True
@@ -684,6 +700,10 @@ Return ONLY a raw JSON object for this segment with the updated "narration" and 
             tokens_i = narr_i.lower().split()
 
             for j in range(i + 1, len(segments)):
+                # Intentionally allow loop echo between Segment 1 and the final segment (the loop bridge)
+                if i == 0 and j == len(segments) - 1 and script.get("loop_callout"):
+                    continue
+
                 narr_j = segments[j].get("narration", "").strip()
                 words_j = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', narr_j.lower()) if w not in stop_words]
                 tokens_j = narr_j.lower().split()
@@ -751,12 +771,20 @@ Return ONLY raw JSON:
                             print(f"[Phase2 Script] LLM segment rewrite note: {e_rw}")
 
                     if not rewritten:
-                        # Heuristic fallback rewrite: strip duplicate prefix and replace with progressive operational fact
+                        if is_fallback_script:
+                            continue
                         if common_prefix and len(narr_j) > len(clause_j):
                             clean_j = narr_j[len(clause_j):].lstrip(" ,.-:;").capitalize()
                             segments[j]["narration"] = f"In actual operations, {clean_j[:1].lower() + clean_j[1:]}"
                         else:
-                            segments[j]["narration"] = "Behind closed doors, industry telemetry records show physical dispatch systems reacting instantly across global networks."
+                            niche_fallbacks = {
+                                "engineering": "Under continuous stress testing, structural sensors confirm the materials withstand extreme kinetic loads.",
+                                "nature": "In field observations, high-speed camera recordings verify this extraordinary survival behavior in the wild.",
+                                "history": "Documented military archives confirm this surprise maneuver caught the defending forces off guard.",
+                                "mystery": "Independent expedition logs confirm the anomalous readings persisted across multiple sensor arrays.",
+                                "science": "Controlled laboratory measurements prove the physical system operates with extraordinary quantum precision."
+                            }
+                            segments[j]["narration"] = niche_fallbacks.get(niche, "Controlled scientific measurements prove the physical system operates with extraordinary precision.")
         if not repetition_found:
             break
 
