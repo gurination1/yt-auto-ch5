@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Burj Khalifa Tuned Mass Damper Wind Engineering",
     "MacArtney's subsea infrastructure enables millimeter-level precision for immersing 73,500-tonne elements of the Fehmarnbelt Fixed Link, a critical advancement in underwater tunnel construction.",
     "How super-cranes lift immense loads by dynamically shifting thousands of tons of counterweight on **Self-Propelled Counterweight Bogies**, making the crane's own ballast often heavier than its lift.",
     "The quiet revolution of subsea processing systems emerging as a capital-efficient alternative to new offshore facilities, extending the lifespan of mature oil fields.",
@@ -89,9 +88,10 @@
     "Why GE Aerospace engine division abandoned unit sales margins to build a predictive telemetry monopoly that bills airlines down to the exact second of thrust.",
     "The Costco Hot Dog Paradox: Why Costco's founder threatened to murder the CEO if he raised the $1.50 hot dog price, and how it anchors $200B in sales",
     "ASML's Extreme UV Monopoly: How a single Dutch company controls 100% of the world's extreme UV chipmaking machines and holds the tech economy hostage",
-    "The Global Sand Mafia: How illegal syndicates and armed cartels steal millions of tons of beach and river sand to feed the concrete construction boom"
+    "The Global Sand Mafia: How illegal syndicates and armed cartels steal millions of tons of beach and river sand to feed the concrete construction boom",
+    "How secretive construction-grade sand brokers manipulate riverbed dredging permits to artificially inflate concrete manufacturing costs across booming mega-cities."
   ],
-  "subcluster_idx": 2,
-  "fallback_idx": 3,
-  "call_count": 254
+  "subcluster_idx": 3,
+  "fallback_idx": 4,
+  "call_count": 255
 }
