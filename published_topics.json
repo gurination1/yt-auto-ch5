@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Bagger 288 Colossal Bucket-Wheel Excavator",
     "The world's tallest wooden skyscraper, Mj\u00f8st\u00e5rnet, spearheads a burgeoning trend of hybrid timber construction, challenging concrete's dominance and revealing how sustainable wood can redefine future colossal urban landscapes.",
     "How subsea tunnels, despite being submerged, experience significant **thermal expansion and contraction** by meters, requiring specialized flexible **expansion joints** to prevent buckling and cracking from internal temperature changes.",
     "Three Gorges Dam Hydropower Civil Engineering",
@@ -89,9 +88,10 @@
     "Rolls-Royce Power-by-the-Hour: Why jet engine manufacturers sell multi-million-dollar engines at a loss and print billions renting uptime by the minute",
     "The Suez Canal Chokepoint: How a single stuck container ship froze $9.6 billion of global trade every day and triggered a worldwide inflation shockwave",
     "Why ASML cleanrooms reject human hair and dead skin cells so violently that technicians wear total-body suits pressurized like space station airlocks",
-    "Cinema Popcorn Economics: Why movie theaters are actually popcorn concessions that show Hollywood movies as an excuse to sell 1,200% markup snacks"
+    "Cinema Popcorn Economics: Why movie theaters are actually popcorn concessions that show Hollywood movies as an excuse to sell 1,200% markup snacks",
+    "The Madagascar Vanilla Syndicate: Why natural vanilla beans are worth more by weight than silver and protected by armed jungle militias"
   ],
-  "subcluster_idx": 2,
-  "fallback_idx": 7,
-  "call_count": 259
+  "subcluster_idx": 3,
+  "fallback_idx": 8,
+  "call_count": 260
 }
