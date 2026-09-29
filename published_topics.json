@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The world's tallest wooden skyscraper, Mj\u00f8st\u00e5rnet, spearheads a burgeoning trend of hybrid timber construction, challenging concrete's dominance and revealing how sustainable wood can redefine future colossal urban landscapes.",
     "How subsea tunnels, despite being submerged, experience significant **thermal expansion and contraction** by meters, requiring specialized flexible **expansion joints** to prevent buckling and cracking from internal temperature changes.",
     "Three Gorges Dam Hydropower Civil Engineering",
     "China's military develops a hypersonic air-to-air weapon, potentially redefining long-range aerial defense and threat projection.",
@@ -89,9 +88,10 @@
     "The Suez Canal Chokepoint: How a single stuck container ship froze $9.6 billion of global trade every day and triggered a worldwide inflation shockwave",
     "Why ASML cleanrooms reject human hair and dead skin cells so violently that technicians wear total-body suits pressurized like space station airlocks",
     "Cinema Popcorn Economics: Why movie theaters are actually popcorn concessions that show Hollywood movies as an excuse to sell 1,200% markup snacks",
-    "The Madagascar Vanilla Syndicate: Why natural vanilla beans are worth more by weight than silver and protected by armed jungle militias"
+    "The Madagascar Vanilla Syndicate: Why natural vanilla beans are worth more by weight than silver and protected by armed jungle militias",
+    "The Herm\u00e8s Birkin Quota Game: How a luxury brand uses forced artificial scarcity and purchase histories to make handbags appreciate faster than the stock market"
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 8,
-  "call_count": 260
+  "subcluster_idx": 4,
+  "fallback_idx": 9,
+  "call_count": 261
 }
