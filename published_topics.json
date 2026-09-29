@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How subsea tunnels, despite being submerged, experience significant **thermal expansion and contraction** by meters, requiring specialized flexible **expansion joints** to prevent buckling and cracking from internal temperature changes.",
     "Three Gorges Dam Hydropower Civil Engineering",
     "China's military develops a hypersonic air-to-air weapon, potentially redefining long-range aerial defense and threat projection.",
     "China's 'Artificial Sun' (EAST) achieves a groundbreaking breakthrough by breaching the Greenwald limit, a critical electron density barrier, significantly advancing the path towards viable nuclear fusion.",
@@ -89,9 +88,10 @@
     "Why ASML cleanrooms reject human hair and dead skin cells so violently that technicians wear total-body suits pressurized like space station airlocks",
     "Cinema Popcorn Economics: Why movie theaters are actually popcorn concessions that show Hollywood movies as an excuse to sell 1,200% markup snacks",
     "The Madagascar Vanilla Syndicate: Why natural vanilla beans are worth more by weight than silver and protected by armed jungle militias",
-    "The Herm\u00e8s Birkin Quota Game: How a luxury brand uses forced artificial scarcity and purchase histories to make handbags appreciate faster than the stock market"
+    "The Herm\u00e8s Birkin Quota Game: How a luxury brand uses forced artificial scarcity and purchase histories to make handbags appreciate faster than the stock market",
+    "E-Waste Urban Mining: Why extracting gold and palladium from a ton of discarded smartphones yields 100 times more precious metal than mining raw gold ore"
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 9,
-  "call_count": 261
+  "subcluster_idx": 0,
+  "fallback_idx": 12,
+  "call_count": 262
 }
