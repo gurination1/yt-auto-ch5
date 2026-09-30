@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The U.S. Army's Dark Eagle hypersonic weapon program faces continued delays in fielding its first battery, prompting a strategic shift towards low-cost, high-production rate demonstrator programs by the Air Force Research Laboratory (AFRL).",
     "Bagger 293 Giant Mining Excavator Mechanics",
     "New design images and 2027 construction plans for OCEANIX Busan, the UN-backed floating city prototype, are sparking global conversations about climate-resilient urbanism.",
     "What if mega-scale continental canal construction relies on giant bucket-wheel excavators moving millions of cubic meters of earth daily via endless conveyor systems?",
@@ -89,9 +88,10 @@
     "Surge Pricing & Battery Drain Algorithms: How travel apps and rideshares detect your remaining battery percentage and demand velocity to secretly inflate prices",
     "How supermarket bakeries pump raw artificial scent-air into HVAC ducts to trigger subconscious hunger and override rational shopping lists.",
     "The Gray Market Rolex Syndicate: How authorized dealers secretly funnel brand-new luxury watches to gray-market flippers for double retail price",
-    "The Gruen Transfer in Supermarket Architecture: Why grocery stores place milk in the furthest back corner and pump bakery scents to force impulse purchases"
+    "The Gruen Transfer in Supermarket Architecture: Why grocery stores place milk in the furthest back corner and pump bakery scents to force impulse purchases",
+    "The DRC Cobalt Chokepoint: How 70% of the global cobalt supply needed for every electric vehicle and smartphone originates from a single mining province"
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 16,
-  "call_count": 266
+  "subcluster_idx": 0,
+  "fallback_idx": 17,
+  "call_count": 267
 }
