@@ -1,6 +1,5 @@
 {
   "topics": [
-    "New design images and 2027 construction plans for OCEANIX Busan, the UN-backed floating city prototype, are sparking global conversations about climate-resilient urbanism.",
     "What if mega-scale continental canal construction relies on giant bucket-wheel excavators moving millions of cubic meters of earth daily via endless conveyor systems?",
     "The Akashi Kaikyo Bridge: The 4-kilometer suspension bridge that survived a 7.2 magnitude earthquake mid-construction",
     "Self-Repairing Heat Shields: The Ceramic Material That Heals Itself Mid-Flight at Mach 10",
@@ -89,9 +88,10 @@
     "The Gray Market Rolex Syndicate: How authorized dealers secretly funnel brand-new luxury watches to gray-market flippers for double retail price",
     "The Gruen Transfer in Supermarket Architecture: Why grocery stores place milk in the furthest back corner and pump bakery scents to force impulse purchases",
     "The DRC Cobalt Chokepoint: How 70% of the global cobalt supply needed for every electric vehicle and smartphone originates from a single mining province",
-    "Luxury Inventory Burning: Why Burberry and Cartier destroyed hundreds of millions in pristine unsold coats and watches rather than discount them"
+    "Luxury Inventory Burning: Why Burberry and Cartier destroyed hundreds of millions in pristine unsold coats and watches rather than discount them",
+    "How cinema butter-flavor oil chemistry uses pure coconut oil and yellow dye to mimic dairy butter at a fraction of the ingredient cost."
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 22,
-  "call_count": 268
+  "subcluster_idx": 2,
+  "fallback_idx": 23,
+  "call_count": 269
 }
