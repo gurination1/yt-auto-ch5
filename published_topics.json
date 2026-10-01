@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The 'Living' Concrete: How Ancient Deep-Sea Structures Self-Heal and Get Stronger Over Centuries by *Growing* New Rock from the Ocean Itself",
     "The 'Floating Skyscraper' ships that stand on the seabed to build offshore wind farms, lifting 3,000-ton turbines.",
     "The 'Underground Factory' TBMs: How colossal boring machines now incorporate entire concrete prefabrication plants *inside* them, building a full tunnel arch every few hours as they drill, deep beneath cities.",
     "The 'Floating' Skyscraper Foundation: How colossal towers are built on soft ground by removing as much soil as the building weighs.",
@@ -89,9 +88,10 @@
     "How cinema butter-flavor oil chemistry uses pure coconut oil and yellow dye to mimic dairy butter at a fraction of the ingredient cost.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How closed-loop pyro-metallurgical smelting plants melt down metric tons of electronic scrap to harvest hidden palladium and gold veins from obsolete supercomputers.",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 0,
+  "subcluster_idx": 1,
   "fallback_idx": 20,
-  "call_count": 272
+  "call_count": 273
 }
