@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Akashi Kaikyo Bridge: The 4-kilometer suspension bridge that survived a 7.2 magnitude earthquake mid-construction",
     "Self-Repairing Heat Shields: The Ceramic Material That Heals Itself Mid-Flight at Mach 10",
     "The 'Living' Concrete: How Ancient Deep-Sea Structures Self-Heal and Get Stronger Over Centuries by *Growing* New Rock from the Ocean Itself",
     "The 'Floating Skyscraper' ships that stand on the seabed to build offshore wind farms, lifting 3,000-ton turbines.",
@@ -89,9 +88,10 @@
     "The DRC Cobalt Chokepoint: How 70% of the global cobalt supply needed for every electric vehicle and smartphone originates from a single mining province",
     "Luxury Inventory Burning: Why Burberry and Cartier destroyed hundreds of millions in pristine unsold coats and watches rather than discount them",
     "How cinema butter-flavor oil chemistry uses pure coconut oil and yellow dye to mimic dairy butter at a fraction of the ingredient cost.",
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "How closed-loop pyro-metallurgical smelting plants melt down metric tons of electronic scrap to harvest hidden palladium and gold veins from obsolete supercomputers."
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 20,
-  "call_count": 270
+  "subcluster_idx": 4,
+  "fallback_idx": 21,
+  "call_count": 271
 }
