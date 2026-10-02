@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The 'Underground Factory' TBMs: How colossal boring machines now incorporate entire concrete prefabrication plants *inside* them, building a full tunnel arch every few hours as they drill, deep beneath cities.",
     "The 'Floating' Skyscraper Foundation: How colossal towers are built on soft ground by removing as much soil as the building weighs.",
     "Dynamic Skyscraper Facades: Buildings That Move",
     "TBMs That Hover: Moving Giants on Air",
@@ -89,9 +88,10 @@
     "How closed-loop pyro-metallurgical smelting plants melt down metric tons of electronic scrap to harvest hidden palladium and gold veins from obsolete supercomputers.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "Why supermarkets intentionally place floral departments right at the front entrance to alter your sensory state and make you spend 30% more on impulse items."
+    "Why supermarkets intentionally place floral departments right at the front entrance to alter your sensory state and make you spend 30% more on impulse items.",
+    "How underground salt cavern syndicates manipulate regional brine reserves to control the chemical feedstock pipeline for global lithium-ion manufacturing."
   ],
-  "subcluster_idx": 2,
-  "fallback_idx": 21,
-  "call_count": 274
+  "subcluster_idx": 3,
+  "fallback_idx": 22,
+  "call_count": 275
 }
