@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The 'Floating Skyscraper' ships that stand on the seabed to build offshore wind farms, lifting 3,000-ton turbines.",
     "The 'Underground Factory' TBMs: How colossal boring machines now incorporate entire concrete prefabrication plants *inside* them, building a full tunnel arch every few hours as they drill, deep beneath cities.",
     "The 'Floating' Skyscraper Foundation: How colossal towers are built on soft ground by removing as much soil as the building weighs.",
     "Dynamic Skyscraper Facades: Buildings That Move",
@@ -89,9 +88,10 @@
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How closed-loop pyro-metallurgical smelting plants melt down metric tons of electronic scrap to harvest hidden palladium and gold veins from obsolete supercomputers.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "Why supermarkets intentionally place floral departments right at the front entrance to alter your sensory state and make you spend 30% more on impulse items."
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 20,
-  "call_count": 273
+  "subcluster_idx": 2,
+  "fallback_idx": 21,
+  "call_count": 274
 }
