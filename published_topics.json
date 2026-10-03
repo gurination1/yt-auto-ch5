@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Ocean's Self-Sealing Tunnels: How Water Pressure Makes Them Stronger",
     "Ecuador's Chinese-Built Mega-Dam Plagued by 17,000 Cracks",
     "How 'plug-and-play' self-erecting mega-cranes are now deploying in hours, not weeks, for mega-projects, with advanced AI-driven precision on challenging sites.",
     "The skyscraper that *bends* with the sun: How supertalls visibly lean and grow meters daily.",
@@ -89,9 +88,10 @@
     "How underground salt cavern syndicates manipulate regional brine reserves to control the chemical feedstock pipeline for global lithium-ion manufacturing.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How Swiss watchmaker Patek Philippe restricts total annual production to under 70,000 timepieces, enforcing multi-decade waitlists for elite buyers.",
-    "The multi-billion-dollar seismic sensors buried beneath ASML cleanrooms that instantly shut down laser lithography whenever a distant train rattles the earth"
+    "The multi-billion-dollar seismic sensors buried beneath ASML cleanrooms that instantly shut down laser lithography whenever a distant train rattles the earth",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 22,
-  "call_count": 278
+  "subcluster_idx": 2,
+  "fallback_idx": 20,
+  "call_count": 279
 }
