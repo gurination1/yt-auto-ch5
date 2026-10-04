@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Norway's Floating Underwater Tunnels: Roads Suspended in Fjords",
     "The silent, inevitable death of every mega-dam: how they are paradoxically designed to fill up with millions of tons of river sediment, eventually becoming useless 'concrete coffins' for water.",
     "Electric 'Urban Mining': 89% Gold Recovery from E-Waste with 100x Less Chemicals",
     "Luxury Fashion's Secret Trash - EU Ban on Inventory Destruction",
@@ -89,9 +88,10 @@
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How specialized e-waste processing plants deploy centrifugal pyrolytic reactors to vaporize plastic housings while leaving a pristine, concentrated slag of molten precious metals behind.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "How airlines use ghost-booking and cookie trackers to quietly dynamic-price vacant middle seats based on your device model."
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 20,
-  "call_count": 283
+  "subcluster_idx": 2,
+  "fallback_idx": 21,
+  "call_count": 284
 }
