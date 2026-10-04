@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The skyscraper that *bends* with the sun: How supertalls visibly lean and grow meters daily.",
     "China's Undersea High-Speed Rail: Robots Battling Extreme Geology",
     "Norway's Floating Underwater Tunnels: Roads Suspended in Fjords",
     "The silent, inevitable death of every mega-dam: how they are paradoxically designed to fill up with millions of tons of river sediment, eventually becoming useless 'concrete coffins' for water.",
@@ -89,9 +88,10 @@
     "The multi-billion-dollar seismic sensors buried beneath ASML cleanrooms that instantly shut down laser lithography whenever a distant train rattles the earth",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "How specialized e-waste processing plants deploy centrifugal pyrolytic reactors to vaporize plastic housings while leaving a pristine, concentrated slag of molten precious metals behind."
+    "How specialized e-waste processing plants deploy centrifugal pyrolytic reactors to vaporize plastic housings while leaving a pristine, concentrated slag of molten precious metals behind.",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 21,
-  "call_count": 281
+  "subcluster_idx": 0,
+  "fallback_idx": 20,
+  "call_count": 282
 }
