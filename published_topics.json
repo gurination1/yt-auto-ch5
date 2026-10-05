@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Electric 'Urban Mining': 89% Gold Recovery from E-Waste with 100x Less Chemicals",
     "Luxury Fashion's Secret Trash - EU Ban on Inventory Destruction",
     "The Invisible Glass That Controls The World: ASML's Secret Lens Monopoly",
     "Costco's Silent Hot Dog Combo Shift: The $1.50 Loss Leader's 40-Year Secret Twist",
@@ -89,9 +88,10 @@
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How airlines use ghost-booking and cookie trackers to quietly dynamic-price vacant middle seats based on your device model.",
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "How closed-loop hydrometallurgical recycling plants strip microgram traces of platinum from dead catalytic converters using selective chemical acid baths."
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 20,
-  "call_count": 285
+  "subcluster_idx": 4,
+  "fallback_idx": 21,
+  "call_count": 286
 }
