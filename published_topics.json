@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Invisible Glass That Controls The World: ASML's Secret Lens Monopoly",
     "Costco's Silent Hot Dog Combo Shift: The $1.50 Loss Leader's 40-Year Secret Twist",
     "South America's 'Lithium OPEC' Emerges: Four Nations Plot Global Market Control",
     "The Razor-and-Blades Business Model of Jet Engines: Why Airlines Get the Blades Free, But Pay for Every Cut",
@@ -89,9 +88,10 @@
     "How airlines use ghost-booking and cookie trackers to quietly dynamic-price vacant middle seats based on your device model.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How closed-loop hydrometallurgical recycling plants strip microgram traces of platinum from dead catalytic converters using selective chemical acid baths.",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 0,
+  "subcluster_idx": 1,
   "fallback_idx": 20,
-  "call_count": 287
+  "call_count": 288
 }
