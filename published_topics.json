@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Razor-and-Blades Business Model of Jet Engines: Why Airlines Get the Blades Free, But Pay for Every Cut",
     "De Beers Diamond Monopoly Cracking Under Lab-Grown Pressure",
     "ASML's Remote Kill Switch in Taiwan Foundries",
     "The Grocery Store Vegetable Misting Trap",
@@ -89,9 +88,10 @@
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 3,
+  "subcluster_idx": 4,
   "fallback_idx": 20,
-  "call_count": 290
+  "call_count": 291
 }
