@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Runway-Cracking Logistics of ASML's Newest High-NA Machine",
     "The FTC's Crackdown on 'Surveillance Pricing' Algorithms",
     "The Secret Mafia Controlling the World's Deserts for Construction Sand",
     "How Rolls-Royce and GE Power Lease Jet Engines for $0 Upfront Profit, Making Billions Exclusively Through Total Hourly Flight Hour Servicing Monopolies",
@@ -89,9 +88,10 @@
     "How airline revenue algorithms intentionally overbook physical seats by mathematically predicting passenger no-show rates to maximize capacity and cash flow.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 0,
+  "subcluster_idx": 1,
   "fallback_idx": 20,
-  "call_count": 297
+  "call_count": 298
 }
