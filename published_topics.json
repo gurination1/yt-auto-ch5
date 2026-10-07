@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Secret Underground Vault in London Where De Beers Physically Locks Away Tons of Diamonds to Prevent the Price From Crashing to Zero",
     "The Runway-Cracking Logistics of ASML's Newest High-NA Machine",
     "The FTC's Crackdown on 'Surveillance Pricing' Algorithms",
     "The Secret Mafia Controlling the World's Deserts for Construction Sand",
@@ -89,9 +88,10 @@
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How airline revenue algorithms intentionally overbook physical seats by mathematically predicting passenger no-show rates to maximize capacity and cash flow.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 4,
+  "subcluster_idx": 0,
   "fallback_idx": 20,
-  "call_count": 296
+  "call_count": 297
 }
