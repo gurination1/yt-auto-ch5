@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The FTC's Crackdown on 'Surveillance Pricing' Algorithms",
     "The Secret Mafia Controlling the World's Deserts for Construction Sand",
     "How Rolls-Royce and GE Power Lease Jet Engines for $0 Upfront Profit, Making Billions Exclusively Through Total Hourly Flight Hour Servicing Monopolies",
     "How Rolex's Certified Pre-Owned program intentionally prices used watches higher than new ones, forcing buyers into a psychological trap to clear showroom backlogs.",
@@ -89,9 +88,10 @@
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "How Costco's $1.50 rotisserie chicken loss-leader anchors an invisible psychographic trap that forces bulk shoppers to spend $300 on non-essentials."
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 20,
-  "call_count": 298
+  "subcluster_idx": 2,
+  "fallback_idx": 21,
+  "call_count": 299
 }
