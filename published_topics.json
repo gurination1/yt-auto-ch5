@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How movie theaters use deceptive vertical popcorn sizing psychology to trick human volumetric perception into buying high-margin large buckets.",
     "How Madagascar's armed vanilla cartels use secret botanical DNA tracking and clandestine jungle heists to control 80% of the world's natural flavoring supply.",
     "Why commercial aviation engine makers legally prohibit airlines from repairing their own turbine blades, enforcing a multi-billion dollar hourly servicing trap.",
     "How Herm\u00e8s uses the psychological 'Birkin Trap' to force billionaire clients to spend six figures on unrelated tableware before earning the right to buy a handbag.",
@@ -89,9 +88,10 @@
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How De Beers secures its global diamond monopoly by locking trillions in rough gems inside a high-security London underground vault system.",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 1,
+  "subcluster_idx": 2,
   "fallback_idx": 20,
-  "call_count": 303
+  "call_count": 304
 }
