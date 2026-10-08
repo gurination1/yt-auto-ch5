@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Secret Zero-Gravity Vacuum Chambers Inside ASML Lithography Machines Where Droplets of Molten Tin Are Blasted 50,000 Times a Second with Lasers to Make Microchips",
     "How movie theaters use deceptive vertical popcorn sizing psychology to trick human volumetric perception into buying high-margin large buckets.",
     "How Madagascar's armed vanilla cartels use secret botanical DNA tracking and clandestine jungle heists to control 80% of the world's natural flavoring supply.",
     "Why commercial aviation engine makers legally prohibit airlines from repairing their own turbine blades, enforcing a multi-billion dollar hourly servicing trap.",
@@ -89,9 +88,10 @@
     "How Costco's $1.50 rotisserie chicken loss-leader anchors an invisible psychographic trap that forces bulk shoppers to spend $300 on non-essentials.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "How De Beers secures its global diamond monopoly by locking trillions in rough gems inside a high-security London underground vault system."
+    "How De Beers secures its global diamond monopoly by locking trillions in rough gems inside a high-security London underground vault system.",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 21,
-  "call_count": 302
+  "subcluster_idx": 1,
+  "fallback_idx": 20,
+  "call_count": 303
 }
