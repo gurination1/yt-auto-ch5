@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How airline dynamic seat tiering algorithms track your device battery level and search history to subtly hike ticket prices in real-time.",
     "The Shadowy Commodity Syndicates That Monopolize Global Quartz Sand, Dictating the Purity Standards Required to Manufacture Every Single Silicon Microchip on Earth.",
     "How Swiss recycling refineries recover millions in lost precious metals from discarded medical equipment using high-temperature plasma arc smelting.",
     "Why luxury fashion giants deliberately burn or shred millions of dollars in unsold designer clothing each year to protect brand exclusivity from bargain hunters.",
@@ -89,9 +88,10 @@
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "Why ASML lithography scanners require ultra-pure tin droplets blasted by high-powered lasers 50,000 times a second to manufacture advanced microchips."
+    "Why ASML lithography scanners require ultra-pure tin droplets blasted by high-powered lasers 50,000 times a second to manufacture advanced microchips.",
+    "How cinema concession stands use coconut-scented oil pumps to artificially trigger intense hunger cravings the moment you step past the box office."
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 21,
-  "call_count": 308
+  "subcluster_idx": 2,
+  "fallback_idx": 22,
+  "call_count": 309
 }
