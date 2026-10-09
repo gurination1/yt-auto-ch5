@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Why commercial aviation engine makers legally prohibit airlines from repairing their own turbine blades, enforcing a multi-billion dollar hourly servicing trap.",
     "How Herm\u00e8s uses the psychological 'Birkin Trap' to force billionaire clients to spend six figures on unrelated tableware before earning the right to buy a handbag.",
     "How the Malacca Straits choke point forces mega-container ships to carry extra tons of fuel just to physically alter their buoyancy and squeeze through shallow underwater mud thresholds.",
     "How airline dynamic seat tiering algorithms track your device battery level and search history to subtly hike ticket prices in real-time.",
@@ -89,9 +88,10 @@
     "How De Beers secures its global diamond monopoly by locking trillions in rough gems inside a high-security London underground vault system.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 3,
+  "subcluster_idx": 4,
   "fallback_idx": 20,
-  "call_count": 305
+  "call_count": 306
 }
