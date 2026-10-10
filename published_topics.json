@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Why luxury fashion giants deliberately burn or shred millions of dollars in unsold designer clothing each year to protect brand exclusivity from bargain hunters.",
     "The invisible anti-piracy private mercenary fleets stationed in the Malacca Straits that legally operate in a maritime gray zone to protect billion-dollar crude tankers.",
     "How supermarket endcap displays and the infamous 'Gruen transfer' layout psychology force shoppers past high-margin impulse items before reaching basic dairy essentials.",
     "How artisanal cobalt miners in the Democratic Republic of Congo manually tunnel through unstable earth by hand, feeding the secretive global battery supply chain.",
@@ -89,9 +88,10 @@
     "Why ASML lithography scanners require ultra-pure tin droplets blasted by high-powered lasers 50,000 times a second to manufacture advanced microchips.",
     "How cinema concession stands use coconut-scented oil pumps to artificially trigger intense hunger cravings the moment you step past the box office.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "The hidden Herm\u00e8s purchase history algorithm that forces elite clients to spend thousands on unwanted plates before earning the right to buy a Birkin."
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 20,
-  "call_count": 311
+  "subcluster_idx": 0,
+  "fallback_idx": 21,
+  "call_count": 312
 }
