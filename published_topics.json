@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The invisible anti-piracy private mercenary fleets stationed in the Malacca Straits that legally operate in a maritime gray zone to protect billion-dollar crude tankers.",
     "How supermarket endcap displays and the infamous 'Gruen transfer' layout psychology force shoppers past high-margin impulse items before reaching basic dairy essentials.",
     "How artisanal cobalt miners in the Democratic Republic of Congo manually tunnel through unstable earth by hand, feeding the secretive global battery supply chain.",
     "How certified e-waste refineries use micro-targeted ionic leaching to strip pure 24-karat gold from discarded smartphone circuit boards with zero toxic acid waste.",
@@ -89,9 +88,10 @@
     "How cinema concession stands use coconut-scented oil pumps to artificially trigger intense hunger cravings the moment you step past the box office.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "The hidden Herm\u00e8s purchase history algorithm that forces elite clients to spend thousands on unwanted plates before earning the right to buy a Birkin."
+    "The hidden Herm\u00e8s purchase history algorithm that forces elite clients to spend thousands on unwanted plates before earning the right to buy a Birkin.",
+    "Why the Bab el-Mandeb strait closure forces mega-container ships to burn millions in extra fuel bypassing Africa's Cape of Good Hope."
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 21,
-  "call_count": 312
+  "subcluster_idx": 1,
+  "fallback_idx": 22,
+  "call_count": 313
 }
