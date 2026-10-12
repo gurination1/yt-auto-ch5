@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How underground black-market brokers launder millions of carats of conflict diamonds and illicit industrial minerals through shadow ports in Dubai and Antwerp.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How Swiss watch cartels strictly control component allocations to independent master watchmakers, effectively choking off the secondary market to manufacture perpetual artificial scarcity.",
     "The Global Helium Crisis: Why medical MRI machines and semiconductor cleanrooms are scrambling over an irreplaceable non-renewable underground gas",
@@ -89,9 +88,10 @@
     "How automated shredding and magnetic eddy current separators isolate microscopic gold flakes from millions of dead consumer smartphones in minutes.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Why the underwater silt geography of the Singapore Strait forces supertankers to calculate every single millimeter of hull clearance during peak tide windows.",
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "How secretive lithium reserve cartels in the Andes exploit transnational water rights loopholes to starve local agricultural communities of vital irrigation."
   ],
-  "subcluster_idx": 2,
-  "fallback_idx": 20,
-  "call_count": 319
+  "subcluster_idx": 3,
+  "fallback_idx": 21,
+  "call_count": 320
 }
