@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How supermarket vegetable misting systems use forced evaporative cooling not for freshness, but to artificially add water weight that makes shoppers pay fresh-produce prices for pure tap water.",
     "How underground black-market brokers launder millions of carats of conflict diamonds and illicit industrial minerals through shadow ports in Dubai and Antwerp.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How Swiss watch cartels strictly control component allocations to independent master watchmakers, effectively choking off the secondary market to manufacture perpetual artificial scarcity.",
@@ -89,9 +88,10 @@
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How automated shredding and magnetic eddy current separators isolate microscopic gold flakes from millions of dead consumer smartphones in minutes.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "Why the underwater silt geography of the Singapore Strait forces supertankers to calculate every single millimeter of hull clearance during peak tide windows."
+    "Why the underwater silt geography of the Singapore Strait forces supertankers to calculate every single millimeter of hull clearance during peak tide windows.",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 21,
-  "call_count": 318
+  "subcluster_idx": 2,
+  "fallback_idx": 20,
+  "call_count": 319
 }
