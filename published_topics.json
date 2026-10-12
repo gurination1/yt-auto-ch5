@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Why TSMC semiconductor foundries in Taiwan require hyper-purified nitrogen gas so sterile that a single stray atom of dust ruins an entire batch of multi-billion-dollar silicon wafers.",
     "How supermarket vegetable misting systems use forced evaporative cooling not for freshness, but to artificially add water weight that makes shoppers pay fresh-produce prices for pure tap water.",
     "How underground black-market brokers launder millions of carats of conflict diamonds and illicit industrial minerals through shadow ports in Dubai and Antwerp.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
@@ -89,9 +88,10 @@
     "How airline booking engines silently deploy device-tracking cookies to dynamically alter seat tier prices based on your computer model and battery status.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How automated shredding and magnetic eddy current separators isolate microscopic gold flakes from millions of dead consumer smartphones in minutes.",
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
+    "Why the underwater silt geography of the Singapore Strait forces supertankers to calculate every single millimeter of hull clearance during peak tide windows."
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 20,
-  "call_count": 317
+  "subcluster_idx": 1,
+  "fallback_idx": 21,
+  "call_count": 318
 }
