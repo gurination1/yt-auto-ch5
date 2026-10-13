@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How Swiss watch cartels strictly control component allocations to independent master watchmakers, effectively choking off the secondary market to manufacture perpetual artificial scarcity.",
     "The Global Helium Crisis: Why medical MRI machines and semiconductor cleanrooms are scrambling over an irreplaceable non-renewable underground gas",
     "Casino Floor Psychological Engineering: Why casinos eliminate windows, remove all clocks, and curve carpet pathways to distort time and risk perception",
@@ -89,9 +88,10 @@
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Why the underwater silt geography of the Singapore Strait forces supertankers to calculate every single millimeter of hull clearance during peak tide windows.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
-    "How secretive lithium reserve cartels in the Andes exploit transnational water rights loopholes to starve local agricultural communities of vital irrigation."
+    "How secretive lithium reserve cartels in the Andes exploit transnational water rights loopholes to starve local agricultural communities of vital irrigation.",
+    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers"
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 21,
-  "call_count": 320
+  "subcluster_idx": 4,
+  "fallback_idx": 20,
+  "call_count": 321
 }
