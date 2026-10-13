@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Casino Floor Psychological Engineering: Why casinos eliminate windows, remove all clocks, and curve carpet pathways to distort time and risk perception",
     "How armed maritime mafia cartels illegally dredge riverbeds and coastlines for construction-grade sand, causing entire islands to vanish overnight.",
     "How GE Aerospace transformed its entire business model from hardware manufacturing into an elite software and hourly service cartel dictating global commercial flight margins.",
     "The Herm\u00e8s Birkin Purchase Ledger: How Secret Client Scoring Algorithms Determine Who Is 'Worthy' of Buying a Six-Figure Handbag",
@@ -89,9 +88,10 @@
     "How secretive lithium reserve cartels in the Andes exploit transnational water rights loopholes to starve local agricultural communities of vital irrigation.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "The Synthetic Diamond Threat: How lab-grown gemstones are terrifying luxury cartels by proving physical perfection destroys artificial rarity value.",
-    "How TSMC semiconductor foundries maintain pristine cleanroom air purity by requiring robotic automated guided vehicles to transport silicon wafers inside sealed vacuum pods."
+    "How TSMC semiconductor foundries maintain pristine cleanroom air purity by requiring robotic automated guided vehicles to transport silicon wafers inside sealed vacuum pods.",
+    "Why warehouse clubs deliberately keep their iconic rotisserie chickens priced below cost to trap buyers into spending hundreds on impulse items."
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 22,
-  "call_count": 323
+  "subcluster_idx": 2,
+  "fallback_idx": 23,
+  "call_count": 324
 }
