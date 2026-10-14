@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Gillette Razor and Blades Model: How industrial consumables trap millions of consumers into high-margin refill subscriptions for decades",
     "The Strait of Malacca Bottleneck: Why 25% of all global traded oil passes through a 1.7-mile maritime corridor and what happens if it shuts down",
     "The Lithium Triangle Geopolitics: How Chile, Bolivia, and Argentina control 50% of the world's battery reserves and play superpowers against each other",
     "How TSMC foundries use ultra-pure liquid hydrogen fluoride acid contained in specially coated Teflon drums to chemically etch microchips without dissolving their own containment walls.",
@@ -89,9 +88,10 @@
     "The Global Helium Crisis: Why medical MRI machines and semiconductor cleanrooms are scrambling over an irreplaceable non-renewable underground gas",
     "The Rolex Authorized Dealer Allocation Matrix: How Secret Blacklists and Purchase History Criteria Decide Who Gets a Watch",
     "Casino Floor Psychological Engineering: Why casinos eliminate windows, remove all clocks, and curve carpet pathways to distort time and risk perception",
-    "Why supermarket checkout aisles use specific eye-level shelving placement to manipulate your impulse buying behavior."
+    "Why supermarket checkout aisles use specific eye-level shelving placement to manipulate your impulse buying behavior.",
+    "How Andean lithium-brine extraction syndicates pump millions of gallons of desert water to manufacture battery chemicals, starving indigenous agricultural basins dry."
   ],
-  "subcluster_idx": 2,
-  "fallback_idx": 0,
-  "call_count": 329
+  "subcluster_idx": 3,
+  "fallback_idx": 1,
+  "call_count": 330
 }
