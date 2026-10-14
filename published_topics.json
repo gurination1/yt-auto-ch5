@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How GE Aerospace transformed its entire business model from hardware manufacturing into an elite software and hourly service cartel dictating global commercial flight margins.",
     "The Herm\u00e8s Birkin Purchase Ledger: How Secret Client Scoring Algorithms Determine Who Is 'Worthy' of Buying a Six-Figure Handbag",
     "How Suez Canal transit authorities calculate dynamic vessel draft limits using real-time hydrodynamic suction forces to prevent container ships from grounding.",
     "The De Beers Diamond Illusion: How an offshore cartel invented the engagement ring tradition out of thin air and artificially stockpiled diamonds to inflate prices",
@@ -89,9 +88,10 @@
     "The Synthetic Diamond Threat: How lab-grown gemstones are terrifying luxury cartels by proving physical perfection destroys artificial rarity value.",
     "How TSMC semiconductor foundries maintain pristine cleanroom air purity by requiring robotic automated guided vehicles to transport silicon wafers inside sealed vacuum pods.",
     "Why warehouse clubs deliberately keep their iconic rotisserie chickens priced below cost to trap buyers into spending hundreds on impulse items.",
-    "The 'Artisanal' Cobalt Trap: How multinational firms use shell companies to bypass supply chain audits, laundering child-mined cobalt into western EV battery packs."
+    "The 'Artisanal' Cobalt Trap: How multinational firms use shell companies to bypass supply chain audits, laundering child-mined cobalt into western EV battery packs.",
+    "The Global Helium Crisis: Why medical MRI machines and semiconductor cleanrooms are scrambling over an irreplaceable non-renewable underground gas"
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 24,
-  "call_count": 325
+  "subcluster_idx": 4,
+  "fallback_idx": 23,
+  "call_count": 326
 }
