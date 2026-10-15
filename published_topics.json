@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Lithium Triangle Geopolitics: How Chile, Bolivia, and Argentina control 50% of the world's battery reserves and play superpowers against each other",
     "How TSMC foundries use ultra-pure liquid hydrogen fluoride acid contained in specially coated Teflon drums to chemically etch microchips without dissolving their own containment walls.",
     "How cinema concession profit margins rely on a 1,200% markup on raw kernels, subsidizing film ticket sales that otherwise net zero studio revenue.",
     "The SaaS Subscription Shift: How software companies abandoned $50 lifetime licenses for recurring monthly fees and multiplied corporate valuations tenfold",
@@ -89,9 +88,10 @@
     "Casino Floor Psychological Engineering: Why casinos eliminate windows, remove all clocks, and curve carpet pathways to distort time and risk perception",
     "Why supermarket checkout aisles use specific eye-level shelving placement to manipulate your impulse buying behavior.",
     "How Andean lithium-brine extraction syndicates pump millions of gallons of desert water to manufacture battery chemicals, starving indigenous agricultural basins dry.",
-    "The De Beers Diamond Illusion: How an offshore cartel invented the engagement ring tradition out of thin air and artificially stockpiled diamonds to inflate prices"
+    "The De Beers Diamond Illusion: How an offshore cartel invented the engagement ring tradition out of thin air and artificially stockpiled diamonds to inflate prices",
+    "The Gillette Razor and Blades Model: How industrial consumables trap millions of consumers into high-margin refill subscriptions for decades"
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 5,
-  "call_count": 331
+  "subcluster_idx": 0,
+  "fallback_idx": 10,
+  "call_count": 332
 }
