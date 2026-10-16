@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Haber-Bosch and Fertilizer Economics: How natural gas feedstock produces global ammonia fertilizer that feeds 50% of the human population",
     "The Intermodal Shipping Container: How a standardized corrugated steel box invented by Malcolm McLean dropped freight transport costs by 99%",
     "Pharmaceutical Patent Thickets: How drug corporations file hundreds of minor secondary patents to delay generic life-saving medicine competition for 30 years",
     "Why grocery store floor tiles are explicitly textured with a click-clack noise pattern to force shoppers to slow down and buy more.",
@@ -89,9 +88,10 @@
     "The Gillette Razor and Blades Model: How industrial consumables trap millions of consumers into high-margin refill subscriptions for decades",
     "How Singapore Strait maritime traffic controllers utilize encrypted radar arrays to prevent catastrophic collisions inside the world's busiest oil and container bottleneck.",
     "How supermarket floor plan designers use the mandatory counter-clockwise 'Decompression Zone' to instantly lower shoppers' cognitive defenses before they reach premium displays.",
-    "The Lithium Triangle Geopolitics: How Chile, Bolivia, and Argentina control 50% of the world's battery reserves and play superpowers against each other"
+    "The Lithium Triangle Geopolitics: How Chile, Bolivia, and Argentina control 50% of the world's battery reserves and play superpowers against each other",
+    "The SaaS Subscription Shift: How software companies abandoned $50 lifetime licenses for recurring monthly fees and multiplied corporate valuations tenfold"
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 15,
-  "call_count": 335
+  "subcluster_idx": 4,
+  "fallback_idx": 18,
+  "call_count": 336
 }
