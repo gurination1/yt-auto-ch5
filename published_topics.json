@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The SaaS Subscription Shift: How software companies abandoned $50 lifetime licenses for recurring monthly fees and multiplied corporate valuations tenfold",
     "Haber-Bosch and Fertilizer Economics: How natural gas feedstock produces global ammonia fertilizer that feeds 50% of the human population",
     "The Intermodal Shipping Container: How a standardized corrugated steel box invented by Malcolm McLean dropped freight transport costs by 99%",
     "Pharmaceutical Patent Thickets: How drug corporations file hundreds of minor secondary patents to delay generic life-saving medicine competition for 30 years",
@@ -89,9 +88,10 @@
     "The De Beers Diamond Illusion: How an offshore cartel invented the engagement ring tradition out of thin air and artificially stockpiled diamonds to inflate prices",
     "The Gillette Razor and Blades Model: How industrial consumables trap millions of consumers into high-margin refill subscriptions for decades",
     "How Singapore Strait maritime traffic controllers utilize encrypted radar arrays to prevent catastrophic collisions inside the world's busiest oil and container bottleneck.",
-    "How supermarket floor plan designers use the mandatory counter-clockwise 'Decompression Zone' to instantly lower shoppers' cognitive defenses before they reach premium displays."
+    "How supermarket floor plan designers use the mandatory counter-clockwise 'Decompression Zone' to instantly lower shoppers' cognitive defenses before they reach premium displays.",
+    "The Lithium Triangle Geopolitics: How Chile, Bolivia, and Argentina control 50% of the world's battery reserves and play superpowers against each other"
   ],
-  "subcluster_idx": 2,
-  "fallback_idx": 12,
-  "call_count": 334
+  "subcluster_idx": 3,
+  "fallback_idx": 15,
+  "call_count": 335
 }
