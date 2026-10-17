@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Costco Hot Dog Paradox: Why Costco's founder threatened to murder the CEO if he raised the $1.50 hot dog price, and how it anchors $200B in sales",
     "ASML's Extreme UV Monopoly: How a single Dutch company controls 100% of the world's extreme UV chipmaking machines and holds the tech economy hostage",
     "The Global Sand Mafia: How illegal syndicates and armed cartels steal millions of tons of beach and river sand to feed the concrete construction boom",
     "How secretive construction-grade sand brokers manipulate riverbed dredging permits to artificially inflate concrete manufacturing costs across booming mega-cities.",
@@ -89,9 +88,10 @@
     "Why TSMC semiconductor mega-foundries rely on subterranean vibration dampeners to isolate ultra-precise wafer etching from distant highway traffic",
     "How warehouse club optical illusion pricing on bulk toilet paper tricks your brain into ignoring the massive unit-cost markup hiding underneath.",
     "How clandestine vanilla curing syndicates artificially manipulate bean moisture levels to trap gourmet food conglomerates in multi-million-dollar price-fixing schemes.",
-    "How GE Aerospace flipped its entire business model from hardware manufacturing to software-driven predictive maintenance, printing billions in recurring hourly service revenue."
+    "How GE Aerospace flipped its entire business model from hardware manufacturing to software-driven predictive maintenance, printing billions in recurring hourly service revenue.",
+    "How high-end designer brands weaponize industrial shredders to pulp unsold seasonal inventory so outlet malls can never devalue their exclusive status."
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 23,
-  "call_count": 341
+  "subcluster_idx": 0,
+  "fallback_idx": 24,
+  "call_count": 342
 }
