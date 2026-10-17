@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How the shadowy global river-sand mafia uses GPS-spoofing barges to evade maritime patrols while stripping away critical coastal protection barriers under cover of night.",
     "Why GE Aerospace engine division abandoned unit sales margins to build a predictive telemetry monopoly that bills airlines down to the exact second of thrust.",
     "The Costco Hot Dog Paradox: Why Costco's founder threatened to murder the CEO if he raised the $1.50 hot dog price, and how it anchors $200B in sales",
     "ASML's Extreme UV Monopoly: How a single Dutch company controls 100% of the world's extreme UV chipmaking machines and holds the tech economy hostage",
@@ -89,9 +88,10 @@
     "The SaaS Subscription Shift: How software companies abandoned $50 lifetime licenses for recurring monthly fees and multiplied corporate valuations tenfold",
     "Haber-Bosch and Fertilizer Economics: How natural gas feedstock produces global ammonia fertilizer that feeds 50% of the human population",
     "Why TSMC semiconductor mega-foundries rely on subterranean vibration dampeners to isolate ultra-precise wafer etching from distant highway traffic",
-    "How warehouse club optical illusion pricing on bulk toilet paper tricks your brain into ignoring the massive unit-cost markup hiding underneath."
+    "How warehouse club optical illusion pricing on bulk toilet paper tricks your brain into ignoring the massive unit-cost markup hiding underneath.",
+    "How clandestine vanilla curing syndicates artificially manipulate bean moisture levels to trap gourmet food conglomerates in multi-million-dollar price-fixing schemes."
   ],
-  "subcluster_idx": 2,
-  "fallback_idx": 21,
-  "call_count": 339
+  "subcluster_idx": 3,
+  "fallback_idx": 22,
+  "call_count": 340
 }
