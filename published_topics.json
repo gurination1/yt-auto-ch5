@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Global Sand Mafia: How illegal syndicates and armed cartels steal millions of tons of beach and river sand to feed the concrete construction boom",
     "How secretive construction-grade sand brokers manipulate riverbed dredging permits to artificially inflate concrete manufacturing costs across booming mega-cities.",
     "Rolls-Royce Power-by-the-Hour: Why jet engine manufacturers sell multi-million-dollar engines at a loss and print billions renting uptime by the minute",
     "The Suez Canal Chokepoint: How a single stuck container ship froze $9.6 billion of global trade every day and triggered a worldwide inflation shockwave",
@@ -89,9 +88,10 @@
     "How clandestine vanilla curing syndicates artificially manipulate bean moisture levels to trap gourmet food conglomerates in multi-million-dollar price-fixing schemes.",
     "How GE Aerospace flipped its entire business model from hardware manufacturing to software-driven predictive maintenance, printing billions in recurring hourly service revenue.",
     "How high-end designer brands weaponize industrial shredders to pulp unsold seasonal inventory so outlet malls can never devalue their exclusive status.",
-    "Why Suez Canal transit schedulers use specialized tugboat swarms to wrestle rogue mega-container vessels through narrow desert dredging channels."
+    "Why Suez Canal transit schedulers use specialized tugboat swarms to wrestle rogue mega-container vessels through narrow desert dredging channels.",
+    "How Costco's frozen corporate mandate to lock the famous $1.50 hot dog price acts as an invisible anchor that drives massive bulk-item cart sales"
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 0,
-  "call_count": 343
+  "subcluster_idx": 2,
+  "fallback_idx": 1,
+  "call_count": 344
 }
