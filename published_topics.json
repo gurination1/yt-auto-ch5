@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Rolls-Royce Power-by-the-Hour: Why jet engine manufacturers sell multi-million-dollar engines at a loss and print billions renting uptime by the minute",
     "The Suez Canal Chokepoint: How a single stuck container ship froze $9.6 billion of global trade every day and triggered a worldwide inflation shockwave",
     "Why ASML cleanrooms reject human hair and dead skin cells so violently that technicians wear total-body suits pressurized like space station airlocks",
     "Cinema Popcorn Economics: Why movie theaters are actually popcorn concessions that show Hollywood movies as an excuse to sell 1,200% markup snacks",
@@ -89,9 +88,10 @@
     "How high-end designer brands weaponize industrial shredders to pulp unsold seasonal inventory so outlet malls can never devalue their exclusive status.",
     "Why Suez Canal transit schedulers use specialized tugboat swarms to wrestle rogue mega-container vessels through narrow desert dredging channels.",
     "How Costco's frozen corporate mandate to lock the famous $1.50 hot dog price acts as an invisible anchor that drives massive bulk-item cart sales",
-    "How underground mafia syndicates in the Mekong Delta weaponize illegal suction dredging barges to steal entire islands of construction sand under the cover of night."
+    "How underground mafia syndicates in the Mekong Delta weaponize illegal suction dredging barges to steal entire islands of construction sand under the cover of night.",
+    "How Pratt & Whitney jet engine factories use proprietary acoustic sensor telemetry to bill commercial airlines per second of actual thrust, turning hardware into a continuous utility meter."
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 2,
-  "call_count": 345
+  "subcluster_idx": 4,
+  "fallback_idx": 3,
+  "call_count": 346
 }
