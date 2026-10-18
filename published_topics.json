@@ -1,6 +1,5 @@
 {
   "topics": [
-    "ASML's Extreme UV Monopoly: How a single Dutch company controls 100% of the world's extreme UV chipmaking machines and holds the tech economy hostage",
     "The Global Sand Mafia: How illegal syndicates and armed cartels steal millions of tons of beach and river sand to feed the concrete construction boom",
     "How secretive construction-grade sand brokers manipulate riverbed dredging permits to artificially inflate concrete manufacturing costs across booming mega-cities.",
     "Rolls-Royce Power-by-the-Hour: Why jet engine manufacturers sell multi-million-dollar engines at a loss and print billions renting uptime by the minute",
@@ -89,9 +88,10 @@
     "How warehouse club optical illusion pricing on bulk toilet paper tricks your brain into ignoring the massive unit-cost markup hiding underneath.",
     "How clandestine vanilla curing syndicates artificially manipulate bean moisture levels to trap gourmet food conglomerates in multi-million-dollar price-fixing schemes.",
     "How GE Aerospace flipped its entire business model from hardware manufacturing to software-driven predictive maintenance, printing billions in recurring hourly service revenue.",
-    "How high-end designer brands weaponize industrial shredders to pulp unsold seasonal inventory so outlet malls can never devalue their exclusive status."
+    "How high-end designer brands weaponize industrial shredders to pulp unsold seasonal inventory so outlet malls can never devalue their exclusive status.",
+    "Why Suez Canal transit schedulers use specialized tugboat swarms to wrestle rogue mega-container vessels through narrow desert dredging channels."
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 24,
-  "call_count": 342
+  "subcluster_idx": 1,
+  "fallback_idx": 0,
+  "call_count": 343
 }
