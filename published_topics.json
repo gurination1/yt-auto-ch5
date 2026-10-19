@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Suez Canal Chokepoint: How a single stuck container ship froze $9.6 billion of global trade every day and triggered a worldwide inflation shockwave",
     "Why ASML cleanrooms reject human hair and dead skin cells so violently that technicians wear total-body suits pressurized like space station airlocks",
     "Cinema Popcorn Economics: Why movie theaters are actually popcorn concessions that show Hollywood movies as an excuse to sell 1,200% markup snacks",
     "The Madagascar Vanilla Syndicate: Why natural vanilla beans are worth more by weight than silver and protected by armed jungle militias",
@@ -89,9 +88,10 @@
     "Why Suez Canal transit schedulers use specialized tugboat swarms to wrestle rogue mega-container vessels through narrow desert dredging channels.",
     "How Costco's frozen corporate mandate to lock the famous $1.50 hot dog price acts as an invisible anchor that drives massive bulk-item cart sales",
     "How underground mafia syndicates in the Mekong Delta weaponize illegal suction dredging barges to steal entire islands of construction sand under the cover of night.",
-    "How Pratt & Whitney jet engine factories use proprietary acoustic sensor telemetry to bill commercial airlines per second of actual thrust, turning hardware into a continuous utility meter."
+    "How Pratt & Whitney jet engine factories use proprietary acoustic sensor telemetry to bill commercial airlines per second of actual thrust, turning hardware into a continuous utility meter.",
+    "How Ferrari applies strict allocation algorithms and invisible ownership blacklists to restrict supercar purchases, forcing billionaires to beg for the right to spend half a million dollars."
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 3,
-  "call_count": 346
+  "subcluster_idx": 0,
+  "fallback_idx": 4,
+  "call_count": 347
 }
