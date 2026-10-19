@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Cinema Popcorn Economics: Why movie theaters are actually popcorn concessions that show Hollywood movies as an excuse to sell 1,200% markup snacks",
     "The Madagascar Vanilla Syndicate: Why natural vanilla beans are worth more by weight than silver and protected by armed jungle militias",
     "The Herm\u00e8s Birkin Quota Game: How a luxury brand uses forced artificial scarcity and purchase histories to make handbags appreciate faster than the stock market",
     "E-Waste Urban Mining: Why extracting gold and palladium from a ton of discarded smartphones yields 100 times more precious metal than mining raw gold ore",
@@ -89,9 +88,10 @@
     "How underground mafia syndicates in the Mekong Delta weaponize illegal suction dredging barges to steal entire islands of construction sand under the cover of night.",
     "How Pratt & Whitney jet engine factories use proprietary acoustic sensor telemetry to bill commercial airlines per second of actual thrust, turning hardware into a continuous utility meter.",
     "How Ferrari applies strict allocation algorithms and invisible ownership blacklists to restrict supercar purchases, forcing billionaires to beg for the right to spend half a million dollars.",
-    "How ASML lithography engineering teams deploy magnetic levitation stages that move with sub-nanometer precision inside ultra-high vacuum chambers"
+    "How ASML lithography engineering teams deploy magnetic levitation stages that move with sub-nanometer precision inside ultra-high vacuum chambers",
+    "The Intermodal Shipping Container: How a standardized corrugated steel box invented by Malcolm McLean dropped freight transport costs by 99%"
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 5,
-  "call_count": 348
+  "subcluster_idx": 2,
+  "fallback_idx": 21,
+  "call_count": 349
 }
