@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Surge Pricing & Battery Drain Algorithms: How travel apps and rideshares detect your remaining battery percentage and demand velocity to secretly inflate prices",
     "How supermarket bakeries pump raw artificial scent-air into HVAC ducts to trigger subconscious hunger and override rational shopping lists.",
     "The Gray Market Rolex Syndicate: How authorized dealers secretly funnel brand-new luxury watches to gray-market flippers for double retail price",
     "The Gruen Transfer in Supermarket Architecture: Why grocery stores place milk in the furthest back corner and pump bakery scents to force impulse purchases",
@@ -89,9 +88,10 @@
     "The Intermodal Shipping Container: How a standardized corrugated steel box invented by Malcolm McLean dropped freight transport costs by 99%",
     "Pharmaceutical Patent Thickets: How drug corporations file hundreds of minor secondary patents to delay generic life-saving medicine competition for 30 years",
     "ASML's Extreme UV Monopoly: How a single Dutch company controls 100% of the world's extreme UV chipmaking machines and holds the tech economy hostage",
-    "How the clandestine Syndicate sightholder system forces selected diamond buyers to accept fixed allocation parcels without inspecting the stones beforehand."
+    "How the clandestine Syndicate sightholder system forces selected diamond buyers to accept fixed allocation parcels without inspecting the stones beforehand.",
+    "Rolls-Royce Power-by-the-Hour: Why jet engine manufacturers sell multi-million-dollar engines at a loss and print billions renting uptime by the minute"
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 3,
-  "call_count": 352
+  "subcluster_idx": 1,
+  "fallback_idx": 4,
+  "call_count": 353
 }
