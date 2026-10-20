@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The Herm\u00e8s Birkin Quota Game: How a luxury brand uses forced artificial scarcity and purchase histories to make handbags appreciate faster than the stock market",
     "E-Waste Urban Mining: Why extracting gold and palladium from a ton of discarded smartphones yields 100 times more precious metal than mining raw gold ore",
     "Surge Pricing & Battery Drain Algorithms: How travel apps and rideshares detect your remaining battery percentage and demand velocity to secretly inflate prices",
     "How supermarket bakeries pump raw artificial scent-air into HVAC ducts to trigger subconscious hunger and override rational shopping lists.",
@@ -89,9 +88,10 @@
     "How Ferrari applies strict allocation algorithms and invisible ownership blacklists to restrict supercar purchases, forcing billionaires to beg for the right to spend half a million dollars.",
     "How ASML lithography engineering teams deploy magnetic levitation stages that move with sub-nanometer precision inside ultra-high vacuum chambers",
     "The Intermodal Shipping Container: How a standardized corrugated steel box invented by Malcolm McLean dropped freight transport costs by 99%",
-    "Pharmaceutical Patent Thickets: How drug corporations file hundreds of minor secondary patents to delay generic life-saving medicine competition for 30 years"
+    "Pharmaceutical Patent Thickets: How drug corporations file hundreds of minor secondary patents to delay generic life-saving medicine competition for 30 years",
+    "ASML's Extreme UV Monopoly: How a single Dutch company controls 100% of the world's extreme UV chipmaking machines and holds the tech economy hostage"
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 0,
-  "call_count": 350
+  "subcluster_idx": 4,
+  "fallback_idx": 2,
+  "call_count": 351
 }
