@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The DRC Cobalt Chokepoint: How 70% of the global cobalt supply needed for every electric vehicle and smartphone originates from a single mining province",
     "Luxury Inventory Burning: Why Burberry and Cartier destroyed hundreds of millions in pristine unsold coats and watches rather than discount them",
     "How cinema butter-flavor oil chemistry uses pure coconut oil and yellow dye to mimic dairy butter at a fraction of the ingredient cost.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
@@ -89,9 +88,10 @@
     "Rolls-Royce Power-by-the-Hour: Why jet engine manufacturers sell multi-million-dollar engines at a loss and print billions renting uptime by the minute",
     "Cinema Popcorn Economics: Why movie theaters are actually popcorn concessions that show Hollywood movies as an excuse to sell 1,200% markup snacks",
     "How the illegal Madagascar vanilla cartel uses vacuum-sealed subterranean caches to weaponize artificial crop rot and dictate global flavoring prices",
-    "How Umicore and Glencore precious metal smelters deploy industrial cyanide leaching towers to extract microscopic gold veins from shredded circuit boards."
+    "How Umicore and Glencore precious metal smelters deploy industrial cyanide leaching towers to extract microscopic gold veins from shredded circuit boards.",
+    "Surge Pricing & Battery Drain Algorithms: How travel apps and rideshares detect your remaining battery percentage and demand velocity to secretly inflate prices"
   ],
-  "subcluster_idx": 4,
-  "fallback_idx": 9,
-  "call_count": 356
+  "subcluster_idx": 0,
+  "fallback_idx": 13,
+  "call_count": 357
 }
