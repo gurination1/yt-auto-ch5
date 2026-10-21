@@ -1,6 +1,5 @@
 {
   "topics": [
-    "How cinema butter-flavor oil chemistry uses pure coconut oil and yellow dye to mimic dairy butter at a fraction of the ingredient cost.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How closed-loop pyro-metallurgical smelting plants melt down metric tons of electronic scrap to harvest hidden palladium and gold veins from obsolete supercomputers.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
@@ -89,9 +88,10 @@
     "How the illegal Madagascar vanilla cartel uses vacuum-sealed subterranean caches to weaponize artificial crop rot and dictate global flavoring prices",
     "How Umicore and Glencore precious metal smelters deploy industrial cyanide leaching towers to extract microscopic gold veins from shredded circuit boards.",
     "Surge Pricing & Battery Drain Algorithms: How travel apps and rideshares detect your remaining battery percentage and demand velocity to secretly inflate prices",
-    "How ASML engineers deploy specialized mirror-polishing robots that spend months grinding Extreme Ultraviolet optical plates to an atomic smoothness tolerance of less than half a nanometer."
+    "How ASML engineers deploy specialized mirror-polishing robots that spend months grinding Extreme Ultraviolet optical plates to an atomic smoothness tolerance of less than half a nanometer.",
+    "The Gruen Transfer in Supermarket Architecture: Why grocery stores place milk in the furthest back corner and pump bakery scents to force impulse purchases"
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 14,
-  "call_count": 358
+  "subcluster_idx": 2,
+  "fallback_idx": 16,
+  "call_count": 359
 }
