@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Luxury Inventory Burning: Why Burberry and Cartier destroyed hundreds of millions in pristine unsold coats and watches rather than discount them",
     "How cinema butter-flavor oil chemistry uses pure coconut oil and yellow dye to mimic dairy butter at a fraction of the ingredient cost.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How closed-loop pyro-metallurgical smelting plants melt down metric tons of electronic scrap to harvest hidden palladium and gold veins from obsolete supercomputers.",
@@ -89,9 +88,10 @@
     "Cinema Popcorn Economics: Why movie theaters are actually popcorn concessions that show Hollywood movies as an excuse to sell 1,200% markup snacks",
     "How the illegal Madagascar vanilla cartel uses vacuum-sealed subterranean caches to weaponize artificial crop rot and dictate global flavoring prices",
     "How Umicore and Glencore precious metal smelters deploy industrial cyanide leaching towers to extract microscopic gold veins from shredded circuit boards.",
-    "Surge Pricing & Battery Drain Algorithms: How travel apps and rideshares detect your remaining battery percentage and demand velocity to secretly inflate prices"
+    "Surge Pricing & Battery Drain Algorithms: How travel apps and rideshares detect your remaining battery percentage and demand velocity to secretly inflate prices",
+    "How ASML engineers deploy specialized mirror-polishing robots that spend months grinding Extreme Ultraviolet optical plates to an atomic smoothness tolerance of less than half a nanometer."
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 13,
-  "call_count": 357
+  "subcluster_idx": 1,
+  "fallback_idx": 14,
+  "call_count": 358
 }
