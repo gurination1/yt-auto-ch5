@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How closed-loop pyro-metallurgical smelting plants melt down metric tons of electronic scrap to harvest hidden palladium and gold veins from obsolete supercomputers.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
@@ -89,9 +88,10 @@
     "How Umicore and Glencore precious metal smelters deploy industrial cyanide leaching towers to extract microscopic gold veins from shredded circuit boards.",
     "Surge Pricing & Battery Drain Algorithms: How travel apps and rideshares detect your remaining battery percentage and demand velocity to secretly inflate prices",
     "How ASML engineers deploy specialized mirror-polishing robots that spend months grinding Extreme Ultraviolet optical plates to an atomic smoothness tolerance of less than half a nanometer.",
-    "The Gruen Transfer in Supermarket Architecture: Why grocery stores place milk in the furthest back corner and pump bakery scents to force impulse purchases"
+    "The Gruen Transfer in Supermarket Architecture: Why grocery stores place milk in the furthest back corner and pump bakery scents to force impulse purchases",
+    "The DRC Cobalt Chokepoint: How 70% of the global cobalt supply needed for every electric vehicle and smartphone originates from a single mining province"
   ],
-  "subcluster_idx": 2,
-  "fallback_idx": 16,
-  "call_count": 359
+  "subcluster_idx": 3,
+  "fallback_idx": 17,
+  "call_count": 360
 }
