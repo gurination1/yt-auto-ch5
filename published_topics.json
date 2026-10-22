@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Why supermarkets intentionally place floral departments right at the front entrance to alter your sensory state and make you spend 30% more on impulse items.",
     "How underground salt cavern syndicates manipulate regional brine reserves to control the chemical feedstock pipeline for global lithium-ion manufacturing.",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How Swiss watchmaker Patek Philippe restricts total annual production to under 70,000 timepieces, enforcing multi-decade waitlists for elite buyers.",
@@ -89,9 +88,10 @@
     "The DRC Cobalt Chokepoint: How 70% of the global cobalt supply needed for every electric vehicle and smartphone originates from a single mining province",
     "Luxury Inventory Burning: Why Burberry and Cartier destroyed hundreds of millions in pristine unsold coats and watches rather than discount them",
     "The Madagascar Vanilla Syndicate: Why natural vanilla beans are worth more by weight than silver and protected by armed jungle militias",
-    "The Herm\u00e8s Birkin Quota Game: How a luxury brand uses forced artificial scarcity and purchase histories to make handbags appreciate faster than the stock market"
+    "The Herm\u00e8s Birkin Quota Game: How a luxury brand uses forced artificial scarcity and purchase histories to make handbags appreciate faster than the stock market",
+    "The Gray Market Rolex Syndicate: How authorized dealers secretly funnel brand-new luxury watches to gray-market flippers for double retail price"
   ],
-  "subcluster_idx": 1,
-  "fallback_idx": 9,
-  "call_count": 363
+  "subcluster_idx": 2,
+  "fallback_idx": 14,
+  "call_count": 364
 }
