@@ -1,6 +1,5 @@
 {
   "topics": [
-    "The multi-billion-dollar seismic sensors buried beneath ASML cleanrooms that instantly shut down laser lithography whenever a distant train rattles the earth",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How specialized e-waste processing plants deploy centrifugal pyrolytic reactors to vaporize plastic housings while leaving a pristine, concentrated slag of molten precious metals behind.",
@@ -89,9 +88,10 @@
     "The Gray Market Rolex Syndicate: How authorized dealers secretly funnel brand-new luxury watches to gray-market flippers for double retail price",
     "The Costco Hot Dog Paradox: Why Costco's founder threatened to murder the CEO if he raised the $1.50 hot dog price, and how it anchors $200B in sales",
     "The Global Sand Mafia: How illegal syndicates and armed cartels steal millions of tons of beach and river sand to feed the concrete construction boom",
-    "The Suez Canal Chokepoint: How a single stuck container ship froze $9.6 billion of global trade every day and triggered a worldwide inflation shockwave"
+    "The Suez Canal Chokepoint: How a single stuck container ship froze $9.6 billion of global trade every day and triggered a worldwide inflation shockwave",
+    "The Strait of Malacca Bottleneck: Why 25% of all global traded oil passes through a 1.7-mile maritime corridor and what happens if it shuts down"
   ],
-  "subcluster_idx": 0,
-  "fallback_idx": 6,
-  "call_count": 367
+  "subcluster_idx": 1,
+  "fallback_idx": 11,
+  "call_count": 368
 }
