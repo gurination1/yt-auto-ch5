@@ -1,6 +1,5 @@
 {
   "topics": [
-    "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
     "How Swiss watchmaker Patek Philippe restricts total annual production to under 70,000 timepieces, enforcing multi-decade waitlists for elite buyers.",
     "The multi-billion-dollar seismic sensors buried beneath ASML cleanrooms that instantly shut down laser lithography whenever a distant train rattles the earth",
     "Loss-Leader Milk Wars: How mega-supermarkets weaponize gallon milk prices below wholesale cost to bankrupt independent grocers",
@@ -89,9 +88,10 @@
     "The Madagascar Vanilla Syndicate: Why natural vanilla beans are worth more by weight than silver and protected by armed jungle militias",
     "The Herm\u00e8s Birkin Quota Game: How a luxury brand uses forced artificial scarcity and purchase histories to make handbags appreciate faster than the stock market",
     "The Gray Market Rolex Syndicate: How authorized dealers secretly funnel brand-new luxury watches to gray-market flippers for double retail price",
-    "The Costco Hot Dog Paradox: Why Costco's founder threatened to murder the CEO if he raised the $1.50 hot dog price, and how it anchors $200B in sales"
+    "The Costco Hot Dog Paradox: Why Costco's founder threatened to murder the CEO if he raised the $1.50 hot dog price, and how it anchors $200B in sales",
+    "The Global Sand Mafia: How illegal syndicates and armed cartels steal millions of tons of beach and river sand to feed the concrete construction boom"
   ],
-  "subcluster_idx": 3,
-  "fallback_idx": 1,
-  "call_count": 365
+  "subcluster_idx": 4,
+  "fallback_idx": 3,
+  "call_count": 366
 }
